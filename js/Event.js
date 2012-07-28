@@ -9,12 +9,14 @@
 	2+ : pinch, rotate
 	   : mousewheel, devicemotion, shake
 	----------------------------------------------------
+	REQUIREMENT: querySelector, querySelectorAll
+	----------------------------------------------------
 	//* There are two ways to add events with this library.
-	target.addEventListener(); // Retains "this" attribute as target, and addEventListener.
+	target.addEventListener(); // Retains "this" attribute as target, and overrides native addEventListener.
 	Event.add(); // Attempts to be as fast as possible.
 	----------------------------------------------------
-	//* turns addEventListener prototyping on/off.
-	Event.prototyped = true;
+	//* turn addEventListener prototyping on/off.
+	Event.prototype(true);
 	----------------------------------------------------
 	//* Single listener.
 	/// optional configuration.
@@ -81,7 +83,7 @@
 		listeners: {
 			taphold: {
 				fingers: 1,
-				wait: 250, // milliseconds
+				wait: 500, // milliseconds
 				listener: function(event, self) {
 					console.log(self.fingers); // "1" finger.
 				}
@@ -112,36 +114,60 @@
 	});
 	----------------------------------------------------
 	//* Event proxies.
+	//  type, fingers, state, start, x, y, position, bbox
+	//  rotation, scale, velocity, angle, hold, cutoff
+	----------------------------------------------------
+	/// "Click" :: fingers, minFingers, maxFingers.
 	Event.add(window, "click", function(event, self) {
 		console.log(self.type, self.x, self.y);
 	});
+	/// "Double-Click" :: fingers, minFingers, maxFingers.
 	Event.add(window, "dblclick", function(event, self) {
 		console.log(self.type, self.x, self.y);
 	});
+	/// "Drag" :: fingers, maxFingers, position
 	Event.add(window, "drag", function(event, self) {
 		console.log(self.type, self.fingers, self.state, self.start, self.x, self.y, self.bbox);
 	});
+	/// "Gesture" :: fingers, minFingers, maxFingers.
 	Event.add(window, "gesture", function(event, self) {
 		console.log(self.type, self.fingers, self.state, self.rotation, self.scale);
 	});
-	Event.add(window, "shake", function(event, self) {
-		console.log(self.type, self.acceleration, self.accelerationIncludingGravity);
-	});
-	Event.add(window, "devicemotion", function(event, self) {
-		console.log(self.type, self.acceleration, self.accelerationIncludingGravity);
-	});
+	/// "Swipe" :: fingers, minFingers, maxFingers, snap, threshold.
 	Event.add(window, "swipe", function(event, self) {
 		console.log(self.type, self.fingers, self.velocity, self.angle);
 	});
+	/// "Tap" and "Tap-Hold" :: fingers, minFingers, maxFingers, hold, cutoff.
 	Event.add(window, "tap", function(event, self) {
 		console.log(self.type, self.fingers);
 	});
+	///
+	Event.add(window, "shake", function(event, self) {
+		console.log(self.type, self.acceleration, self.accelerationIncludingGravity);
+	});
+	///
+	Event.add(window, "devicemotion", function(event, self) {
+		console.log(self.type, self.acceleration, self.accelerationIncludingGravity);
+	});
+	///
 	Event.add(window, "wheel", function(event, self) {
 		console.log(self.type, self.state, self.wheelDelta);
 	});
 	----------------------------------------------------
-	//* Listen for selectors to become available.
-	Event.add("body div#test", "ready", callback);
+	//* Use query selectors to create an event (querySelectorAll)
+	Event.add("#element a.link", "click", callback);
+	document.querySelectorAll("#element a.link").addEventListener("click", callback);
+	----------------------------------------------------
+	//* Listen for query selector to become available (querySelector)
+	Event.add("body", "ready", callback);
+	----------------------------------------------------
+	Event.add({
+		target: "body", 
+		type: "ready", 
+		timeout: 10000, // set a timeout to stop checking.
+		interval: 30, // set how often to check for element.
+		listener: callback
+	});
 	----------------------------------------------------
 	Event.stop(event); // stop bubble.
 	Event.prevent(event); // prevent default.
@@ -159,14 +185,14 @@
 
 if (typeof(Event) === "undefined") var Event = {};
 
-(function(root) { "use strict";
+Event = (function(root) { "use strict";
 
-root.add = function(target, type, listener, conf) {
-	return handleEvent(target, type, listener, "add", conf);
+root.add = function(target, type, listener, configure) {
+	return eventHandler(target, type, listener, configure, "add");
 };
 
-root.remove = function(target, type, listener, conf) {
-	return handleEvent(target, type, listener, "remove", conf);
+root.remove = function(target, type, listener, configure) {
+	return eventHandler(target, type, listener, configure, "remove");
 };
 
 root.stop = function(event) {
@@ -183,6 +209,95 @@ root.prevent = function(event) {
 root.cancel = function(event) {
 	root.stop(event);
 	root.prevent(event);
+};
+
+root.enablePointer = function() {
+	function createCustomEvent(eventName, target, payload) {
+		var event = document.createEvent('Event');
+		event.initEvent(eventName, true, true);
+		for (var k in payload) event[k] = payload[k];
+		target.dispatchEvent(event);
+	};
+	function Pointer(x, y, type, identifier) {
+		this.x = x;
+		this.y = y;
+		this.type = type;
+		this.identifier = identifier;
+	};
+	var PointerTypes = {
+		TOUCH: 'touch',
+		MOUSE: 'mouse'
+	};
+	function getPointerList() {
+		// Note: "this" is the element.
+		var pointers = [];
+		if (this.touchList) {
+			for (var i = 0; i < this.touchList.length; i++) {
+				var touch = this.touchList[i];
+				var pointer = new Pointer(touch.pageX, touch.pageY, PointerTypes.TOUCH, touch.identifier);
+				pointers.push(pointer);
+			}
+		}
+		if (this.mouseEvent) {
+			pointers.push(new Pointer(this.mouseEvent.pageX, this.mouseEvent.pageY, PointerTypes.MOUSE, Infinity));
+		}
+		return pointers;
+	};
+	var primitives = {
+		"mousedown": true, 
+		"mouseup": true, 
+		"mousemove": true,
+		"MSPointerDown": true,
+		"MSPointerMove": true,
+		"MSPointerUp": true,
+		"touchstart": true,
+		"touchend": true,
+		"touchmove": true
+	};
+	var augmentEventListener = function(baseElementClass) {
+		var oldAddEventListener = baseElementClass.prototype.addEventListener;
+		baseElementClass.prototype.addEventListener = function (type, listener, useCapture) {
+		console.log(type)
+			if (primitives[type]) { // handle native events.
+				oldAddEventListener.call(this, normalize(type), listener, useCapture);
+			} else { // handle custom events.
+				if (typeof(useCapture) === "object") {
+					useCapture.call = true;
+				} else {
+					useCapture = {
+						call: true,
+						useCapture: useCapture
+					}
+				}
+				eventHandler(this, type, listener, useCapture, "add");
+			}
+		};
+		var oldRemoveEventListener = baseElementClass.prototype.removeEventListener;
+		baseElementClass.prototype.removeEventListener = function (type, listener, useCapture) {
+			if (primitives[type]) { // handle native events.
+				oldRemoveEventListener.call(this, normalize(type), listener, useCapture);
+			} else { // handle custom events.
+				if (typeof(useCapture) === "object") {
+					useCapture.call = true;
+				} else {
+					useCapture = {
+						call: true,
+						useCapture: useCapture
+					}
+				}
+				eventHandler(this, type, listener, useCapture, "remove");
+			}
+		};
+	};
+	// Note: Firefox doesn't work like other browsers... overriding HTMLElement
+	// doesn't actually affect anything. Special case for Firefox:
+	if (navigator.userAgent.match(/Firefox/)) {
+		// TODO: fix this for the general case.
+		augmentEventListener(HTMLDivElement);
+		augmentEventListener(HTMLCanvasElement);
+	} else {
+		augmentEventListener(HTMLElement);
+	}
 };
 
 // Check to see whether event exists (via @kangax)
@@ -203,29 +318,190 @@ root.supports = function (target, type) {
 	}
 };
 
-/// Expose special key commands.
-(function() {
+/// Keep track of whether metaKey is being fired.
+root.metaTracker = (function() {
 	var agent = navigator.userAgent.toLowerCase();
 	var mac = agent.indexOf("macintosh") !== -1;
-	if (mac && agent.indexOf("khtml") !== -1) { // chrome, safari
-		var codes = { 91: true, 93: true };
-	} else if (mac && agent.indexOf("firefox") !== -1) {  // mac firefox
-		var codes = { 224: true };
-	} else { // windows, linux, or mac opera
-		var codes = { 17: true };
+	if (mac && agent.indexOf("khtml") !== -1) { // chrome, safari.
+		var watch = { 91: true, 93: true };
+	} else if (mac && agent.indexOf("firefox") !== -1) {  // mac firefox.
+		var watch = { 224: true };
+	} else { // windows, linux, or mac opera.
+		var watch = { 17: true };
 	}
-	///
-	root.metaTracker = function(event) {
-		if (codes[event.keyCode]) {
+	return function(event) {
+		if (watch[event.keyCode]) {
 			root.metaKey = event.type === "keydown";
 		}
 	};
 })();
 
-/// Detect custom event listeners.
-var isEventProxy = (function () {
+/// Event listeners.
+var eventHandler = function(target, type, listener, configure, trigger) {
+	configure = configure || {};
+	// Check for element to load on interval (before onload).
+	if (typeof(target) === "string" && type === "ready") {
+		var timeout = configure.timeout;
+		var speed = configure.interval || 1000 / 60;
+		var interval = setInterval(function() {
+			if (document.querySelector(target)) {
+				clearInterval(interval);
+				listener();
+			}
+		}, speed);
+		return;
+	}
+	// Get DOM element from Query Selector.
+	if (typeof(target) === "string") {
+		target = document.querySelectorAll(target);
+		if (target.length === 0) return;
+		if (target.length === 1) {
+			target = target[0];
+		} else { /// Handle multiple targets.
+			var events = {};
+			for (var n = 0, length = target.length; n < length; n ++) {
+				var event = eventHandler(target[n], type, listener, configure, trigger);
+				if (event) events[n] = event;
+			}	
+			return batch(events);
+		}
+	}
+	// Check for multiple events in one string.
+	if (type.indexOf && type.indexOf(" ") !== -1) type = type.split(" ");
+	if (type.indexOf && type.indexOf(",") !== -1) type = type.split(",");
+	// Attach or remove multiple events associated with a target.
+	if (typeof(type) !== "string") { // Has multiple events.
+		var events = {};
+		if (typeof(type.length) === "number") { // Handle multiple listeners glued together.
+			for (var n = 0, length = type.length; n < length; n ++) { // Array [type]
+				var event = eventHandler(target, type[n], listener, configure, trigger);
+				if (event) events[type[n]] = event;
+			}
+		} else { // Handle multiple listeners.
+			for (var key in type) { // Object {type}
+				if (typeof(type[key]) === "function") { // without configuration.
+					var event = eventHandler(target, key, type[key], configure, trigger);
+				} else { // with configuration.
+					var event = eventHandler(target, key, type[key].listener, type[key], trigger);
+				}
+				if (event) events[key] = event;
+			}
+		}
+		return batch(events);
+	}
+	// Ensure listener is a function.
+	if (typeof(listener) !== "function") return;
+	// Generate a unique wrapper identifier.
+	var id = normalize(type) + getID(target) + "." + getID(listener);
+	var useCapture = configure.useCapture || false;
+	// Handle the event.
+	if (detectProxy[type]) { // Fire custom event.
+		if (trigger === "remove") { // Remove event listener.
+			if (!wrappers[id]) return; // Already removed.
+			wrappers[id].remove();
+			delete wrappers[id];
+		} else if (trigger === "add") { // Attach event listener.
+			if (wrappers[id]) return wrappers[id]; // Already attached.
+			// Retains "this" orientation.
+			if (configure.call) {
+				var tmp = listener;
+				var listener = function(event, self) {
+					for (var key in self) event[key] = self[key];
+					event.target.mouseEvent = event;
+					event.identifier = Infinity;
+					event.pointerType = "mouse";
+					event.getPointerList = function() {
+						return [event];
+					};
+					return tmp.call(target, event);
+				};
+			}
+			// Create listener proxy.
+			configure.type = type; 
+			configure.target = target;
+			configure.listener = listener;
+			// Record wrapper.
+			wrappers[id] = root.proxy[type](configure); 
+		}
+	} else { // Fire native event.
+		if (trigger === "remove") { // Remove event listener.
+			if (!wrappers[id]) return; // Already removed.
+			wrappers[id].remove();
+			delete wrappers[id];
+		} else if (trigger === "add") { // Attach event listener.
+			if (wrappers[id]) return wrappers[id]; // Already attached.
+			var type = normalize(type);
+			// Attach listener.
+			target[add](type, listener, useCapture); 
+			// Record wrapper.
+			wrappers[id] = { 
+				type: type,
+				target: target,
+				listener: listener,
+				remove: function() {
+					root.remove(target, type, listener, configure);
+				}
+			};				
+		}
+	}
+	return wrappers[id];
+};
+
+/// Perform batch actions on multiple events.
+var batch = function(events) {
+	return {
+		remove: function() { // Remove multiple events.
+			for (var key in events) {
+				events[key].remove();
+			}
+		},
+		add: function() { // Add multiple events.
+			for (var key in events) {
+				events[key].add();
+			}
+		}
+	};
+};
+
+/// Handle naming discrepancies.
+var normalize = (function() {
+	var generalized = {
+		"pointerdown": "mousedown", 
+		"pointerup": "mouseup", 
+		"pointermove": "mousemove"
+	};
+	/// MSIE Pointer event
+	var mspointer = window.navigator.msPointerEnabled ? {
+		"mousedown": "MSPointerDown",
+		"mousemove": "MSPointerMove",
+		"mouseup": "MSPointerUp"
+	} : { };
+	/// Touch event
+	var touch = root.supports("touchstart") ? {
+		"mousedown": "touchstart",
+		"mouseup": "touchend",
+		"mousemove": "touchmove"
+	} : { };
+	/// Normalize.
+	return function(type) {
+		if (generalized[type]) type = generalized[type];
+		if (mspointer[type]) type = mspointer[type];
+		if (touch[type]) type = touch[type];
+		if (!document.addEventListener) { // IE
+			return "on" + type;
+		} else {
+			return type;
+		}
+	};
+})();
+
+/// Detect custom event listeners (proxies).
+var detectProxy = (function () {
 	var events = {};
 	var types = [];
+	types.push("pointerdown");
+	types.push("pointermove");
+	types.push("pointerup");
 	types.push("click");
 	types.push("dblclick");
 	types.push("dbltap");
@@ -237,123 +513,12 @@ var isEventProxy = (function () {
 	types.push("taphold");
 	types.push("devicemotion");
 	types.push("mousewheel");
+	/// Convert to matching object.
 	for (var n = 0, length = types.length; n < length; n ++) {
 		events[types[n]] = true;
 	}
 	return events; 
 })();
-
-/// Handle naming discrepancies.
-var touch = root.supports("touchstart") ? {
-	"mousedown": "touchstart",
-	"mouseup": "touchend",
-	"mousemove": "touchmove"
-} : { };
-
-var mspointer = window.navigator.msPointerEnabled ? {
-	"mousedown": "MSPointerDown",
-	"mousemove": "MSPointerMove",
-	"mouseup": "MSPointerUp"
-} : { };
-
-var shorthand = {
-	"down": "mousedown", 
-	"up": "mouseup", 
-	"move": "mousemove"
-};
-
-var normalize = function(type) {
-	if (shorthand[type]) type = shorthand[type];
-	if (touch[type]) type = touch[type];
-	if (mspointer[type]) type = mspointer[type];
-	if (!document.addEventListener) { // IE
-		return "on" + type;
-	} else { // 
-		return type;
-	}
-};
-
-/// Event listeners.
-var handleEvent = function(target, type, listener, trigger, conf) {
-	// Check for element to load on interval (before onload).
-	if (typeof(target) === "string" && type === "ready") {
-		var interval = setInterval(function() {
-			if (document.querySelector(target)) {
-				clearInterval(interval);
-				listener();
-			}
-		}, 1000 / 60);
-		return;
-	}
-	if (typeof(target) === "string") {
-		target = document.querySelector(target);
-	}
-	// Check for multiple events in one string.
-	if (type.indexOf && type.indexOf(" ") !== -1) type = type.split(" ");
-	if (type.indexOf && type.indexOf(",") !== -1) type = type.split(",");
-	// Attach or remove multiple events associated with a target.
-	if (typeof(type) !== "string") { // Has multiple events.
-		var events = {};
-		if (typeof(type.length) === "number") { // Has multiple listeners glued together.
-			for (var n = 0, length = type.length; n < length; n ++) { // Array[]
-				var event = handleEvent(target, type[n], listener, trigger);
-				if (event) events[type[n]] = event;
-			}
-		} else { // Has multiple listeners.
-			for (var key in type) { // Object{}
-				var event = handleEvent(target, key, type[key], trigger);
-				if (event) events[key] = event;
-			}
-		}
-		return {
-			remove: function() { // Remove multiple events.
-				var events = that.events;
-				for (var key in events) events[key].remove();
-			},
-			add: function() { // Add multiple events.
-				var events = that.events;
-				for (var key in events) events[key].add();
-			}
-		};
-	}
-	// Ensure listener is a function.
-	if (typeof(listener) !== "function") return;
-	// Generate a unique wrapper identifier.
-	var id = normalize(type) + getID(target) + "." + getID(listener);
-	// Handle the event.
-	if (isEventProxy[type]) { // Fire custom event.
-		if (trigger === "remove") { // Remove event listener.
-			if (!wrappers[id]) return;
-			wrappers[id].remove();
-			delete wrappers[id];
-		} else if (trigger === "add") { // Attach event listener.
-			if (wrappers[id]) return wrappers[id]; // Already attached.
-			conf = conf || {};
-			conf.type = type;
-			conf.target = target;
-			conf.listener = listener;
-			wrappers[id] = root.proxy[type](conf);			
-		}
-	} else { // Fire native event.
-		if (trigger === "remove") { // Remove event listener.
-			if (!wrappers[id]) return;
-			target[remove](normalize(type), wrappers[id].listener, false);		
-			delete wrappers[id];
-		} else if (trigger === "add") { // Attach event listener.
-			if (wrappers[id]) return wrappers[id];
-			target[add](normalize(type), listener, false);
-			wrappers[id] = {
-				type: type,
-				target: target,
-				listener: listener,
-				remove: function() {
-					root.remove(target, type, listener);
-				}
-			};				
-		}
-	}
-	return wrappers[id];
-};
 
 /// Event wrappers, and associated variables.
 var wrappers = {};
@@ -370,7 +535,11 @@ var getID = function(object) {
 var add = document.addEventListener ? "addEventListener" : "attachEvent";
 var remove = document.removeEventListener ? "removeEventListener" : "detachEvent";
 
-})(Event);
+root.enablePointer();
+
+return root;
+
+})(Event);
 /*
 	----------------------------------------------------
 	Event.proxy : 0.3.8 : 2012/07/14 : MIT License
@@ -389,6 +558,35 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
+root.addPointer = function(self, conf) {
+	conf.doc = conf.target.ownerDocument || conf.target;
+	conf.minFingers = conf.minFingers || conf.fingers || 1;
+	conf.maxFingers = conf.maxFingers || conf.fingers || Infinity; // Maximum allowed fingers.
+	conf.position = conf.position || "relative"; // Point to source coordinates from.
+	///
+	self.type = conf.type;
+	self.target = conf.target;
+	self.listener = conf.listener;
+	self.remove = function() {
+		Event.remove(conf.target, "mousedown", conf.onMouseDown);
+		Event.remove(conf.doc, "mousemove", conf.onMouseMove);
+		Event.remove(conf.doc, "mouseup", conf.onMouseUp);
+	};
+	self.disable = function(opt) {
+		if (!opt || opt.move) Event.remove(conf.doc, "mousemove", conf.onMouseMove);
+		if (!opt || opt.up) Event.remove(conf.doc, "mouseup", conf.onMouseUp);
+		conf.fingers = 0;
+	};
+	self.enable = function(opt) {
+		if (!opt || opt.move) Event.add(conf.doc, "mousemove", conf.onMouseMove);
+		if (!opt || opt.move) Event.add(conf.doc, "mouseup", conf.onMouseUp);
+		conf.fingers = 1;
+	};
+	///
+	return self;
+};
+
+///
 root.gestureStart = function(event, conf) {
 	var addTouchStart = function(touch, sid) {	
 		var bbox = conf.bbox;
@@ -427,7 +625,7 @@ root.gestureStart = function(event, conf) {
 	//
 	var isTouchStart = !conf.fingers;
 	var track = conf.tracker;
-	var touches = event.changedTouches || getCoords(event);
+	var touches = event.changedTouches || root.getCoords(event);
 	var length = touches.length;
 	// Adding touch events to tracking.
 	for (var i = 0; i < length; i ++) {
@@ -464,9 +662,9 @@ root.gestureStart = function(event, conf) {
 	return isTouchStart;
 };
 
+///
 root.gestureEnd = function(event, conf, callback) {
 	// Record changed touches have ended (iOS changedTouches is not reliable).
-	//- simplify this for desktop computers...
 	var touches = event.touches || [];
 	var length = touches.length;
 	var exists = {};
@@ -492,7 +690,7 @@ root.gestureEnd = function(event, conf, callback) {
 			conf.fingers --;
 		}
 	}
-/*	var touches = event.changedTouches || getCoords(event);
+/*	var touches = event.changedTouches || root.getCoords(event);
 	var length = touches.length;
 	// Record changed touches have ended (this should work).
 	for (var i = 0; i < length; i ++) {
@@ -514,23 +712,7 @@ root.gestureEnd = function(event, conf, callback) {
 	return true;
 };
 
-var getCoords = function(event) {
-	if (typeof(event.pageX) !== "undefined") { // Desktop browsers.
-		getCoords = function(event) {
-			return Array(event);
-		};
-	} else { // Internet Explorer <=8.0
-		getCoords = function(event) {
-			event = event || window.event;
-			return Array({
-				pageX: event.clientX + document.documentElement.scrollLeft,
-				pageY: event.clientY + document.documentElement.scrollTop
-			});
-		};
-	}
-	return getCoords(event);
-};
-
+/// Get target position in space.
 root.getBoundingBox = function(o) { 
 	if (o === window || o === document) o = document.body;
 	///
@@ -577,10 +759,28 @@ root.getBoundingBox = function(o) {
 };
 
 root.getCoords = function(event) {
+	if (typeof(event.pageX) !== "undefined") { // Desktop browsers.
+		root.getCoords = function(event) {
+			return Array(event);
+		};
+	} else { // Internet Explorer <= 8.0
+		root.getCoords = function(event) {
+			event = event || window.event;
+			return Array({
+				pageX: event.clientX + document.documentElement.scrollLeft,
+				pageY: event.clientY + document.documentElement.scrollTop
+			});
+		};
+	}
+	return root.getCoords(event);
+};
+
+/// Legacy function, get single coordinate.
+root.getCoord = function(event) {
 	if ("ontouchstart" in window) { // Mobile browsers.
 		var pX = 0;
 		var pY = 0;
-		root.getCoords = function(event) {
+		root.getCoord = function(event) {
 			var touches = event.changedTouches;
 			if (touches.length) { // ontouchstart + ontouchmove
 				return {
@@ -595,14 +795,14 @@ root.getCoords = function(event) {
 			}
 		};
 	} else if(typeof(event.pageX) !== "undefined" && typeof(event.pageY) !== "undefined") { // Desktop browsers.
-		root.getCoords = function(event) {
+		root.getCoord = function(event) {
 			return {
 				x: event.pageX,
 				y: event.pageY
 			};
 		};
 	} else { // Internet Explorer <=8.0
-		root.getCoords = function(event) {
+		root.getCoord = function(event) {
 			event = event || window.event;
 			return {
 				x: event.clientX + document.documentElement.scrollLeft,
@@ -610,12 +810,12 @@ root.getCoords = function(event) {
 			};
 		};
 	}
-	return root.getCoords(event);
+	return root.getCoord(event);
 };
 
 return root;
 
-})(Event.proxy);
+})(Event.proxy);
 /*
 	"Click" event proxy.
 	----------------------------------------------------
@@ -660,7 +860,7 @@ root.click = function(conf) {
 			Event.remove(conf.doc, "mousemove", onMouseMove);
 			Event.remove(conf.doc, "mouseup", onMouseUp);
 			if (event.cancelBubble && ++event.bubble > 1) return;
-			var touches = event.changedTouches || getCoords(event);
+			var touches = event.changedTouches || root.getCoords(event);
 			var touch = touches[0];
 			var bbox = conf.bbox;
 			var newbbox = root.getBoundingBox(conf.target);
@@ -681,7 +881,7 @@ root.click = function(conf) {
 
 return root;
 
-})(Event.proxy);
+})(Event.proxy);
 /*
 	"Double-Click" aka "Double-Tap" event proxy.
 	----------------------------------------------------
@@ -715,7 +915,7 @@ root.dblclick = function(conf) {
 	var touch0, touch1;
 	// Tracking the events.
 	var onMouseDown = function (event) {
-		var touches = event.changedTouches || getCoords(event);
+		var touches = event.changedTouches || root.getCoords(event);
 		if (time0 && !time1) { // Click #2
 			touch1 = touches[0];
 			time1 = (new Date).getTime() - time0;
@@ -735,7 +935,7 @@ root.dblclick = function(conf) {
 	};
 	var onMouseMove = function (event) {
 		if (time0 && !time1) {
-			var touches = event.changedTouches || getCoords(event);
+			var touches = event.changedTouches || root.getCoords(event);
 			touch1 = touches[0];
 		}
 		var bbox = conf.bbox;
@@ -773,7 +973,7 @@ root.dblclick = function(conf) {
 
 return root;
 
-})(Event.proxy);
+})(Event.proxy);
 /*
 	"Drag" event proxy (1+ fingers).
 	----------------------------------------------------
@@ -787,46 +987,20 @@ return root;
 if (typeof(Event) === "undefined") var Event = {};
 if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
-Event.proxy = (function(root) { "use strict";
+Event.proxy = (function(root, exports) { "use strict";
 
 root.drag = function(conf) {
-	conf.doc = conf.target.ownerDocument || conf.target;
-	conf.minFingers = conf.minFingers || 1;
-	conf.maxFingers = conf.maxFingers || Infinity; // Maximum allowed fingers.
-	conf.position = conf.position || "relative"; // Point to source coordinates from.
-	// Externally accessible data.
-	var self = {
-		type: "drag",
-		target: conf.target,
-		listener: conf.listener,
-		remove: function() {
-			Event.remove(conf.target, "mousedown", onMouseDown);
-			Event.remove(conf.doc, "mousemove", onMouseMove);
-			Event.remove(conf.doc, "mouseup", onMouseUp);
-		},
-		disable: function(d) {
-			if (!d || d.move) Event.remove(conf.doc, "mousemove", onMouseMove);
-			if (!d || d.up) Event.remove(conf.doc, "mouseup", onMouseUp);
-			conf.fingers = 0;
-		},
-		enable: function(d) {
-			if (!d || d.move) Event.add(conf.doc, "mousemove", onMouseMove);
-			if (!d || d.move) Event.add(conf.doc, "mouseup", onMouseUp);
-			conf.fingers = 1;
-		}
-	};
-	// Tracking the events.
-	var onMouseDown = function (event) {
+	conf.onMouseDown = function (event) {
 		if (root.gestureStart(event, conf)) {
-			Event.add(conf.doc, "mousemove", onMouseMove);
-			Event.add(conf.doc, "mouseup", onMouseUp);
+			Event.add(conf.doc, "mousemove", conf.onMouseMove);
+			Event.add(conf.doc, "mouseup", conf.onMouseUp);
 		}
 		// Process event listener.
-		onMouseMove(event, "down");
+		conf.onMouseMove(event, "down");
 	};
-	var onMouseMove = function (event, state) {
+	conf.onMouseMove = function (event, state) {
 		var bbox = conf.bbox;
-		var touches = event.changedTouches || getCoords(event);
+		var touches = event.changedTouches || root.getCoords(event);
 		var length = touches.length;
 		for (var i = 0; i < length; i ++) {
 			var touch = touches[i];
@@ -838,33 +1012,42 @@ root.drag = function(conf) {
 			o.pageY = touch.pageY;
 			// Record data.
 			self.state = state || "move";
-			self.id = sid;
+			self.identifier = sid;
+			self.start = o.start;
 			self.x = (touch.pageX + bbox.scrollLeft - o.offsetX) * bbox.scaleX;
 			self.y = (touch.pageY + bbox.scrollTop - o.offsetY) * bbox.scaleY;
-			self.start = o.start;
-			conf.listener(event, self);
+			///
+			if (Event.prototyped) {
+				window._createCustomEvent('drag', self.target, {});
+			} else {
+				conf.listener(event, self);
+			}
 		}
 	};
-	var onMouseUp = function(event) {
+	conf.onMouseUp = function(event) {
 		// Remove tracking for touch.
-		if (root.gestureEnd(event, conf, onMouseMove)) {
-			Event.remove(conf.doc, "mousemove", onMouseMove);
-			Event.remove(conf.doc, "mouseup", onMouseUp);
+		if (root.gestureEnd(event, conf, conf.onMouseMove)) {
+			Event.remove(conf.doc, "mousemove", conf.onMouseMove);
+			Event.remove(conf.doc, "mouseup", conf.onMouseUp);
 		}
 	};
+	// Data accessible externally.
+	var self = root.addPointer({}, conf);
 	// Attach events.
 	if (conf.event) {
-		onMouseDown(conf.event);
+		conf.onMouseDown(conf.event);
 	} else {
-		Event.add(conf.target, "mousedown", onMouseDown);
+		Event.add(conf.target, "mousedown", conf.onMouseDown);
 	}
 	// Return this object.
 	return self;
 };
 
+//exports.Gesture._gestureHandlers.drag = root.drag;
+
 return root;
 
-})(Event.proxy);
+})(Event.proxy, window);
 /*
 	"Gesture" event proxy (2+ fingers).
 	----------------------------------------------------
@@ -908,9 +1091,9 @@ root.gesture = function(conf) {
 			self.scale = 1;
 			self.rotation = 0;
 			self.state = "start";
-			var sids = "";
+			var sids = ""; //- FIXME(mud): can generate duplicate IDs.
 			for (var key in conf.tracker) sids += key;
-			self.id = parseInt(sids);
+			self.identifier = parseInt(sids);
 			conf.listener(event, self);
 		}
 	};
@@ -918,7 +1101,7 @@ root.gesture = function(conf) {
 	var onMouseMove = function (event, state) {
 		var bbox = conf.bbox;
 		var points = conf.tracker;
-		var touches = event.changedTouches || getCoords(event);
+		var touches = event.changedTouches || root.getCoords(event);
 		var length = touches.length;
 		// Update tracker coordinates.
 		for (var i = 0; i < length; i ++) {
@@ -1012,7 +1195,59 @@ root.gesture = function(conf) {
 
 return root;
 
-})(Event.proxy);
+})(Event.proxy);
+if (typeof(Event) === "undefined") var Event = {};
+if (typeof(Event.proxy) === "undefined") Event.proxy = {};
+
+Event.proxy = (function(root) { "use strict";
+
+var down = false;
+
+root.pointerdown = function(conf) {
+	// Tracking the events.
+	conf.onMouseUp = function (event) {
+		down = false;
+	};
+	conf.onMouseDown = function (event) {
+		down = true;
+		conf.listener(event, self);
+	};
+	// Attach events.
+	var self = root.addPointer({}, conf);
+	Event.add(conf.target, "mousedown", conf.onMouseDown);
+	Event.add(conf.target, "mouseup", conf.onMouseUp);
+	// Return this object.
+	return self;
+};
+
+root.pointermove = function(conf) {
+	// Tracking the events.
+	conf.onMouseMove = function (event) {
+		if (down) conf.listener(event, self);
+	};
+	// Attach events.
+	var self = root.addPointer({}, conf);
+	Event.add(conf.target, "mousemove", conf.onMouseMove);
+	// Return this object.
+	return self;
+};		
+
+root.pointerup = function(conf) {
+	// Tracking the events.
+	conf.onMouseUp = function (event) {
+		down = false;
+		conf.listener(event, self);
+	};
+	// Attach events.
+	var self = root.addPointer({}, conf);
+	Event.add(conf.target, "mouseup", conf.onMouseUp);
+	// Return this object.
+	return self;
+};		
+
+return root;
+
+})(Event.proxy);
 /*
 	"Device Motion" and "Shake" event proxy.
 	----------------------------------------------------
@@ -1071,7 +1306,7 @@ root.devicemotion = function(conf) {
 		} 
 		var data = "xyz";
 		var now = (new Date).getTime();
-		for (var n = 0; n < data.length; n ++) {
+		for (var n = 0, length = data.length; n < length; n ++) {
 			var letter = data[n];
 			var ACCELERATION = self.acceleration[letter];
 			var DELTA = delta[letter];
@@ -1111,7 +1346,7 @@ root.devicemotion = function(conf) {
 
 return root;
 
-})(Event.proxy);
+})(Event.proxy);
 /*
 	"Swipe" event proxy (1+ fingers).
 	----------------------------------------------------
@@ -1152,7 +1387,7 @@ root.swipe = function(conf) {
 		}
 	};
 	var onMouseMove = function (event) {
-		var touches = event.changedTouches || getCoords(event);
+		var touches = event.changedTouches || root.getCoords(event);
 		var length = touches.length;
 		for (var i = 0; i < length; i ++) {
 			var touch = touches[i];
@@ -1208,11 +1443,11 @@ root.swipe = function(conf) {
 
 return root;
 
-})(Event.proxy);
+})(Event.proxy);
 /*
 	"Tap" and "Tap-Hold" event proxy.
 	----------------------------------------------------
-	CONFIGURE: minhold, maxhold.
+	CONFIGURE: hold, cutoff.
 	----------------------------------------------------
 	Event.add(window, "tap", function(event, self) {
 		console.log(self.fingers);
@@ -1232,12 +1467,12 @@ root.taphold = function(conf) {
 	conf.doc = conf.target.ownerDocument || conf.target;
 	conf.minFingers = conf.minFingers || 1;
 	conf.maxFingers = conf.maxFingers || Infinity; // Maximum allowed fingers.
-	if (conf.type === "taphold" || conf.minhold) {
+	if (conf.type === "taphold" || conf.hold) {
 		conf.type = "taphold";
-		conf.delay = conf.minhold || 500;
+		conf.delay = conf.hold || 500;
 	} else {
 		conf.type = "tap";
-		conf.delay = conf.maxhold || 250;
+		conf.delay = conf.cutoff || 250;
 	}
 	// Externally accessible data.
 	var self = {
@@ -1277,7 +1512,7 @@ root.taphold = function(conf) {
 	};
 	var onMouseMove = function (event) {
 		var bbox = conf.bbox;
-		var touches = event.changedTouches || getCoords(event);
+		var touches = event.changedTouches || root.getCoords(event);
 		var length = touches.length;
 		for (var i = 0; i < length; i ++) {
 			var touch = touches[i];
@@ -1329,7 +1564,7 @@ root.taphold = function(conf) {
 
 return root;
 
-})(Event.proxy);
+})(Event.proxy);
 /*
 	"Mouse Wheel" event proxy.
 	----------------------------------------------------
@@ -1381,1163 +1616,4 @@ root.mousewheel = function(conf) {
 
 return root;
 
-})(Event.proxy);
-/**
- * Gesture recognizer for the `doubletap` gesture.
- *
- * Taps happen when an element is pressed and then released.
- */
-(function(exports) {
-  var DOUBLETAP_TIME = 300;
-
-  function pointerDown(e) {
-    var now = new Date();
-    if (now - this.lastDownTime < DOUBLETAP_TIME) {
-      this.lastDownTime = 0;
-      var payload = {};
-      window._createCustomEvent('gesturedoubletap', e.target, payload);
-    }
-    this.lastDownTime = now;
-  }
-
-  /**
-   * Make the specified element create gesturetap events.
-   */
-  function emitDoubleTaps(el) {
-    el.addEventListener('pointerdown', pointerDown);
-  }
-
-  exports.Gesture._gestureHandlers.gesturedoubletap = emitDoubleTaps;
-
-})(window);
-
-(function(exports) {
-
-  function synthesizeGestureEvents(type, listener, useCapture) {
-    if (type.indexOf('gesture') === 0) {
-      var handler = Gesture._gestureHandlers[type];
-      if (handler) {
-        handler(this);
-      } else {
-        console.error('Warning: no handler found for {{evt}}.'
-                      .replace('{{evt}}', type));
-      }
-    }
-  }
-
-  // Note: Firefox doesn't work like other browsers... overriding HTMLElement
-  // doesn't actually affect anything. Special case for Firefox:
-  if (navigator.userAgent.match(/Firefox/)) {
-    // TODO: fix this for the general case.
-    window._augmentAddEventListener(HTMLDivElement, synthesizeGestureEvents);
-    window._augmentAddEventListener(HTMLCanvasElement, synthesizeGestureEvents);
-  } else {
-    window._augmentAddEventListener(HTMLElement, synthesizeGestureEvents);
-  }
-
-  exports.Gesture = exports.Gesture || {};
-  exports.Gesture._gestureHandlers = exports.Gesture._gestureHandlers || {};
-
-})(window);
-
-// Source:
-// https://github.com/slightlyoff/cassowary-js-refactor/blob/master/src/c.js#L10-23
-// For Safari 5.x. Go-go-gadget ridiculously long release cycle!
-try {
-  (function(){}).bind(scope);
-} catch (e) {
-  Object.defineProperty(Function.prototype, "bind", {
-    value: function(scope) {
-      var f = this;
-      return function() { return f.apply(scope, arguments); };
-    },
-    enumerable: false,
-    configurable: true,
-    writable: true
-  });
-}
-
-
-/* Modernizr 2.5.3 (Custom Build) | MIT & BSD
- * Build: http://www.modernizr.com/download/#-touch-teststyles-prefixes
- */
-
-window.Modernizr = (function (window, document, undefined) {
-	var version = '2.5.3',
-		Modernizr = {},
-		docElement = document.documentElement,
-		mod = 'modernizr',
-		modElem = document.createElement(mod),
-		mStyle = modElem.style,
-		inputElem,
-		toString = {}.toString,
-		prefixes = ' -webkit- -moz- -o- -ms- '.split(' '),
-		tests = {},
-		inputs = {},
-		attrs = {},
-		classes = [],
-		slice = classes.slice,
-		featureName,
-		injectElementWithStyles = function (rule, callback, nodes, testnames) {
-			var style, ret, node,
-			div = document.createElement('div'),
-				body = document.body,
-				fakeBody = body ? body : document.createElement('body');
-			if (parseInt(nodes, 10)) {
-				while (nodes--) {
-					node = document.createElement('div');
-					node.id = testnames ? testnames[nodes] : mod + (nodes + 1);
-					div.appendChild(node);
-				}
-			}
-			style = ['&#173;', '<style>', rule, '</style>'].join('');
-			div.id = mod;
-			(body ? div : fakeBody).innerHTML += style;
-			fakeBody.appendChild(div);
-			if (!body) {
-				fakeBody.style.background = "";
-				docElement.appendChild(fakeBody);
-			}
-			ret = callback(div, rule);
-			!body ? fakeBody.parentNode.removeChild(fakeBody) : div.parentNode.removeChild(div);
-			return !!ret;
-		},
-		_hasOwnProperty = ({}).hasOwnProperty,
-		hasOwnProperty;
-	if (!is(_hasOwnProperty, 'undefined') && !is(_hasOwnProperty.call, 'undefined')) {
-		hasOwnProperty = function (object, property) {
-			return _hasOwnProperty.call(object, property);
-		};
-	} else {
-		hasOwnProperty = function (object, property) {
-			return ((property in object) && is(object.constructor.prototype[property], 'undefined'));
-		};
-	}
-	if (!Function.prototype.bind) {
-		Function.prototype.bind = function bind(that) {
-			var target = this;
-			if (typeof target != "function") {
-				throw new TypeError();
-			}
-			var args = slice.call(arguments, 1),
-				bound = function () {
-					if (this instanceof bound) {
-						var F = function () {};
-						F.prototype = target.prototype;
-						var self = new F;
-						var result = target.apply(
-						self,
-						args.concat(slice.call(arguments)));
-						if (Object(result) === result) {
-							return result;
-						}
-						return self;
-					} else {
-						return target.apply(
-						that,
-						args.concat(slice.call(arguments)));
-					}
-				};
-			return bound;
-		};
-	}
-
-	function setCss(str) {
-		mStyle.cssText = str;
-	}
-
-	function is(obj, type) {
-		return typeof obj === type;
-	}
-	var testBundle = (function (styles, tests) {
-		var style = styles.join(''),
-			len = tests.length;
-		injectElementWithStyles(style, function (node, rule) {
-			var style = document.styleSheets[document.styleSheets.length - 1],
-				cssText = style ? (style.cssRules && style.cssRules[0] ? style.cssRules[0].cssText : style.cssText || '') : '',
-				children = node.childNodes,
-				hash = {};
-			while (len--) {
-				hash[children[len].id] = children[len];
-			}
-			console.log(node)
-			Modernizr['touch'] = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch || (hash['touch'] && hash['touch'].offsetTop) === 9;
-		}, len, tests);
-	})([, ['@media (', prefixes.join('touch-enabled),('), mod, ')', '{#touch{top:9px;position:absolute}}'].join('')], [, 'touch']);
-	tests['touch'] = function () {
-		return Modernizr['touch'];
-	};
-	for (var feature in tests) {
-		if (hasOwnProperty(tests, feature)) {
-			featureName = feature.toLowerCase();
-			Modernizr[featureName] = tests[feature]();
-			classes.push((Modernizr[featureName] ? '' : 'no-') + featureName);
-		}
-	}
-	setCss('');
-	modElem = inputElem = null;
-	Modernizr._version = version;
-	Modernizr._prefixes = prefixes;
-	Modernizr.testStyles = injectElementWithStyles;
-	return Modernizr;
-})(this, this.document);;
-/**
- * Gesture recognizer for the `longpress` gesture.
- *
- * Longpress happens when pointer is pressed and doesn't get released
- * for a while (without movement).
- */
-(function(exports) {
-  var LONGPRESS_TIME = 600;
-
-  function pointerDown(e) {
-    // Start a timer.
-    this.longPressTimer = setTimeout(function() {
-      payload = {};
-      window._createCustomEvent('gesturelongpress', e.target, payload);
-    }, LONGPRESS_TIME);
-  }
-
-  function pointerMove(e) {
-    // TODO(smus): allow for small movement and still emit a longpress.
-    clearTimeout(this.longPressTimer);
-  }
-
-  function pointerUp(e) {
-    clearTimeout(this.longPressTimer);
-  }
-
-  /**
-   * Make the specified element create gesturetap events.
-   */
-  function emitLongPresses(el) {
-    el.addEventListener('pointerdown', pointerDown);
-    el.addEventListener('pointermove', pointerMove);
-    el.addEventListener('pointerup', pointerUp);
-  }
-
-  exports.Gesture._gestureHandlers.gesturelongpress = emitLongPresses;
-
-})(window);
-
-(function (exports) {
-
-	var MOUSE_ID = Infinity;
-
-	function Pointer(x, y, type, identifier) {
-		this.x = x;
-		this.y = y;
-		this.type = type;
-		this.identifier = identifier;
-	};
-
-	var PointerTypes = {
-		TOUCH: 'touch',
-		MOUSE: 'mouse'
-	};
-
-	/**
-	 * Returns an array of all pointers currently on the screen.
-	 */
-	function getPointerList() {
-		// Note: "this" is the element.
-		var pointers = [];
-		if (this.touchList) {
-			for (var i = 0; i < this.touchList.length; i++) {
-				var touch = this.touchList[i];
-				var pointer = new Pointer(touch.pageX, touch.pageY, PointerTypes.TOUCH, touch.identifier);
-				pointers.push(pointer);
-			}
-		}
-		if (this.mouseEvent) {
-			pointers.push(new Pointer(this.mouseEvent.pageX, this.mouseEvent.pageY, PointerTypes.MOUSE, MOUSE_ID));
-		}
-		return pointers;
-	};
-
-	function createCustomEvent(eventName, target, payload) {
-		var event = document.createEvent('Event');
-		event.initEvent(eventName, true, true);
-		for (var k in payload) {
-			event[k] = payload[k];
-		}
-		target.dispatchEvent(event);
-	};
-
-	/**
-	 * Causes the passed in element to broadcast pointer events instead
-	 * of mouse/touch/etc events.
-	 */
-	function emitPointers(el) {
-		if (!el.isPointerEmitter) {
-			// Latch on to all relevant events for this element.
-			if (isTouch()) {
-				el.addEventListener('touchstart', touchStartHandler);
-				el.addEventListener('touchmove', touchMoveHandler);
-				el.addEventListener('touchend', touchEndHandler);
-			} else if (isPointer()) {
-				el.addEventListener('MSPointerDown', pointerDownHandler);
-				el.addEventListener('MSPointerMove', pointerMoveHandler);
-				el.addEventListener('MSPointerUp', pointerUpHandler);
-			} else {
-				el.addEventListener('mousedown', mouseDownHandler);
-				el.addEventListener('mousemove', mouseMoveHandler);
-				el.addEventListener('mouseup', mouseUpHandler);
-				// Necessary for the edge case that the mouse is down and you drag out of
-				// the area.
-				el.addEventListener('mouseout', mouseOutHandler);
-			}
-			el.isPointerEmitter = true;
-		}
-	};
-
-	/*************** Mouse event handlers *****************/
-
-	function mouseDownHandler(event) {
-		event.preventDefault();
-		event.target.mouseEvent = event;
-		var payload = {
-			pointerType: 'mouse',
-			getPointerList: getPointerList.bind(this),
-			originalEvent: event
-		};
-		createCustomEvent('pointerdown', event.target, payload);
-	};
-
-	function mouseMoveHandler(event) {
-		event.preventDefault();
-		event.target.mouseEvent = event;
-		var payload = {
-			pointerType: 'mouse',
-			getPointerList: getPointerList.bind(this),
-			originalEvent: event
-		};
-		createCustomEvent('pointermove', event.target, payload);
-	};
-
-	function mouseUpHandler(event) {
-		event.preventDefault();
-		event.target.mouseEvent = null;
-		var payload = {
-			pointerType: 'mouse',
-			getPointerList: getPointerList.bind(this),
-			originalEvent: event
-		};
-		createCustomEvent('pointerup', event.target, payload);
-	};
-
-	function mouseOutHandler(event) {
-		event.preventDefault();
-		event.target.mouseEvent = null;
-	};
-
-	/*************** Touch event handlers *****************/
-
-	function touchStartHandler(event) {
-		console.log('touchstart');
-		event.preventDefault();
-		touchEvent.target.touchList = touchEvent.targetTouches;
-		var payload = {
-			pointerType: 'touch',
-			getPointerList: getPointerList.bind(this),
-			originalEvent: event
-		};
-		createCustomEvent('pointerdown', event.target, payload);
-	};
-
-	function touchMoveHandler(event) {
-		event.preventDefault();
-		touchEvent.target.touchList = touchEvent.targetTouches;
-		var payload = {
-			pointerType: 'touch',
-			getPointerList: getPointerList.bind(this),
-			originalEvent: event
-		};
-		createCustomEvent('pointermove', event.target, payload);
-	};
-
-	function touchEndHandler(event) {
-		event.preventDefault();
-		touchEvent.target.touchList = touchEvent.targetTouches;
-		var payload = {
-			pointerType: 'touch',
-			getPointerList: getPointerList.bind(this),
-			originalEvent: event
-		};
-		createCustomEvent('pointerup', event.target, payload);
-	};
-
-	/*************** MSIE Pointer event handlers *****************/
-
-	function pointerDownHandler(event) {
-		log('pointerdown');
-	};
-
-	function pointerMoveHandler(event) {
-		log('pointermove');
-	};
-
-	function pointerUpHandler(event) {
-		log('pointerup');
-	};
-
-	/**
-	 * @return {Boolean} Returns true iff this user agent supports touch events.
-	 */
-	function isTouch() {
-		return Modernizr.touch;
-	};
-
-	/**
-	 * @return {Boolean} Returns true iff this user agent supports MSIE pointer
-	 * events.
-	 */
-	function isPointer() {
-		return false;
-		// TODO(smus): Implement support for pointer events.
-		// return window.navigator.msPointerEnabled;
-	};
-
-	/**
-	 * Option 1: Require emitPointers call on all pointer event emitters.
-	 */
-	//exports.pointer = {
-	//  emitPointers: emitPointers,
-	//};
-
-	/**
-	 * Option 2: Replace addEventListener with a custom version.
-	 */
-	function augmentAddEventListener(baseElementClass, customEventListener) {
-		var oldAddEventListener = baseElementClass.prototype.addEventListener;
-		baseElementClass.prototype.addEventListener = function (type, listener, useCapture) {
-			customEventListener.call(this, type, listener, useCapture);
-			oldAddEventListener.call(this, type, listener, useCapture);
-		};
-	};
-
-	function synthesizePointerEvents(type, listener, useCapture) {
-		if (type.indexOf('pointer') === 0) {
-			emitPointers(this);
-		}
-	};
-
-	// Note: Firefox doesn't work like other browsers... overriding HTMLElement
-	// doesn't actually affect anything. Special case for Firefox:
-	if (navigator.userAgent.match(/Firefox/)) {
-		// TODO: fix this for the general case.
-		augmentAddEventListener(HTMLDivElement, synthesizePointerEvents);
-		augmentAddEventListener(HTMLCanvasElement, synthesizePointerEvents);
-	} else {
-		augmentAddEventListener(HTMLElement, synthesizePointerEvents);
-	}
-
-	exports._createCustomEvent = createCustomEvent;
-	exports._augmentAddEventListener = augmentAddEventListener;
-	exports.PointerTypes = PointerTypes;
-
-})(window);
-/**
- * Gesture recognizer for the `scale` gesture.
- *
- * Scale happens when two fingers are placed on the screen, and then
- * they move so the the distance between them is greater or less than a
- * certain threshold.
- */
-(function(exports) {
-
-  var SCALE_THRESHOLD = 0.2;
-
-  function PointerPair(p1, p2) {
-    this.p1 = p1;
-    this.p2 = p2;
-  }
-
-  /**
-   * Calculate the distance between the two pointers.
-   */
-  PointerPair.prototype.span = function() {
-    var dx = this.p1.x - this.p2.x;
-    var dy = this.p1.y - this.p2.y;
-    return Math.sqrt(dx*dx + dy*dy);
-  };
-
-  /**
-   * Given a reference pair, calculate the scale multiplier difference.
-   */
-  PointerPair.prototype.scaleSince = function(referencePair) {
-    return this.span() / referencePair.span();
-  };
-
-  function pointerDown(e) {
-    var pointerList = e.getPointerList();
-    // If there are exactly two pointers down,
-    if (pointerList.length == 2) {
-      // Record the initial pointer pair.
-      e.target.scaleReferencePair = new PointerPair(pointerList[0],
-                                                    pointerList[1]);
-    }
-  }
-
-  function pointerMove(e) {
-    var pointerList = e.getPointerList();
-    // If there are two pointers down, compare to the initial pointer pair.
-    if (pointerList.length == 2 && e.target.scaleReferencePair) {
-      var pair = new PointerPair(pointerList[0], pointerList[1]);
-      // Compute the scaling value according to the difference.
-      var scale = pair.scaleSince(e.target.scaleReferencePair);
-      // If the movement is drastic enough:
-      if (Math.abs(1 - scale) > SCALE_THRESHOLD) {
-        // Create the scale event as a result.
-        var payload = {
-          scale: scale
-        };
-        window._createCustomEvent('gesturescale', e.target, payload);
-      }
-    }
-  }
-
-  function pointerUp(e) {
-    e.target.scaleReferencePair = null;
-  }
-
-  /**
-   * Make the specified element create gesturetap events.
-   */
-  function emitScale(el) {
-    el.addEventListener('pointerdown', pointerDown);
-    el.addEventListener('pointermove', pointerMove);
-    el.addEventListener('pointerup', pointerUp);
-  }
-
-  exports.Gesture._gestureHandlers.gesturescale = emitScale;
-
-})(window);
-
-/* Modernizr 2.5.3 (Custom Build) | MIT & BSD
- * Build: http://www.modernizr.com/download/#-touch-teststyles-prefixes
- */
-
-
-
-window.Modernizr = (function( window, document, undefined ) {
-
-    var version = '2.5.3',
-
-    Modernizr = {},
-
-
-    docElement = document.documentElement,
-
-    mod = 'modernizr',
-    modElem = document.createElement(mod),
-    mStyle = modElem.style,
-
-    inputElem  ,
-
-
-    toString = {}.toString,
-
-    prefixes = ' -webkit- -moz- -o- -ms- '.split(' '),
-
-
-
-    tests = {},
-    inputs = {},
-    attrs = {},
-
-    classes = [],
-
-    slice = classes.slice,
-
-    featureName, 
-
-
-    injectElementWithStyles = function( rule, callback, nodes, testnames ) {
-
-      var style, ret, node,
-          div = document.createElement('div'),
-                body = document.body, 
-                fakeBody = body ? body : document.createElement('body');
-
-      if ( parseInt(nodes, 10) ) {
-                      while ( nodes-- ) {
-              node = document.createElement('div');
-              node.id = testnames ? testnames[nodes] : mod + (nodes + 1);
-              div.appendChild(node);
-          }
-      }
-
-                style = ['&#173;','<style>', rule, '</style>'].join('');
-      div.id = mod;
-          (body ? div : fakeBody).innerHTML += style;
-      fakeBody.appendChild(div);
-      if(!body){
-                fakeBody.style.background = "";
-          docElement.appendChild(fakeBody);
-      }
-
-      ret = callback(div, rule);
-        !body ? fakeBody.parentNode.removeChild(fakeBody) : div.parentNode.removeChild(div);
-
-      return !!ret;
-
-    },
-    _hasOwnProperty = ({}).hasOwnProperty, hasOwnProperty;
-
-    if ( !is(_hasOwnProperty, 'undefined') && !is(_hasOwnProperty.call, 'undefined') ) {
-      hasOwnProperty = function (object, property) {
-        return _hasOwnProperty.call(object, property);
-      };
-    }
-    else {
-      hasOwnProperty = function (object, property) { 
-        return ((property in object) && is(object.constructor.prototype[property], 'undefined'));
-      };
-    }
-
-
-    if (!Function.prototype.bind) {
-      Function.prototype.bind = function bind(that) {
-
-        var target = this;
-
-        if (typeof target != "function") {
-            throw new TypeError();
-        }
-
-        var args = slice.call(arguments, 1),
-            bound = function () {
-
-            if (this instanceof bound) {
-
-              var F = function(){};
-              F.prototype = target.prototype;
-              var self = new F;
-
-              var result = target.apply(
-                  self,
-                  args.concat(slice.call(arguments))
-              );
-              if (Object(result) === result) {
-                  return result;
-              }
-              return self;
-
-            } else {
-
-              return target.apply(
-                  that,
-                  args.concat(slice.call(arguments))
-              );
-
-            }
-
-        };
-
-        return bound;
-      };
-    }
-
-    function setCss( str ) {
-        mStyle.cssText = str;
-    }
-
-    function setCssAll( str1, str2 ) {
-        return setCss(prefixes.join(str1 + ';') + ( str2 || '' ));
-    }
-
-    function is( obj, type ) {
-        return typeof obj === type;
-    }
-
-    function contains( str, substr ) {
-        return !!~('' + str).indexOf(substr);
-    }
-
-
-    function testDOMProps( props, obj, elem ) {
-        for ( var i in props ) {
-            var item = obj[props[i]];
-            if ( item !== undefined) {
-
-                            if (elem === false) return props[i];
-
-                            if (is(item, 'function')){
-                                return item.bind(elem || obj);
-                }
-
-                            return item;
-            }
-        }
-        return false;
-    }
-
-
-    var testBundle = (function( styles, tests ) {
-        var style = styles.join(''),
-            len = tests.length;
-
-        injectElementWithStyles(style, function( node, rule ) {
-            var style = document.styleSheets[document.styleSheets.length - 1],
-                                                    cssText = style ? (style.cssRules && style.cssRules[0] ? style.cssRules[0].cssText : style.cssText || '') : '',
-                children = node.childNodes, hash = {};
-
-            while ( len-- ) {
-                hash[children[len].id] = children[len];
-            }
-
-                       Modernizr['touch'] = ('ontouchstart' in window) || window.DocumentTouch && document instanceof DocumentTouch || (hash['touch'] && hash['touch'].offsetTop) === 9; 
-                                }, len, tests);
-
-    })([
-                       ,['@media (',prefixes.join('touch-enabled),('),mod,')',
-                                '{#touch{top:9px;position:absolute}}'].join('')           ],
-      [
-                       ,'touch'                ]);
-
-
-
-    tests['touch'] = function() {
-        return Modernizr['touch'];
-    };
-
-
-
-    for ( var feature in tests ) {
-        if ( hasOwnProperty(tests, feature) ) {
-                                    featureName  = feature.toLowerCase();
-            Modernizr[featureName] = tests[feature]();
-
-            classes.push((Modernizr[featureName] ? '' : 'no-') + featureName);
-        }
-    }
-    setCss('');
-    modElem = inputElem = null;
-
-
-    Modernizr._version      = version;
-
-    Modernizr._prefixes     = prefixes;
-
-    Modernizr.testStyles    = injectElementWithStyles;
-    return Modernizr;
-
-})(this, this.document);
-;
-
-(function(exports) {
-
-  // TODO(smus): Come up with a better solution for this. This is bad because
-  // it might conflict with a touch ID. However, giving negative IDs is also
-  // bad because of code that makes assumptions about touch identifiers being
-  // positive integers.
-  var MOUSE_ID = 31337;
-
-  function Pointer(x, y, type, identifier) {
-    this.x = x;
-    this.y = y;
-    this.type = type;
-    this.identifier = identifier;
-  }
-
-  var PointerTypes = {
-    TOUCH: 'touch',
-    MOUSE: 'mouse'
-  };
-
-  function setMouse(mouseEvent) {
-    mouseEvent.target.mouseEvent = mouseEvent;
-  }
-
-  function unsetMouse(mouseEvent) {
-    mouseEvent.target.mouseEvent = null;
-  }
-
-  function setTouch(touchEvent) {
-    touchEvent.target.touchList = touchEvent.targetTouches;
-  }
-
-  /**
-   * Returns an array of all pointers currently on the screen.
-   */
-  function getPointerList() {
-    // Note: "this" is the element.
-    var pointers = [];
-    if (this.touchList) {
-      for (var i = 0; i < this.touchList.length; i++) {
-        var touch = this.touchList[i];
-        var pointer = new Pointer(touch.pageX, touch.pageY,
-                                  PointerTypes.TOUCH, touch.identifier);
-        pointers.push(pointer);
-      }
-    }
-    if (this.mouseEvent) {
-      pointers.push(new Pointer(this.mouseEvent.pageX, this.mouseEvent.pageY,
-                                  PointerTypes.MOUSE, MOUSE_ID));
-    }
-    return pointers;
-  }
-
-  function createCustomEvent(eventName, target, payload) {
-    var event = document.createEvent('Event');
-    event.initEvent(eventName, true, true);
-    for (var k in payload) {
-      event[k] = payload[k];
-    }
-    target.dispatchEvent(event);
-  }
-
-  /*************** Mouse event handlers *****************/
-
-  function mouseDownHandler(event) {
-    event.preventDefault();
-    setMouse(event);
-    var payload = {
-      pointerType: 'mouse',
-      getPointerList: getPointerList.bind(this),
-      originalEvent: event
-    };
-    createCustomEvent('pointerdown', event.target, payload);
-  }
-
-  function mouseMoveHandler(event) {
-    event.preventDefault();
-    if (event.target.mouseEvent) {
-      setMouse(event);
-    }
-    var payload = {
-      pointerType: 'mouse',
-      getPointerList: getPointerList.bind(this),
-      originalEvent: event
-    };
-    createCustomEvent('pointermove', event.target, payload);
-  }
-
-  function mouseUpHandler(event) {
-    event.preventDefault();
-    unsetMouse(event);
-    var payload = {
-      pointerType: 'mouse',
-      getPointerList: getPointerList.bind(this),
-      originalEvent: event
-    };
-    createCustomEvent('pointerup', event.target, payload);
-  }
-
-  /*************** Touch event handlers *****************/
-
-  function touchStartHandler(event) {
-    console.log('touchstart');
-    event.preventDefault();
-    setTouch(event);
-    var payload = {
-      pointerType: 'touch',
-      getPointerList: getPointerList.bind(this),
-      originalEvent: event
-    };
-    createCustomEvent('pointerdown', event.target, payload);
-  }
-
-  function touchMoveHandler(event) {
-    event.preventDefault();
-    setTouch(event);
-    var payload = {
-      pointerType: 'touch',
-      getPointerList: getPointerList.bind(this),
-      originalEvent: event
-    };
-    createCustomEvent('pointermove', event.target, payload);
-  }
-
-  function touchEndHandler(event) {
-    event.preventDefault();
-    setTouch(event);
-    var payload = {
-      pointerType: 'touch',
-      getPointerList: getPointerList.bind(this),
-      originalEvent: event
-    };
-    createCustomEvent('pointerup', event.target, payload);
-  }
-
-  function mouseOutHandler(event) {
-    event.preventDefault();
-    unsetMouse(event);
-  }
-
-  /*************** MSIE Pointer event handlers *****************/
-
-  function pointerDownHandler(event) {
-    log('pointerdown');
-  }
-
-  function pointerMoveHandler(event) {
-    log('pointermove');
-  }
-
-  function pointerUpHandler(event) {
-    log('pointerup');
-  }
-
-  /**
-   * Causes the passed in element to broadcast pointer events instead
-   * of mouse/touch/etc events.
-   */
-  function emitPointers(el) {
-    if (!el.isPointerEmitter) {
-      // Latch on to all relevant events for this element.
-      if (isTouch()) {
-        el.addEventListener('touchstart', touchStartHandler);
-        el.addEventListener('touchmove', touchMoveHandler);
-        el.addEventListener('touchend', touchEndHandler);
-      } else if (isPointer()) {
-        el.addEventListener('MSPointerDown', pointerDownHandler);
-        el.addEventListener('MSPointerMove', pointerMoveHandler);
-        el.addEventListener('MSPointerUp', pointerUpHandler);
-      } else {
-        el.addEventListener('mousedown', mouseDownHandler);
-        el.addEventListener('mousemove', mouseMoveHandler);
-        el.addEventListener('mouseup', mouseUpHandler);
-        // Necessary for the edge case that the mouse is down and you drag out of
-        // the area.
-        el.addEventListener('mouseout', mouseOutHandler);
-      }
-
-      el.isPointerEmitter = true;
-    }
-  }
-
-  /**
-   * @return {Boolean} Returns true iff this user agent supports touch events.
-   */
-  function isTouch() {
-    return Modernizr.touch;
-  }
-
-  /**
-   * @return {Boolean} Returns true iff this user agent supports MSIE pointer
-   * events.
-   */
-  function isPointer() {
-    return false;
-    // TODO(smus): Implement support for pointer events.
-    // return window.navigator.msPointerEnabled;
-  }
-
-  /**
-   * Option 1: Require emitPointers call on all pointer event emitters.
-   */
-  //exports.pointer = {
-  //  emitPointers: emitPointers,
-  //};
-
-  /**
-   * Option 2: Replace addEventListener with a custom version.
-   */
-  function augmentAddEventListener(baseElementClass, customEventListener) {
-    var oldAddEventListener = baseElementClass.prototype.addEventListener;
-    baseElementClass.prototype.addEventListener = function(type, listener, useCapture) {
-      customEventListener.call(this, type, listener, useCapture);
-      oldAddEventListener.call(this, type, listener, useCapture);
-    };
-  }
-
-  function synthesizePointerEvents(type, listener, useCapture) {
-    if (type.indexOf('pointer') === 0) {
-      emitPointers(this);
-    }
-  }
-
-  // Note: Firefox doesn't work like other browsers... overriding HTMLElement
-  // doesn't actually affect anything. Special case for Firefox:
-  if (navigator.userAgent.match(/Firefox/)) {
-    // TODO: fix this for the general case.
-    augmentAddEventListener(HTMLDivElement, synthesizePointerEvents);
-    augmentAddEventListener(HTMLCanvasElement, synthesizePointerEvents);
-  } else {
-    augmentAddEventListener(HTMLElement, synthesizePointerEvents);
-  }
-
-  exports._createCustomEvent = createCustomEvent;
-  exports._augmentAddEventListener = augmentAddEventListener;
-  exports.PointerTypes = PointerTypes;
-
-})(window);
-
-(function(exports) {
-
-  function synthesizeGestureEvents(type, listener, useCapture) {
-    if (type.indexOf('gesture') === 0) {
-      var handler = Gesture._gestureHandlers[type];
-      if (handler) {
-        handler(this);
-      } else {
-        console.error('Warning: no handler found for {{evt}}.'
-                      .replace('{{evt}}', type));
-      }
-    }
-  }
-
-  // Note: Firefox doesn't work like other browsers... overriding HTMLElement
-  // doesn't actually affect anything. Special case for Firefox:
-  if (navigator.userAgent.match(/Firefox/)) {
-    // TODO: fix this for the general case.
-    window._augmentAddEventListener(HTMLDivElement, synthesizeGestureEvents);
-    window._augmentAddEventListener(HTMLCanvasElement, synthesizeGestureEvents);
-  } else {
-    window._augmentAddEventListener(HTMLElement, synthesizeGestureEvents);
-  }
-
-  exports.Gesture = exports.Gesture || {};
-  exports.Gesture._gestureHandlers = exports.Gesture._gestureHandlers || {};
-
-})(window);
-
-/**
- * Gesture recognizer for the `doubletap` gesture.
- *
- * Taps happen when an element is pressed and then released.
- */
-(function(exports) {
-  var DOUBLETAP_TIME = 300;
-
-  function pointerDown(e) {
-    var now = new Date();
-    if (now - this.lastDownTime < DOUBLETAP_TIME) {
-      this.lastDownTime = 0;
-      var payload = {
-      };
-      window._createCustomEvent('gesturedoubletap', e.target, payload);
-    }
-    this.lastDownTime = now;
-  }
-
-  /**
-   * Make the specified element create gesturetap events.
-   */
-  function emitDoubleTaps(el) {
-    el.addEventListener('pointerdown', pointerDown);
-  }
-
-  exports.Gesture._gestureHandlers.gesturedoubletap = emitDoubleTaps;
-
-})(window);
-
-/**
- * Gesture recognizer for the `longpress` gesture.
- *
- * Longpress happens when pointer is pressed and doesn't get released
- * for a while (without movement).
- */
-(function(exports) {
-  var LONGPRESS_TIME = 600;
-
-  function pointerDown(e) {
-    // Start a timer.
-    this.longPressTimer = setTimeout(function() {
-      payload = {};
-      window._createCustomEvent('gesturelongpress', e.target, payload);
-    }, LONGPRESS_TIME);
-  }
-
-  function pointerMove(e) {
-    // TODO(smus): allow for small movement and still emit a longpress.
-    clearTimeout(this.longPressTimer);
-  }
-
-  function pointerUp(e) {
-    clearTimeout(this.longPressTimer);
-  }
-
-  /**
-   * Make the specified element create gesturetap events.
-   */
-  function emitLongPresses(el) {
-    el.addEventListener('pointerdown', pointerDown);
-    el.addEventListener('pointermove', pointerMove);
-    el.addEventListener('pointerup', pointerUp);
-  }
-
-  exports.Gesture._gestureHandlers.gesturelongpress = emitLongPresses;
-
-})(window);
-
-/**
- * Gesture recognizer for the `scale` gesture.
- *
- * Scale happens when two fingers are placed on the screen, and then
- * they move so the the distance between them is greater or less than a
- * certain threshold.
- */
-(function(exports) {
-
-  var SCALE_THRESHOLD = 0.2;
-
-  function PointerPair(p1, p2) {
-    this.p1 = p1;
-    this.p2 = p2;
-  }
-
-  /**
-   * Calculate the distance between the two pointers.
-   */
-  PointerPair.prototype.span = function() {
-    var dx = this.p1.x - this.p2.x;
-    var dy = this.p1.y - this.p2.y;
-    return Math.sqrt(dx*dx + dy*dy);
-  };
-
-  /**
-   * Given a reference pair, calculate the scale multiplier difference.
-   */
-  PointerPair.prototype.scaleSince = function(referencePair) {
-    return this.span() / referencePair.span();
-  };
-
-  function pointerDown(e) {
-    var pointerList = e.getPointerList();
-    // If there are exactly two pointers down,
-    if (pointerList.length == 2) {
-      // Record the initial pointer pair.
-      e.target.scaleReferencePair = new PointerPair(pointerList[0],
-                                                    pointerList[1]);
-    }
-  }
-
-  function pointerMove(e) {
-    var pointerList = e.getPointerList();
-    // If there are two pointers down, compare to the initial pointer pair.
-    if (pointerList.length == 2 && e.target.scaleReferencePair) {
-      var pair = new PointerPair(pointerList[0], pointerList[1]);
-      // Compute the scaling value according to the difference.
-      var scale = pair.scaleSince(e.target.scaleReferencePair);
-      // If the movement is drastic enough:
-      if (Math.abs(1 - scale) > SCALE_THRESHOLD) {
-        // Create the scale event as a result.
-        var payload = {
-          scale: scale
-        };
-        window._createCustomEvent('gesturescale', e.target, payload);
-      }
-    }
-  }
-
-  function pointerUp(e) {
-    e.target.scaleReferencePair = null;
-  }
-
-  /**
-   * Make the specified element create gesturetap events.
-   */
-  function emitScale(el) {
-    el.addEventListener('pointerdown', pointerDown);
-    el.addEventListener('pointermove', pointerMove);
-    el.addEventListener('pointerup', pointerUp);
-  }
-
-  exports.Gesture._gestureHandlers.gesturescale = emitScale;
-
-})(window);
-
-window.Modernizr=function(a,b,c){function v(a){i.cssText=a}function w(a,b){return v(l.join(a+";")+(b||""))}function x(a,b){return typeof a===b}function y(a,b){return!!~(""+a).indexOf(b)}function z(a,b,d){for(var e in a){var f=b[a[e]];if(f!==c)return d===!1?a[e]:x(f,"function")?f.bind(d||b):f}return!1}var d="2.5.3",e={},f=b.documentElement,g="modernizr",h=b.createElement(g),i=h.style,j,k={}.toString,l=" -webkit- -moz- -o- -ms- ".split(" "),m={},n={},o={},p=[],q=p.slice,r,s=function(a,c,d,e){var h,i,j,k=b.createElement("div"),l=b.body,m=l?l:b.createElement("body");if(parseInt(d,10))while(d--)j=b.createElement("div"),j.id=e?e[d]:g+(d+1),k.appendChild(j);return h=["&#173;","<style>",a,"</style>"].join(""),k.id=g,(l?k:m).innerHTML+=h,m.appendChild(k),l||(m.style.background="",f.appendChild(m)),i=c(k,a),l?k.parentNode.removeChild(k):m.parentNode.removeChild(m),!!i},t={}.hasOwnProperty,u;!x(t,"undefined")&&!x(t.call,"undefined")?u=function(a,b){return t.call(a,b)}:u=function(a,b){return b in a&&x(a.constructor.prototype[b],"undefined")},Function.prototype.bind||(Function.prototype.bind=function(a){var b=this;if(typeof b!="function")throw new TypeError;var c=q.call(arguments,1),d=function(){if(this instanceof d){var e=function(){};e.prototype=b.prototype;var f=new e,g=b.apply(f,c.concat(q.call(arguments)));return Object(g)===g?g:f}return b.apply(a,c.concat(q.call(arguments)))};return d});var A=function(c,d){var f=c.join(""),g=d.length;s(f,function(c,d){var f=b.styleSheets[b.styleSheets.length-1],h=f?f.cssRules&&f.cssRules[0]?f.cssRules[0].cssText:f.cssText||"":"",i=c.childNodes,j={};while(g--)j[i[g].id]=i[g];e.touch="ontouchstart"in a||a.DocumentTouch&&b instanceof DocumentTouch||(j.touch&&j.touch.offsetTop)===9},g,d)}([,["@media (",l.join("touch-enabled),("),g,")","{#touch{top:9px;position:absolute}}"].join("")],[,"touch"]);m.touch=function(){return e.touch};for(var B in m)u(m,B)&&(r=B.toLowerCase(),e[r]=m[B](),p.push((e[r]?"":"no-")+r));return v(""),h=j=null,e._version=d,e._prefixes=l,e.testStyles=s,e}(this,this.document),function(a){function c(a,b,c,d){this.x=a,this.y=b,this.type=c,this.identifier=d}function e(a){a.target.mouseEvent=a}function f(a){a.target.mouseEvent=null}function g(a){a.target.touchList=a.targetTouches}function h(){var a=[];if(this.touchList)for(var e=0;e<this.touchList.length;e++){var f=this.touchList[e],g=new c(f.pageX,f.pageY,d.TOUCH,f.identifier);a.push(g)}return this.mouseEvent&&a.push(new c(this.mouseEvent.pageX,this.mouseEvent.pageY,d.MOUSE,b)),a}function i(a,b,c){var d=document.createEvent("Event");d.initEvent(a,!0,!0);for(var e in c)d[e]=c[e];b.dispatchEvent(d)}function j(a){a.preventDefault(),e(a);var b={pointerType:"mouse",getPointerList:h.bind(this),originalEvent:a};i("pointerdown",a.target,b)}function k(a){a.preventDefault(),a.target.mouseEvent&&e(a);var b={pointerType:"mouse",getPointerList:h.bind(this),originalEvent:a};i("pointermove",a.target,b)}function l(a){a.preventDefault(),f(a);var b={pointerType:"mouse",getPointerList:h.bind(this),originalEvent:a};i("pointerup",a.target,b)}function m(a){console.log("touchstart"),a.preventDefault(),g(a);var b={pointerType:"touch",getPointerList:h.bind(this),originalEvent:a};i("pointerdown",a.target,b)}function n(a){a.preventDefault(),g(a);var b={pointerType:"touch",getPointerList:h.bind(this),originalEvent:a};i("pointermove",a.target,b)}function o(a){a.preventDefault(),g(a);var b={pointerType:"touch",getPointerList:h.bind(this),originalEvent:a};i("pointerup",a.target,b)}function p(a){a.preventDefault(),f(a)}function q(a){log("pointerdown")}function r(a){log("pointermove")}function s(a){log("pointerup")}function t(a){a.isPointerEmitter||(u()?(a.addEventListener("touchstart",m),a.addEventListener("touchmove",n),a.addEventListener("touchend",o)):v()?(a.addEventListener("MSPointerDown",q),a.addEventListener("MSPointerMove",r),a.addEventListener("MSPointerUp",s)):(a.addEventListener("mousedown",j),a.addEventListener("mousemove",k),a.addEventListener("mouseup",l),a.addEventListener("mouseout",p)),a.isPointerEmitter=!0)}function u(){return Modernizr.touch}function v(){return!1}function w(a,b){var c=a.prototype.addEventListener;a.prototype.addEventListener=function(a,d,e){b.call(this,a,d,e),c.call(this,a,d,e)}}function x(a,b,c){a.indexOf("pointer")===0&&t(this)}var b=31337,d={TOUCH:"touch",MOUSE:"mouse"};navigator.userAgent.match(/Firefox/)?(w(HTMLDivElement,x),w(HTMLCanvasElement,x)):w(HTMLElement,x),a._createCustomEvent=i,a._augmentAddEventListener=w,a.PointerTypes=d}(window),function(a){function b(a,b,c){if(a.indexOf("gesture")===0){var d=Gesture._gestureHandlers[a];d?d(this):console.error("Warning: no handler found for {{evt}}.".replace("{{evt}}",a))}}navigator.userAgent.match(/Firefox/)?(window._augmentAddEventListener(HTMLDivElement,b),window._augmentAddEventListener(HTMLCanvasElement,b)):window._augmentAddEventListener(HTMLElement,b),a.Gesture=a.Gesture||{},a.Gesture._gestureHandlers=a.Gesture._gestureHandlers||{}}(window),function(a){function c(a){var c=new Date;if(c-this.lastDownTime<b){this.lastDownTime=0;var d={};window._createCustomEvent("gesturedoubletap",a.target,d)}this.lastDownTime=c}function d(a){a.addEventListener("pointerdown",c)}var b=300;a.Gesture._gestureHandlers.gesturedoubletap=d}(window),function(a){function c(a){this.longPressTimer=setTimeout(function(){payload={},window._createCustomEvent("gesturelongpress",a.target,payload)},b)}function d(a){clearTimeout(this.longPressTimer)}function e(a){clearTimeout(this.longPressTimer)}function f(a){a.addEventListener("pointerdown",c),a.addEventListener("pointermove",d),a.addEventListener("pointerup",e)}var b=600;a.Gesture._gestureHandlers.gesturelongpress=f}(window),function(a){function c(a,b){this.p1=a,this.p2=b}function d(a){var b=a.getPointerList();b.length==2&&(a.target.scaleReferencePair=new c(b[0],b[1]))}function e(a){var d=a.getPointerList();if(d.length==2&&a.target.scaleReferencePair){var e=new c(d[0],d[1]),f=e.scaleSince(a.target.scaleReferencePair);if(Math.abs(1-f)>b){var g={scale:f};window._createCustomEvent("gesturescale",a.target,g)}}}function f(a){a.target.scaleReferencePair=null}function g(a){a.addEventListener("pointerdown",d),a.addEventListener("pointermove",e),a.addEventListener("pointerup",f)}var b=.2;c.prototype.span=function(){var a=this.p1.x-this.p2.x,b=this.p1.y-this.p2.y;return Math.sqrt(a*a+b*b)},c.prototype.scaleSince=function(a){return this.span()/a.span()},a.Gesture._gestureHandlers.gesturescale=g}(window)
+})(Event.proxy);

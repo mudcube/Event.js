@@ -12,47 +12,6 @@ var CanvasDrawr = function(options) {
   canvas.width = canvas.offsetWidth;
   canvas.style.width = '';
 
-	(function() {
-		(function() {
-			var evt = document.createEvent("Event");
-			evt.initEvent("pointerdown", true, true);
-			canvas.addEventListener("mousedown", function (e) {
-				e.target.mouseEvent = e;
-				evt.identifier = Infinity;
-				evt.getPointerList = function() {
-					return [e];
-				};
-				canvas.dispatchEvent(evt);
-			}, false);
-		})();
-		
-		(function() {
-			var evt = document.createEvent("Event");
-			evt.initEvent("pointermove", true, true);
-			canvas.addEventListener("mousemove", function (e) {
-				evt.identifier = Infinity;
-				evt.getPointerList = function() {
-					return e.target.mouseEvent ? [e] : [];
-				};
-				canvas.dispatchEvent(evt);
-			}, false);
-		})();
-		
-		(function() {
-			var evt = document.createEvent("Event");
-			evt.initEvent("pointerup", true, true);
-			canvas.addEventListener("mouseup", function (e) {
-				e.target.mouseEvent = null;
-				evt.identifier = Infinity;
-				evt.getPointerList = function() {
-					return [e];
-				};
-				canvas.dispatchEvent(evt);
-			}, false);
-		})();
-	
-	})();
-
   // set props from options, but the defaults are for the cool kids
   ctxt.lineWidth = options.size || Math.ceil(Math.random() * 35);
   ctxt.lineCap = options.lineCap || "round";
@@ -120,7 +79,7 @@ var CanvasDrawr = function(options) {
 };
 
 
-$(function(){
+window.onload = function() {
   var super_awesome_multitouch_drawing_canvas_thingy = new CanvasDrawr({id:"example", size: 15 });
-});
+};
 

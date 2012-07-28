@@ -1,7 +1,5 @@
 (function (exports) {
 
-	var MOUSE_ID = Infinity;
-
 	function Pointer(x, y, type, identifier) {
 		this.x = x;
 		this.y = y;
@@ -28,7 +26,7 @@
 			}
 		}
 		if (this.mouseEvent) {
-			pointers.push(new Pointer(this.mouseEvent.pageX, this.mouseEvent.pageY, PointerTypes.MOUSE, MOUSE_ID));
+			pointers.push(new Pointer(this.mouseEvent.pageX, this.mouseEvent.pageY, PointerTypes.MOUSE, Infinity));
 		}
 		return pointers;
 	};
@@ -36,37 +34,8 @@
 	function createCustomEvent(eventName, target, payload) {
 		var event = document.createEvent('Event');
 		event.initEvent(eventName, true, true);
-		for (var k in payload) {
-			event[k] = payload[k];
-		}
+		for (var k in payload) event[k] = payload[k];
 		target.dispatchEvent(event);
-	};
-
-	/**
-	 * Causes the passed in element to broadcast pointer events instead
-	 * of mouse/touch/etc events.
-	 */
-	function emitPointers(el) {
-		if (!el.isPointerEmitter) {
-			// Latch on to all relevant events for this element.
-			if (isTouch()) {
-				el.addEventListener('touchstart', touchStartHandler);
-				el.addEventListener('touchmove', touchMoveHandler);
-				el.addEventListener('touchend', touchEndHandler);
-			} else if (isPointer()) {
-				el.addEventListener('MSPointerDown', pointerDownHandler);
-				el.addEventListener('MSPointerMove', pointerMoveHandler);
-				el.addEventListener('MSPointerUp', pointerUpHandler);
-			} else {
-				el.addEventListener('mousedown', mouseDownHandler);
-				el.addEventListener('mousemove', mouseMoveHandler);
-				el.addEventListener('mouseup', mouseUpHandler);
-				// Necessary for the edge case that the mouse is down and you drag out of
-				// the area.
-				el.addEventListener('mouseout', mouseOutHandler);
-			}
-			el.isPointerEmitter = true;
-		}
 	};
 
 	/*************** Mouse event handlers *****************/
@@ -177,6 +146,33 @@
 	};
 
 	/**
+	 * Causes the passed in element to broadcast pointer events instead
+	 * of mouse/touch/etc events.
+	 */
+	function emitPointers(el) {
+		if (!el.isPointerEmitter) {
+			// Latch on to all relevant events for this element.
+			if (isTouch()) {
+				el.addEventListener('touchstart', touchStartHandler);
+				el.addEventListener('touchmove', touchMoveHandler);
+				el.addEventListener('touchend', touchEndHandler);
+			} else if (isPointer()) {
+				el.addEventListener('MSPointerDown', pointerDownHandler);
+				el.addEventListener('MSPointerMove', pointerMoveHandler);
+				el.addEventListener('MSPointerUp', pointerUpHandler);
+			} else {
+				el.addEventListener('mousedown', mouseDownHandler);
+				el.addEventListener('mousemove', mouseMoveHandler);
+				el.addEventListener('mouseup', mouseUpHandler);
+				// Necessary for the edge case that the mouse is down and you drag out of
+				// the area.
+				el.addEventListener('mouseout', mouseOutHandler);
+			}
+			el.isPointerEmitter = true;
+		}
+	};
+
+	/**
 	 * Option 1: Require emitPointers call on all pointer event emitters.
 	 */
 	//exports.pointer = {
@@ -195,7 +191,14 @@
 	};
 
 	function synthesizePointerEvents(type, listener, useCapture) {
-		if (type.indexOf('pointer') === 0) {
+		if (type.indexOf('gesture') === 0) {
+			var handler = Gesture._gestureHandlers[type];
+			if (handler) {
+				handler(this);
+			} else {
+				console.error('Warning: no handler found for {{evt}}.'.replace('{{evt}}', type));
+			}
+		} else if (type.indexOf('pointer') === 0) {
 			emitPointers(this);
 		}
 	};
@@ -213,5 +216,7 @@
 	exports._createCustomEvent = createCustomEvent;
 	exports._augmentAddEventListener = augmentAddEventListener;
 	exports.PointerTypes = PointerTypes;
+	exports.Gesture = exports.Gesture || {};
+	exports.Gesture._gestureHandlers = exports.Gesture._gestureHandlers || {};
 
 })(window);

@@ -38,7 +38,7 @@ root.swipe = function(conf) {
 		}
 	};
 	var onMouseMove = function (event) {
-		var touches = event.changedTouches || getCoords(event);
+		var touches = event.changedTouches || root.getCoords(event);
 		var length = touches.length;
 		for (var i = 0; i < length; i ++) {
 			var touch = touches[i];

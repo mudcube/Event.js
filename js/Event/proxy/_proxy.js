@@ -16,6 +16,35 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
+root.addPointer = function(self, conf) {
+	conf.doc = conf.target.ownerDocument || conf.target;
+	conf.minFingers = conf.minFingers || conf.fingers || 1;
+	conf.maxFingers = conf.maxFingers || conf.fingers || Infinity; // Maximum allowed fingers.
+	conf.position = conf.position || "relative"; // Point to source coordinates from.
+	///
+	self.type = conf.type;
+	self.target = conf.target;
+	self.listener = conf.listener;
+	self.remove = function() {
+		if (conf.onMouseDown) Event.remove(conf.target, "mousedown", conf.onMouseDown);
+		if (conf.onMouseMove) Event.remove(conf.doc, "mousemove", conf.onMouseMove);
+		if (conf.onMouseUp) Event.remove(conf.doc, "mouseup", conf.onMouseUp);
+	};
+	self.disable = function(opt) {
+		if (!opt || opt.move) Event.remove(conf.doc, "mousemove", conf.onMouseMove);
+		if (!opt || opt.up) Event.remove(conf.doc, "mouseup", conf.onMouseUp);
+		conf.fingers = 0;
+	};
+	self.enable = function(opt) {
+		if (!opt || opt.move) Event.add(conf.doc, "mousemove", conf.onMouseMove);
+		if (!opt || opt.move) Event.add(conf.doc, "mouseup", conf.onMouseUp);
+		conf.fingers = 1;
+	};
+	///
+	return self;
+};
+
+///
 root.gestureStart = function(event, conf) {
 	var addTouchStart = function(touch, sid) {	
 		var bbox = conf.bbox;
@@ -54,7 +83,7 @@ root.gestureStart = function(event, conf) {
 	//
 	var isTouchStart = !conf.fingers;
 	var track = conf.tracker;
-	var touches = event.changedTouches || getCoords(event);
+	var touches = event.changedTouches || root.getCoords(event);
 	var length = touches.length;
 	// Adding touch events to tracking.
 	for (var i = 0; i < length; i ++) {
@@ -91,9 +120,9 @@ root.gestureStart = function(event, conf) {
 	return isTouchStart;
 };
 
+///
 root.gestureEnd = function(event, conf, callback) {
 	// Record changed touches have ended (iOS changedTouches is not reliable).
-	//- simplify this for desktop computers...
 	var touches = event.touches || [];
 	var length = touches.length;
 	var exists = {};
@@ -119,7 +148,7 @@ root.gestureEnd = function(event, conf, callback) {
 			conf.fingers --;
 		}
 	}
-/*	var touches = event.changedTouches || getCoords(event);
+/*	var touches = event.changedTouches || root.getCoords(event);
 	var length = touches.length;
 	// Record changed touches have ended (this should work).
 	for (var i = 0; i < length; i ++) {
@@ -141,23 +170,7 @@ root.gestureEnd = function(event, conf, callback) {
 	return true;
 };
 
-var getCoords = function(event) {
-	if (typeof(event.pageX) !== "undefined") { // Desktop browsers.
-		getCoords = function(event) {
-			return Array(event);
-		};
-	} else { // Internet Explorer <=8.0
-		getCoords = function(event) {
-			event = event || window.event;
-			return Array({
-				pageX: event.clientX + document.documentElement.scrollLeft,
-				pageY: event.clientY + document.documentElement.scrollTop
-			});
-		};
-	}
-	return getCoords(event);
-};
-
+/// Get target position in space.
 root.getBoundingBox = function(o) { 
 	if (o === window || o === document) o = document.body;
 	///
@@ -204,10 +217,28 @@ root.getBoundingBox = function(o) {
 };
 
 root.getCoords = function(event) {
+	if (typeof(event.pageX) !== "undefined") { // Desktop browsers.
+		root.getCoords = function(event) {
+			return Array(event);
+		};
+	} else { // Internet Explorer <= 8.0
+		root.getCoords = function(event) {
+			event = event || window.event;
+			return Array({
+				pageX: event.clientX + document.documentElement.scrollLeft,
+				pageY: event.clientY + document.documentElement.scrollTop
+			});
+		};
+	}
+	return root.getCoords(event);
+};
+
+/// Legacy function, get single coordinate.
+root.getCoord = function(event) {
 	if ("ontouchstart" in window) { // Mobile browsers.
 		var pX = 0;
 		var pY = 0;
-		root.getCoords = function(event) {
+		root.getCoord = function(event) {
 			var touches = event.changedTouches;
 			if (touches.length) { // ontouchstart + ontouchmove
 				return {
@@ -222,14 +253,14 @@ root.getCoords = function(event) {
 			}
 		};
 	} else if(typeof(event.pageX) !== "undefined" && typeof(event.pageY) !== "undefined") { // Desktop browsers.
-		root.getCoords = function(event) {
+		root.getCoord = function(event) {
 			return {
 				x: event.pageX,
 				y: event.pageY
 			};
 		};
 	} else { // Internet Explorer <=8.0
-		root.getCoords = function(event) {
+		root.getCoord = function(event) {
 			event = event || window.event;
 			return {
 				x: event.clientX + document.documentElement.scrollLeft,
@@ -237,7 +268,7 @@ root.getCoords = function(event) {
 			};
 		};
 	}
-	return root.getCoords(event);
+	return root.getCoord(event);
 };
 
 return root;

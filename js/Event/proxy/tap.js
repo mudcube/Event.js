@@ -1,7 +1,7 @@
 /*
 	"Tap" and "Tap-Hold" event proxy.
 	----------------------------------------------------
-	CONFIGURE: minhold, maxhold.
+	CONFIGURE: hold, cutoff.
 	----------------------------------------------------
 	Event.add(window, "tap", function(event, self) {
 		console.log(self.fingers);
@@ -21,12 +21,12 @@ root.taphold = function(conf) {
 	conf.doc = conf.target.ownerDocument || conf.target;
 	conf.minFingers = conf.minFingers || 1;
 	conf.maxFingers = conf.maxFingers || Infinity; // Maximum allowed fingers.
-	if (conf.type === "taphold" || conf.minhold) {
+	if (conf.type === "taphold" || conf.hold) {
 		conf.type = "taphold";
-		conf.delay = conf.minhold || 500;
+		conf.delay = conf.hold || 500;
 	} else {
 		conf.type = "tap";
-		conf.delay = conf.maxhold || 250;
+		conf.delay = conf.cutoff || 250;
 	}
 	// Externally accessible data.
 	var self = {
@@ -66,7 +66,7 @@ root.taphold = function(conf) {
 	};
 	var onMouseMove = function (event) {
 		var bbox = conf.bbox;
-		var touches = event.changedTouches || getCoords(event);
+		var touches = event.changedTouches || root.getCoords(event);
 		var length = touches.length;
 		for (var i = 0; i < length; i ++) {
 			var touch = touches[i];

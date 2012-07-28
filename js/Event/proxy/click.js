@@ -42,7 +42,7 @@ root.click = function(conf) {
 			Event.remove(conf.doc, "mousemove", onMouseMove);
 			Event.remove(conf.doc, "mouseup", onMouseUp);
 			if (event.cancelBubble && ++event.bubble > 1) return;
-			var touches = event.changedTouches || getCoords(event);
+			var touches = event.changedTouches || root.getCoords(event);
 			var touch = touches[0];
 			var bbox = conf.bbox;
 			var newbbox = root.getBoundingBox(conf.target);

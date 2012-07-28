@@ -10,8 +10,7 @@
     var now = new Date();
     if (now - this.lastDownTime < DOUBLETAP_TIME) {
       this.lastDownTime = 0;
-      var payload = {};
-      window._createCustomEvent('gesturedoubletap', e.target, payload);
+      window._createCustomEvent('gesturedoubletap', e.target, {});
     }
     this.lastDownTime = now;
   }
@@ -19,10 +18,8 @@
   /**
    * Make the specified element create gesturetap events.
    */
-  function emitDoubleTaps(el) {
+  exports.Gesture._gestureHandlers.gesturedoubletap = function(el) {
     el.addEventListener('pointerdown', pointerDown);
-  }
-
-  exports.Gesture._gestureHandlers.gesturedoubletap = emitDoubleTaps;
+  };
 
 })(window);

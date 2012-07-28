@@ -56,7 +56,7 @@ root.devicemotion = function(conf) {
 		} 
 		var data = "xyz";
 		var now = (new Date).getTime();
-		for (var n = 0; n < data.length; n ++) {
+		for (var n = 0, length = data.length; n < length; n ++) {
 			var letter = data[n];
 			var ACCELERATION = self.acceleration[letter];
 			var DELTA = delta[letter];

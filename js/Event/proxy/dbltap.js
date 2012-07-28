@@ -31,7 +31,7 @@ root.dblclick = function(conf) {
 	var touch0, touch1;
 	// Tracking the events.
 	var onMouseDown = function (event) {
-		var touches = event.changedTouches || getCoords(event);
+		var touches = event.changedTouches || root.getCoords(event);
 		if (time0 && !time1) { // Click #2
 			touch1 = touches[0];
 			time1 = (new Date).getTime() - time0;
@@ -51,7 +51,7 @@ root.dblclick = function(conf) {
 	};
 	var onMouseMove = function (event) {
 		if (time0 && !time1) {
-			var touches = event.changedTouches || getCoords(event);
+			var touches = event.changedTouches || root.getCoords(event);
 			touch1 = touches[0];
 		}
 		var bbox = conf.bbox;

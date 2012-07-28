@@ -41,9 +41,9 @@ root.gesture = function(conf) {
 			self.scale = 1;
 			self.rotation = 0;
 			self.state = "start";
-			var sids = "";
+			var sids = ""; //- FIXME(mud): can generate duplicate IDs.
 			for (var key in conf.tracker) sids += key;
-			self.id = parseInt(sids);
+			self.identifier = parseInt(sids);
 			conf.listener(event, self);
 		}
 	};
@@ -51,7 +51,7 @@ root.gesture = function(conf) {
 	var onMouseMove = function (event, state) {
 		var bbox = conf.bbox;
 		var points = conf.tracker;
-		var touches = event.changedTouches || getCoords(event);
+		var touches = event.changedTouches || root.getCoords(event);
 		var length = touches.length;
 		// Update tracker coordinates.
 		for (var i = 0; i < length; i ++) {
