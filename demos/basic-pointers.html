@@ -1,0 +1,47 @@
+<!doctype html>
+<head>
+  <meta name="viewport" content="width=device-width">
+</head>
+
+<style>
+  #test {
+    background: green;
+    width: 480px;
+    height: 480px;
+    margin: 0 auto;
+    overflow: hidden;
+    color: white;
+    -ms-touch-action: none;
+  }
+
+  body {
+    overflow: hidden;
+  }
+</style>
+
+<div id="test">
+</div>
+
+Move your mouse or finger around on the green area.
+
+<!-- Pointer events library. -->
+<script src="../js/Pointer.js"></script>
+<script>
+
+  var test = document.querySelector('#test');
+  test.addEventListener('pointerdown', function(e) {
+    log('pointerdown, pointerType: ' + e.pointerType);
+  });
+  test.addEventListener('pointermove', function(e) {
+    log('pointermove, pointerType: ' + e.pointerType);
+    log('pointer count: ' + e.getPointerList().length);
+  });
+  test.addEventListener('pointerup', function(e) {
+    log('pointerup, pointerType: ' + e.pointerType);
+  });
+
+  function log(msg) {
+    test.innerHTML = msg + '<br/>' + test.innerHTML;
+  }
+
+</script>
