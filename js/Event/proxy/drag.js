@@ -41,7 +41,7 @@ root.drag = function(conf) {
 	};
 	// Tracking the events.
 	var onMouseDown = function (event) {
-		if (root.TouchStart(event, conf)) {
+		if (root.gestureStart(event, conf)) {
 			Event.add(conf.doc, "mousemove", onMouseMove);
 			Event.add(conf.doc, "mouseup", onMouseUp);
 		}
@@ -71,7 +71,7 @@ root.drag = function(conf) {
 	};
 	var onMouseUp = function(event) {
 		// Remove tracking for touch.
-		if (root.TouchEnd(event, conf, onMouseMove)) {
+		if (root.gestureEnd(event, conf, onMouseMove)) {
 			Event.remove(conf.doc, "mousemove", onMouseMove);
 			Event.remove(conf.doc, "mouseup", onMouseUp);
 		}

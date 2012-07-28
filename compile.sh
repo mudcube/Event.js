@@ -2,8 +2,8 @@
 # setup variables
 CLOSURE="/Library/WebServer/Documents/mudcu.be/inc/closure.jar"
 UGLIFY="/Library/WebServer/Documents/xGithub/UglifyJS/bin/uglifyjs";
-ROOT="/Library/WebServer/Documents/xGithub/Event.js/"
-JSDIR="$ROOT/js"
+ROOT="/Library/WebServer/Documents/xGithub/Event.js/js/Event"
+JSDIR="$ROOT/.."
 JSCOMPILE="$JSDIR/Event.min.js"
 JSRAW="$JSDIR/Event.js"
 # read user input

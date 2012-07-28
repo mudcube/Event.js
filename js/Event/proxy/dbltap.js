@@ -44,7 +44,7 @@ root.dblclick = function(conf) {
 				time0 = 0;
 			}, delay);
 		}
-		if (root.TouchStart(event, conf)) {
+		if (root.gestureStart(event, conf)) {
 			Event.add(conf.doc, "mousemove", onMouseMove).listener(event);
 			Event.add(conf.doc, "mouseup", onMouseUp);
 		}
@@ -68,7 +68,7 @@ root.dblclick = function(conf) {
 		}
 	};
 	var onMouseUp = function(event) {
-		if (root.TouchEnd(event, conf)) {
+		if (root.gestureEnd(event, conf)) {
 			Event.remove(conf.doc, "mousemove", onMouseMove);
 			Event.remove(conf.doc, "mouseup", onMouseUp);
 		}

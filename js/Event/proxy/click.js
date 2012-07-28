@@ -29,7 +29,7 @@ root.click = function(conf) {
 	var event;
 	// Tracking the events.
 	var onMouseDown = function (e) {
-		if (root.TouchStart(e, conf)) {
+		if (root.gestureStart(e, conf)) {
 			Event.add(conf.doc, "mousemove", onMouseMove).listener(e);
 			Event.add(conf.doc, "mouseup", onMouseUp);
 		}
@@ -38,7 +38,7 @@ root.click = function(conf) {
 		event = e;
 	};
 	var onMouseUp = function(e) {
-		if (root.TouchEnd(e, conf)) {
+		if (root.gestureEnd(e, conf)) {
 			Event.remove(conf.doc, "mousemove", onMouseMove);
 			Event.remove(conf.doc, "mouseup", onMouseUp);
 			if (event.cancelBubble && ++event.bubble > 1) return;

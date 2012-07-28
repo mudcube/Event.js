@@ -9,8 +9,6 @@
 	2+ : pinch, rotate
 	   : mousewheel, devicemotion, shake
 	----------------------------------------------------
-	- Add "self" to the "event" object?
-	----------------------------------------------------
 */
 
 if (typeof(Event) === "undefined") var Event = {};
@@ -18,7 +16,7 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
-root.TouchStart = function(event, conf) {
+root.gestureStart = function(event, conf) {
 	var addTouchStart = function(touch, sid) {	
 		var bbox = conf.bbox;
 		var o = track[sid] = {};
@@ -93,7 +91,7 @@ root.TouchStart = function(event, conf) {
 	return isTouchStart;
 };
 
-root.TouchEnd = function(event, conf, callback) {
+root.gestureEnd = function(event, conf, callback) {
 	// Record changed touches have ended (iOS changedTouches is not reliable).
 	//- simplify this for desktop computers...
 	var touches = event.touches || [];

@@ -41,7 +41,7 @@ root.taphold = function(conf) {
 	var timestamp, timeout;
 	// Tracking the events.
 	var onMouseDown = function (event) {
-		if (root.TouchStart(event, conf)) {
+		if (root.gestureStart(event, conf)) {
 			timestamp = (new Date).getTime();
 			// Initialize event listeners.
 			Event.add(conf.doc, "mousemove", onMouseMove).listener(event);
@@ -87,7 +87,7 @@ root.taphold = function(conf) {
 		}
 	};
 	var onMouseUp = function(event) {
-		if (root.TouchEnd(event, conf)) {
+		if (root.gestureEnd(event, conf)) {
 			clearTimeout(timeout);
 			Event.remove(conf.doc, "mousemove", onMouseMove);
 			Event.remove(conf.doc, "mouseup", onMouseUp);

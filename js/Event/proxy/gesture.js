@@ -3,10 +3,6 @@
 	----------------------------------------------------
 	CONFIGURE: minFingers, maxFingers.
 	----------------------------------------------------
-	ongesturestart	Fired when the user starts a gesture using two fingers
-	ongesturechange	Fired when the user is moving her fingers, rotating or pinching
-	ongestureend	Fired when the user lifts one or both fingers
-	----------------------------------------------------
 	Event.add(window, "gesture", function(event, self) {
 		console.log(self.rotation, self.scale, self.fingers, self.state);
 	});
@@ -35,7 +31,7 @@ root.gesture = function(conf) {
 	// Tracking the events.
 	var onMouseDown = function (event) {
 		var fingers = conf.fingers;
-		if (root.TouchStart(event, conf)) {
+		if (root.gestureStart(event, conf)) {
 			Event.add(conf.doc, "mousemove", onMouseMove);
 			Event.add(conf.doc, "mouseup", onMouseUp);
 		}
@@ -130,7 +126,7 @@ root.gesture = function(conf) {
 	var onMouseUp = function(event) {
 		// Remove tracking for touch.
 		var fingers = conf.fingers;
-		if (root.TouchEnd(event, conf)) {
+		if (root.gestureEnd(event, conf)) {
 			Event.remove(conf.doc, "mousemove", onMouseMove);
 			Event.remove(conf.doc, "mouseup", onMouseUp);
 		}
