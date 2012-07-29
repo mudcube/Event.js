@@ -52,7 +52,7 @@ root.drag = function(conf) {
 		}
 	};
 	// Generate maintenance commands, and other configurations.
-	var self = root.utility(conf);
+	var self = root.setup(conf);
 	// Attach events.
 	if (conf.event) {
 		conf.onPointerDown(conf.event);

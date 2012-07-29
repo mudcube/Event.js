@@ -10,37 +10,23 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 Event.proxy = (function(root) { "use strict";
 
 root.click = function(conf) {
-	conf.doc = conf.target.ownerDocument || conf.target;
-	conf.minFingers = conf.minFingers || 1;
-	conf.maxFingers = conf.maxFingers || 1; // Maximum allowed fingers.
-	// Externally accessible data.
-	var self = {
-		type: "click",
-		target: conf.target,
-		listener: conf.listener,
-		add: function() {
-			Event.add(conf.target, "mousedown", onMouseDown);
-		},
-		remove: function() {
-			Event.remove(conf.target, "mousedown", onMouseDown);
-		}
-	};
+	conf.maxFingers = conf.maxFingers || conf.fingers || 1;
 	// Setting up local variables.
 	var event;
 	// Tracking the events.
-	var onMouseDown = function (e) {
+	conf.onPointerDown = function (e) {
 		if (root.gestureStart(e, conf)) {
-			Event.add(conf.doc, "mousemove", onMouseMove).listener(e);
-			Event.add(conf.doc, "mouseup", onMouseUp);
+			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(e);
+			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
 	};
-	var onMouseMove = function (e) {
+	conf.onPointerMove = function (e) {
 		event = e;
 	};
-	var onMouseUp = function(e) {
+	conf.onPointerUp = function(e) {
 		if (root.gestureEnd(e, conf)) {
-			Event.remove(conf.doc, "mousemove", onMouseMove);
-			Event.remove(conf.doc, "mouseup", onMouseUp);
+			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
+			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 			if (event.cancelBubble && ++event.bubble > 1) return;
 			var touches = event.changedTouches || root.getCoords(event);
 			var touch = touches[0];
@@ -55,8 +41,10 @@ root.click = function(conf) {
 			}
 		}
 	};
+	// Generate maintenance commands, and other configurations.
+	var self = root.setup(conf);
 	// Attach events.
-	Event.add(conf.target, "mousedown", onMouseDown);
+	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.
 	return self;
 };

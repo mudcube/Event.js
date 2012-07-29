@@ -13,24 +13,13 @@ Event.proxy = (function(root) { "use strict";
 
 root.dbltap =
 root.dblclick = function(conf) {
-	conf.doc = conf.target.ownerDocument || conf.target;
-	conf.minFingers = conf.minFingers || 1;
-	conf.maxFingers = conf.maxFingers || 1; // Maximum allowed fingers.
-	// Externally accessible data.
-	var self = {
-		type: conf.type,
-		target: conf.target,
-		listener: conf.listener,
-		remove: function() {
-			Event.remove(conf.target, "mousedown", onMouseDown);
-		}
-	};
+	conf.maxFingers = conf.maxFingers || conf.fingers || 1;
 	// Setting up local variables.
 	var delay = 700; // in milliseconds
 	var time0, time1, timeout; 
 	var touch0, touch1;
 	// Tracking the events.
-	var onMouseDown = function (event) {
+	conf.onPointerDown = function (event) {
 		var touches = event.changedTouches || root.getCoords(event);
 		if (time0 && !time1) { // Click #2
 			touch1 = touches[0];
@@ -45,11 +34,11 @@ root.dblclick = function(conf) {
 			}, delay);
 		}
 		if (root.gestureStart(event, conf)) {
-			Event.add(conf.doc, "mousemove", onMouseMove).listener(event);
-			Event.add(conf.doc, "mouseup", onMouseUp);
+			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
+			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
 	};
-	var onMouseMove = function (event) {
+	conf.onPointerMove = function (event) {
 		if (time0 && !time1) {
 			var touches = event.changedTouches || root.getCoords(event);
 			touch1 = touches[0];
@@ -62,15 +51,15 @@ root.dblclick = function(conf) {
 			  Math.abs(touch1.pageX - touch0.pageX) <= 25 && // Within drift deviance.
 			  Math.abs(touch1.pageY - touch0.pageY) <= 25)) {
 			// Cancel out this listener.
-			Event.remove(conf.doc, "mousemove", onMouseMove);
+			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 			clearTimeout(timeout);
 			time0 = time1 = 0;
 		}
 	};
-	var onMouseUp = function(event) {
+	conf.onPointerUp = function(event) {
 		if (root.gestureEnd(event, conf)) {
-			Event.remove(conf.doc, "mousemove", onMouseMove);
-			Event.remove(conf.doc, "mouseup", onMouseUp);
+			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
+			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 		}
 		if (time0 && time1) {
 			if (time1 <= delay && !(event.cancelBubble && ++event.bubble > 1)) {
@@ -81,8 +70,10 @@ root.dblclick = function(conf) {
 			time0 = time1 = 0;
 		}
 	};
+	// Generate maintenance commands, and other configurations.
+	var self = root.setup(conf);
 	// Attach events.
-	Event.add(conf.target, "mousedown", onMouseDown);
+	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.
 	return self;
 };

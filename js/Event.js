@@ -23,7 +23,7 @@
 
 	*	You can turn prototyping on/off for individual features.
 	----------------------------------------------------
-	Event.modifyAddEventListener = true; // use experimental *EventListener on HTMLElement
+	Event.modifyEventListener = true; // use experimental *EventListener on HTMLElement
 	Event.modifySelectors = true; // use experimental *EventListener on NodeList (from querySelectorAll, getElementsByTagName, ect).
 
 	*	Example of setting up a single listener with a custom configuration.
@@ -216,7 +216,7 @@ if (typeof(Event) === "undefined") var Event = {};
 Event = (function(root) { "use strict";
 
 // Add custom *EventListener commands to HTMLElements.
-root.modifyAddEventListener = true;
+root.modifyEventListener = true;
 
 // Add bulk *EventListener commands on NodeLists from querySelectorAll and others.
 root.modifySelectors = true;
@@ -338,8 +338,8 @@ var eventManager = function(target, type, listener, configure, trigger) {
 	// Ensure listener is a function.
 	if (typeof(listener) !== "function") return;
 	// Generate a unique wrapper identifier.
-	var id = normalize(type) + getID(target) + "." + getID(listener);
 	var useCapture = configure.useCapture || false;
+	var id = normalize(type) + getID(target) + "." + getID(listener) + "." + (useCapture ? 1 : 0);
 	// Handle the event.
 	if (root.Gesture._gestureHandlers[type]) { // Fire custom event.
 		if (trigger === "remove") { // Remove event listener.
@@ -486,9 +486,9 @@ root.createCustomEvent = function (eventName, target, payload) {
 	target.dispatchEvent(event);
 };
 
-if (root.modifyAddEventListener || root.modifySelectors) (function() {
+if (root.modifyEventListener || root.modifySelectors) (function() {
 	/// Allows *EventListener to use custom event proxies.
-	if (root.modifyAddEventListener) {
+	if (root.modifyEventListener) {
 		var augmentEventListener = function(proto) {
 			var recall = function(trigger) { // overwrite native *EventListener's
 				var handle = trigger + "EventListener";
@@ -546,7 +546,7 @@ return root;
 })(Event);
 /*
 	----------------------------------------------------
-	Event.proxy : 0.3.8 : 2012/07/14 : MIT License
+	Event.proxy : 0.4.2 : 2012/07/29 : MIT License
 	----------------------------------------------------
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
@@ -562,7 +562,8 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
-root.utility = function(conf, self) {
+root.setup = function(conf, self) {
+	var type = conf.type.indexOf("pointer") === 0 ? "pointer" : "mouse";
 	conf.doc = conf.target.ownerDocument || conf.target;
 	conf.minFingers = conf.minFingers || conf.fingers || 1;
 	conf.maxFingers = conf.maxFingers || conf.fingers || Infinity; // Maximum allowed fingers.
@@ -573,17 +574,17 @@ root.utility = function(conf, self) {
 	self.target = conf.target;
 	self.listener = conf.listener;
 	self.remove = function() {
-		if (conf.onPointerDown) Event.remove(conf.target, "mousedown", conf.onPointerDown);
-		if (conf.onPointerMove) Event.remove(conf.doc, "mousemove", conf.onPointerMove);
-		if (conf.onPointerUp) Event.remove(conf.doc, "mouseup", conf.onPointerUp);
+		if (conf.onPointerDown) Event.remove(conf.target, type + "down", conf.onPointerDown);
+		if (conf.onPointerMove) Event.remove(conf.doc, type + "move", conf.onPointerMove);
+		if (conf.onPointerUp) Event.remove(conf.doc, type + "up", conf.onPointerUp);
 	};
 	self.disable = function(opt) {
-		if (conf.onPointerMove && (!opt || opt.move)) Event.remove(conf.doc, "mousemove", conf.onPointerMove);
-		if (conf.onPointerUp && (!opt || opt.up)) Event.remove(conf.doc, "mouseup", conf.onPointerUp);
+		if (conf.onPointerMove && (!opt || opt.move)) Event.remove(conf.doc, type + "move", conf.onPointerMove);
+		if (conf.onPointerUp && (!opt || opt.up)) Event.remove(conf.doc, type + "up", conf.onPointerUp);
 	};
 	self.enable = function(opt) {
-		if (conf.onPointerMove && (!opt || opt.move)) Event.add(conf.doc, "mousemove", conf.onPointerMove);
-		if (conf.onPointerUp && (!opt || opt.move)) Event.add(conf.doc, "mouseup", conf.onPointerUp);
+		if (conf.onPointerMove && (!opt || opt.move)) Event.add(conf.doc, type + "move", conf.onPointerMove);
+		if (conf.onPointerUp && (!opt || opt.move)) Event.add(conf.doc, type + "up", conf.onPointerUp);
 	};
 	///
 	return self;
@@ -831,37 +832,23 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 Event.proxy = (function(root) { "use strict";
 
 root.click = function(conf) {
-	conf.doc = conf.target.ownerDocument || conf.target;
-	conf.minFingers = conf.minFingers || 1;
-	conf.maxFingers = conf.maxFingers || 1; // Maximum allowed fingers.
-	// Externally accessible data.
-	var self = {
-		type: "click",
-		target: conf.target,
-		listener: conf.listener,
-		add: function() {
-			Event.add(conf.target, "mousedown", onMouseDown);
-		},
-		remove: function() {
-			Event.remove(conf.target, "mousedown", onMouseDown);
-		}
-	};
+	conf.maxFingers = conf.maxFingers || conf.fingers || 1;
 	// Setting up local variables.
 	var event;
 	// Tracking the events.
-	var onMouseDown = function (e) {
+	conf.onPointerDown = function (e) {
 		if (root.gestureStart(e, conf)) {
-			Event.add(conf.doc, "mousemove", onMouseMove).listener(e);
-			Event.add(conf.doc, "mouseup", onMouseUp);
+			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(e);
+			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
 	};
-	var onMouseMove = function (e) {
+	conf.onPointerMove = function (e) {
 		event = e;
 	};
-	var onMouseUp = function(e) {
+	conf.onPointerUp = function(e) {
 		if (root.gestureEnd(e, conf)) {
-			Event.remove(conf.doc, "mousemove", onMouseMove);
-			Event.remove(conf.doc, "mouseup", onMouseUp);
+			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
+			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 			if (event.cancelBubble && ++event.bubble > 1) return;
 			var touches = event.changedTouches || root.getCoords(event);
 			var touch = touches[0];
@@ -876,8 +863,10 @@ root.click = function(conf) {
 			}
 		}
 	};
+	// Generate maintenance commands, and other configurations.
+	var self = root.setup(conf);
 	// Attach events.
-	Event.add(conf.target, "mousedown", onMouseDown);
+	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.
 	return self;
 };
@@ -904,24 +893,13 @@ Event.proxy = (function(root) { "use strict";
 
 root.dbltap =
 root.dblclick = function(conf) {
-	conf.doc = conf.target.ownerDocument || conf.target;
-	conf.minFingers = conf.minFingers || 1;
-	conf.maxFingers = conf.maxFingers || 1; // Maximum allowed fingers.
-	// Externally accessible data.
-	var self = {
-		type: conf.type,
-		target: conf.target,
-		listener: conf.listener,
-		remove: function() {
-			Event.remove(conf.target, "mousedown", onMouseDown);
-		}
-	};
+	conf.maxFingers = conf.maxFingers || conf.fingers || 1;
 	// Setting up local variables.
 	var delay = 700; // in milliseconds
 	var time0, time1, timeout; 
 	var touch0, touch1;
 	// Tracking the events.
-	var onMouseDown = function (event) {
+	conf.onPointerDown = function (event) {
 		var touches = event.changedTouches || root.getCoords(event);
 		if (time0 && !time1) { // Click #2
 			touch1 = touches[0];
@@ -936,11 +914,11 @@ root.dblclick = function(conf) {
 			}, delay);
 		}
 		if (root.gestureStart(event, conf)) {
-			Event.add(conf.doc, "mousemove", onMouseMove).listener(event);
-			Event.add(conf.doc, "mouseup", onMouseUp);
+			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
+			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
 	};
-	var onMouseMove = function (event) {
+	conf.onPointerMove = function (event) {
 		if (time0 && !time1) {
 			var touches = event.changedTouches || root.getCoords(event);
 			touch1 = touches[0];
@@ -953,15 +931,15 @@ root.dblclick = function(conf) {
 			  Math.abs(touch1.pageX - touch0.pageX) <= 25 && // Within drift deviance.
 			  Math.abs(touch1.pageY - touch0.pageY) <= 25)) {
 			// Cancel out this listener.
-			Event.remove(conf.doc, "mousemove", onMouseMove);
+			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 			clearTimeout(timeout);
 			time0 = time1 = 0;
 		}
 	};
-	var onMouseUp = function(event) {
+	conf.onPointerUp = function(event) {
 		if (root.gestureEnd(event, conf)) {
-			Event.remove(conf.doc, "mousemove", onMouseMove);
-			Event.remove(conf.doc, "mouseup", onMouseUp);
+			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
+			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 		}
 		if (time0 && time1) {
 			if (time1 <= delay && !(event.cancelBubble && ++event.bubble > 1)) {
@@ -972,8 +950,10 @@ root.dblclick = function(conf) {
 			time0 = time1 = 0;
 		}
 	};
+	// Generate maintenance commands, and other configurations.
+	var self = root.setup(conf);
 	// Attach events.
-	Event.add(conf.target, "mousedown", onMouseDown);
+	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.
 	return self;
 };
@@ -1040,7 +1020,7 @@ root.drag = function(conf) {
 		}
 	};
 	// Generate maintenance commands, and other configurations.
-	var self = root.utility(conf);
+	var self = root.setup(conf);
 	// Attach events.
 	if (conf.event) {
 		conf.onPointerDown(conf.event);
@@ -1076,24 +1056,14 @@ Event.proxy = (function(root) { "use strict";
 var RAD_DEG = Math.PI / 180;
 
 root.gesture = function(conf) {
-	conf.doc = conf.target.ownerDocument || conf.target;
-	conf.minFingers = conf.minFingers || 2;
-	conf.maxFingers = conf.maxFingers || 2;
-	// Externally accessible data.
-	var self = {
-		type: "gesture",
-		target: conf.target,
-		listener: conf.listener,
-		remove: function() {
-			Event.remove(conf.target, "mousedown", onMouseDown);
-		}
-	};
+	conf.minFingers = conf.minFingers || conf.fingers || 2;
+	conf.maxFingers = conf.maxFingers || conf.fingers || 2;
 	// Tracking the events.
-	var onMouseDown = function (event) {
+	conf.onPointerDown = function (event) {
 		var fingers = conf.fingers;
 		if (root.gestureStart(event, conf)) {
-			Event.add(conf.doc, "mousemove", onMouseMove);
-			Event.add(conf.doc, "mouseup", onMouseUp);
+			Event.add(conf.doc, "mousemove", conf.onPointerMove);
+			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
 		// Record gesture start.
 		if (conf.fingers === conf.minFingers && fingers !== conf.fingers) {
@@ -1108,7 +1078,7 @@ root.gesture = function(conf) {
 		}
 	};
 	///
-	var onMouseMove = function (event, state) {
+	conf.onPointerMove = function (event, state) {
 		var bbox = conf.bbox;
 		var points = conf.tracker;
 		var touches = event.changedTouches || root.getCoords(event);
@@ -1183,12 +1153,12 @@ root.gesture = function(conf) {
 		self.state = "change";
 		conf.listener(event, self);
 	};
-	var onMouseUp = function(event) {
+	conf.onPointerUp = function(event) {
 		// Remove tracking for touch.
 		var fingers = conf.fingers;
 		if (root.gestureEnd(event, conf)) {
-			Event.remove(conf.doc, "mousemove", onMouseMove);
-			Event.remove(conf.doc, "mouseup", onMouseUp);
+			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
+			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 		}
 		// Check whether fingers has dropped below minFingers.
 		if (fingers === conf.minFingers && conf.fingers < conf.minFingers) {
@@ -1197,8 +1167,10 @@ root.gesture = function(conf) {
 			conf.listener(event, self);
 		}
 	};
+	// Generate maintenance commands, and other configurations.
+	var self = root.setup(conf);
 	// Attach events.
-	Event.add(conf.target, "mousedown", onMouseDown);
+	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.
 	return self;
 };
@@ -1233,33 +1205,34 @@ root.pointerdown = function(conf) {
 		conf.target.mouseEvent = event;
 		Event.createCustomEvent('pointerdown', event.target, {
 			pointerType: 'mouse',
-			getPointerList: Event.getPointerList.bind(this),
+			getPointerList: Event.getPointerList.bind(conf.target),
 			originalEvent: event
 		});
 	};
 	conf.onPointerMove = function (event) {
 //		conf.listener(event, self);
 		if (conf.target.mouseEvent) conf.target.mouseEvent = event;
-		Event.createCustomEvent('pointermove', event.target, {
+		Event.createCustomEvent('pointermove', conf.target, {
 			pointerType: 'mouse',
-			getPointerList: Event.getPointerList.bind(this),
+			getPointerList: Event.getPointerList.bind(conf.target),
 			originalEvent: event
 		});
 	};
 	conf.onPointerUp = function (event) {
 //		conf.listener(event, self);
 		conf.target.mouseEvent = null;
-		Event.createCustomEvent('pointerup', event.target, {
+		Event.createCustomEvent('pointerup', conf.target, {
 			pointerType: 'mouse',
-			getPointerList: Event.getPointerList.bind(this),
+			getPointerList: Event.getPointerList.bind(conf.target),
 			originalEvent: event
 		});
 	};
+	// Generate maintenance commands, and other configurations.
+	var self = root.setup(conf);
 	// Attach events.
-	var self = root.utility(conf);
 	Event.add(conf.target, "mousedown", conf.onPointerDown);
-	Event.add(conf.target, "mousemove", conf.onPointerMove);
-	Event.add(conf.target, "mouseup", conf.onPointerUp);
+	Event.add(conf.doc, "mousemove", conf.onPointerMove);
+	Event.add(conf.doc, "mouseup", conf.onPointerUp);
 	// Return this object.
 	conf.target.isPointerEmitter = true;
 	return self;
@@ -1396,28 +1369,16 @@ Event.proxy = (function(root) { "use strict";
 var RAD_DEG = Math.PI / 180;
 
 root.swipe = function(conf) {
-	conf.doc = conf.target.ownerDocument || conf.target;
 	conf.snap = conf.snap || 90; // angle snap.
 	conf.threshold = conf.threshold || 1; // velocity threshold.
-	conf.minFingers = conf.minFingers || 1;
-	conf.maxFingers = conf.maxFingers || 5;
-	// Externally accessible data.
-	var self = {
-		type: "swipe",
-		target: conf.target,
-		listener: conf.listener,
-		remove: function() {
-			Event.remove(conf.target, "mousedown", onMouseDown);
-		}
-	};
 	// Tracking the events.
-	var onMouseDown = function (event) {
+	conf.onPointerDown = function (event) {
 		if (root.gestureStart(event, conf)) {
-			Event.add(conf.doc, "mousemove", onMouseMove).listener(event);
-			Event.add(conf.doc, "mouseup", onMouseUp);
+			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
+			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
 	};
-	var onMouseMove = function (event) {
+	conf.onPointerMove = function (event) {
 		var touches = event.changedTouches || root.getCoords(event);
 		var length = touches.length;
 		for (var i = 0; i < length; i ++) {
@@ -1431,10 +1392,10 @@ root.swipe = function(conf) {
 			o.moveTime = (new Date).getTime();
 		}
 	};
-	var onMouseUp = function(event) {
+	conf.onPointerUp = function(event) {
 		if (root.gestureEnd(event, conf)) {
-			Event.remove(conf.doc, "mousemove", onMouseMove);
-			Event.remove(conf.doc, "mouseup", onMouseUp);
+			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
+			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 			///
 			var velocity1;
 			var velocity2
@@ -1466,8 +1427,10 @@ root.swipe = function(conf) {
 			}
 		}
 	};
+	// Generate maintenance commands, and other configurations.
+	var self = root.setup(conf);
 	// Attach events.
-	Event.add(conf.target, "mousedown", onMouseDown);
+	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.
 	return self;
 };
@@ -1499,34 +1462,17 @@ Event.proxy = (function(root) { "use strict";
 
 root.tap = 
 root.longpress = function(conf) {
-	conf.doc = conf.target.ownerDocument || conf.target;
-	conf.minFingers = conf.minFingers || 1;
-	conf.maxFingers = conf.maxFingers || Infinity; // Maximum allowed fingers.
-	if (conf.type === "longpress" || conf.delay) {
-		conf.type = "longpress";
-		conf.ms = conf.delay || 500;
-	} else {
-		conf.type = "tap";
-		conf.ms = conf.timeout || 250;
-	}
-	// Externally accessible data.
-	var self = {
-		type: conf.type,
-		target: conf.target,
-		listener: conf.listener,
-		remove: function() {
-			Event.remove(conf.target, "mousedown", onMouseDown);
-		}
-	};
+	conf.delay = conf.delay || 500;
+	conf.timeout = conf.timeout || 250;
 	// Setting up local variables.
 	var timestamp, timeout;
 	// Tracking the events.
-	var onMouseDown = function (event) {
+	conf.onPointerDown = function (event) {
 		if (root.gestureStart(event, conf)) {
 			timestamp = (new Date).getTime();
 			// Initialize event listeners.
-			Event.add(conf.doc, "mousemove", onMouseMove).listener(event);
-			Event.add(conf.doc, "mouseup", onMouseUp);
+			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
+			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 			// Make sure this is a "longpress" event.
 			if (conf.type !== "longpress") return;
 			timeout = setTimeout(function() {
@@ -1542,10 +1488,10 @@ root.longpress = function(conf) {
 				self.state = "start";
 				self.fingers = fingers;
 				conf.listener(event, self);
-			}, conf.ms);
+			}, conf.delay);
 		}
 	};
-	var onMouseMove = function (event) {
+	conf.onPointerMove = function (event) {
 		var bbox = conf.bbox;
 		var touches = event.changedTouches || root.getCoords(event);
 		var length = touches.length;
@@ -1561,17 +1507,17 @@ root.longpress = function(conf) {
 				  Math.abs(x - o.start.x) <= 25 && // Within drift deviance.
 				  Math.abs(y - o.start.y) <= 25)) {
 				// Cancel out this listener.
-				Event.remove(conf.doc, "mousemove", onMouseMove);
+				Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 				conf.cancel = true;
 				return;
 			}
 		}
 	};
-	var onMouseUp = function(event) {
+	conf.onPointerUp = function(event) {
 		if (root.gestureEnd(event, conf)) {
 			clearTimeout(timeout);
-			Event.remove(conf.doc, "mousemove", onMouseMove);
-			Event.remove(conf.doc, "mouseup", onMouseUp);
+			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
+			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 			if (event.cancelBubble && ++event.bubble > 1) return;
 			// Callback release on longpress.
 			if (conf.type === "longpress") {
@@ -1584,15 +1530,17 @@ root.longpress = function(conf) {
 			// Cancel event due to movement.
 			if (conf.cancel) return;
 			// Ensure delay is within margins.
-			if ((new Date).getTime() - timestamp > conf.ms) return;
+			if ((new Date).getTime() - timestamp > conf.timeout) return;
 			// Send callback.
 			self.state = "tap";
 			self.fingers = conf.gestureFingers;
 			conf.listener(event, self);
 		}
 	};
+	// Generate maintenance commands, and other configurations.
+	var self = root.setup(conf);
 	// Attach events.
-	Event.add(conf.target, "mousedown", onMouseDown);
+	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.
 	return self;
 };

@@ -21,33 +21,34 @@ root.pointerdown = function(conf) {
 		conf.target.mouseEvent = event;
 		Event.createCustomEvent('pointerdown', event.target, {
 			pointerType: 'mouse',
-			getPointerList: Event.getPointerList.bind(this),
+			getPointerList: Event.getPointerList.bind(conf.target),
 			originalEvent: event
 		});
 	};
 	conf.onPointerMove = function (event) {
 //		conf.listener(event, self);
 		if (conf.target.mouseEvent) conf.target.mouseEvent = event;
-		Event.createCustomEvent('pointermove', event.target, {
+		Event.createCustomEvent('pointermove', conf.target, {
 			pointerType: 'mouse',
-			getPointerList: Event.getPointerList.bind(this),
+			getPointerList: Event.getPointerList.bind(conf.target),
 			originalEvent: event
 		});
 	};
 	conf.onPointerUp = function (event) {
 //		conf.listener(event, self);
 		conf.target.mouseEvent = null;
-		Event.createCustomEvent('pointerup', event.target, {
+		Event.createCustomEvent('pointerup', conf.target, {
 			pointerType: 'mouse',
-			getPointerList: Event.getPointerList.bind(this),
+			getPointerList: Event.getPointerList.bind(conf.target),
 			originalEvent: event
 		});
 	};
+	// Generate maintenance commands, and other configurations.
+	var self = root.setup(conf);
 	// Attach events.
-	var self = root.utility(conf);
 	Event.add(conf.target, "mousedown", conf.onPointerDown);
-	Event.add(conf.target, "mousemove", conf.onPointerMove);
-	Event.add(conf.target, "mouseup", conf.onPointerUp);
+	Event.add(conf.doc, "mousemove", conf.onPointerMove);
+	Event.add(conf.doc, "mouseup", conf.onPointerUp);
 	// Return this object.
 	conf.target.isPointerEmitter = true;
 	return self;

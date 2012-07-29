@@ -16,24 +16,14 @@ Event.proxy = (function(root) { "use strict";
 var RAD_DEG = Math.PI / 180;
 
 root.gesture = function(conf) {
-	conf.doc = conf.target.ownerDocument || conf.target;
-	conf.minFingers = conf.minFingers || 2;
-	conf.maxFingers = conf.maxFingers || 2;
-	// Externally accessible data.
-	var self = {
-		type: "gesture",
-		target: conf.target,
-		listener: conf.listener,
-		remove: function() {
-			Event.remove(conf.target, "mousedown", onMouseDown);
-		}
-	};
+	conf.minFingers = conf.minFingers || conf.fingers || 2;
+	conf.maxFingers = conf.maxFingers || conf.fingers || 2;
 	// Tracking the events.
-	var onMouseDown = function (event) {
+	conf.onPointerDown = function (event) {
 		var fingers = conf.fingers;
 		if (root.gestureStart(event, conf)) {
-			Event.add(conf.doc, "mousemove", onMouseMove);
-			Event.add(conf.doc, "mouseup", onMouseUp);
+			Event.add(conf.doc, "mousemove", conf.onPointerMove);
+			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
 		// Record gesture start.
 		if (conf.fingers === conf.minFingers && fingers !== conf.fingers) {
@@ -48,7 +38,7 @@ root.gesture = function(conf) {
 		}
 	};
 	///
-	var onMouseMove = function (event, state) {
+	conf.onPointerMove = function (event, state) {
 		var bbox = conf.bbox;
 		var points = conf.tracker;
 		var touches = event.changedTouches || root.getCoords(event);
@@ -123,12 +113,12 @@ root.gesture = function(conf) {
 		self.state = "change";
 		conf.listener(event, self);
 	};
-	var onMouseUp = function(event) {
+	conf.onPointerUp = function(event) {
 		// Remove tracking for touch.
 		var fingers = conf.fingers;
 		if (root.gestureEnd(event, conf)) {
-			Event.remove(conf.doc, "mousemove", onMouseMove);
-			Event.remove(conf.doc, "mouseup", onMouseUp);
+			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
+			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 		}
 		// Check whether fingers has dropped below minFingers.
 		if (fingers === conf.minFingers && conf.fingers < conf.minFingers) {
@@ -137,8 +127,10 @@ root.gesture = function(conf) {
 			conf.listener(event, self);
 		}
 	};
+	// Generate maintenance commands, and other configurations.
+	var self = root.setup(conf);
 	// Attach events.
-	Event.add(conf.target, "mousedown", onMouseDown);
+	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.
 	return self;
 };

@@ -1,6 +1,6 @@
 /*
 	----------------------------------------------------
-	Event.proxy : 0.3.8 : 2012/07/14 : MIT License
+	Event.proxy : 0.4.2 : 2012/07/29 : MIT License
 	----------------------------------------------------
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
@@ -16,7 +16,8 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
-root.utility = function(conf, self) {
+root.setup = function(conf, self) {
+	var type = conf.type.indexOf("pointer") === 0 ? "pointer" : "mouse";
 	conf.doc = conf.target.ownerDocument || conf.target;
 	conf.minFingers = conf.minFingers || conf.fingers || 1;
 	conf.maxFingers = conf.maxFingers || conf.fingers || Infinity; // Maximum allowed fingers.
@@ -27,17 +28,17 @@ root.utility = function(conf, self) {
 	self.target = conf.target;
 	self.listener = conf.listener;
 	self.remove = function() {
-		if (conf.onPointerDown) Event.remove(conf.target, "mousedown", conf.onPointerDown);
-		if (conf.onPointerMove) Event.remove(conf.doc, "mousemove", conf.onPointerMove);
-		if (conf.onPointerUp) Event.remove(conf.doc, "mouseup", conf.onPointerUp);
+		if (conf.onPointerDown) Event.remove(conf.target, type + "down", conf.onPointerDown);
+		if (conf.onPointerMove) Event.remove(conf.doc, type + "move", conf.onPointerMove);
+		if (conf.onPointerUp) Event.remove(conf.doc, type + "up", conf.onPointerUp);
 	};
 	self.disable = function(opt) {
-		if (conf.onPointerMove && (!opt || opt.move)) Event.remove(conf.doc, "mousemove", conf.onPointerMove);
-		if (conf.onPointerUp && (!opt || opt.up)) Event.remove(conf.doc, "mouseup", conf.onPointerUp);
+		if (conf.onPointerMove && (!opt || opt.move)) Event.remove(conf.doc, type + "move", conf.onPointerMove);
+		if (conf.onPointerUp && (!opt || opt.up)) Event.remove(conf.doc, type + "up", conf.onPointerUp);
 	};
 	self.enable = function(opt) {
-		if (conf.onPointerMove && (!opt || opt.move)) Event.add(conf.doc, "mousemove", conf.onPointerMove);
-		if (conf.onPointerUp && (!opt || opt.move)) Event.add(conf.doc, "mouseup", conf.onPointerUp);
+		if (conf.onPointerMove && (!opt || opt.move)) Event.add(conf.doc, type + "move", conf.onPointerMove);
+		if (conf.onPointerUp && (!opt || opt.move)) Event.add(conf.doc, type + "up", conf.onPointerUp);
 	};
 	///
 	return self;

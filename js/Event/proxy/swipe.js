@@ -16,28 +16,16 @@ Event.proxy = (function(root) { "use strict";
 var RAD_DEG = Math.PI / 180;
 
 root.swipe = function(conf) {
-	conf.doc = conf.target.ownerDocument || conf.target;
 	conf.snap = conf.snap || 90; // angle snap.
 	conf.threshold = conf.threshold || 1; // velocity threshold.
-	conf.minFingers = conf.minFingers || 1;
-	conf.maxFingers = conf.maxFingers || 5;
-	// Externally accessible data.
-	var self = {
-		type: "swipe",
-		target: conf.target,
-		listener: conf.listener,
-		remove: function() {
-			Event.remove(conf.target, "mousedown", onMouseDown);
-		}
-	};
 	// Tracking the events.
-	var onMouseDown = function (event) {
+	conf.onPointerDown = function (event) {
 		if (root.gestureStart(event, conf)) {
-			Event.add(conf.doc, "mousemove", onMouseMove).listener(event);
-			Event.add(conf.doc, "mouseup", onMouseUp);
+			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
+			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
 	};
-	var onMouseMove = function (event) {
+	conf.onPointerMove = function (event) {
 		var touches = event.changedTouches || root.getCoords(event);
 		var length = touches.length;
 		for (var i = 0; i < length; i ++) {
@@ -51,10 +39,10 @@ root.swipe = function(conf) {
 			o.moveTime = (new Date).getTime();
 		}
 	};
-	var onMouseUp = function(event) {
+	conf.onPointerUp = function(event) {
 		if (root.gestureEnd(event, conf)) {
-			Event.remove(conf.doc, "mousemove", onMouseMove);
-			Event.remove(conf.doc, "mouseup", onMouseUp);
+			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
+			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 			///
 			var velocity1;
 			var velocity2
@@ -86,8 +74,10 @@ root.swipe = function(conf) {
 			}
 		}
 	};
+	// Generate maintenance commands, and other configurations.
+	var self = root.setup(conf);
 	// Attach events.
-	Event.add(conf.target, "mousedown", onMouseDown);
+	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.
 	return self;
 };

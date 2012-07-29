@@ -338,8 +338,8 @@ var eventManager = function(target, type, listener, configure, trigger) {
 	// Ensure listener is a function.
 	if (typeof(listener) !== "function") return;
 	// Generate a unique wrapper identifier.
-	var id = normalize(type) + getID(target) + "." + getID(listener);
 	var useCapture = configure.useCapture || false;
+	var id = normalize(type) + getID(target) + "." + getID(listener) + "." + (useCapture ? 1 : 0);
 	// Handle the event.
 	if (root.Gesture._gestureHandlers[type]) { // Fire custom event.
 		if (trigger === "remove") { // Remove event listener.

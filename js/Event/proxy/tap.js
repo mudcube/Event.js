@@ -18,34 +18,17 @@ Event.proxy = (function(root) { "use strict";
 
 root.tap = 
 root.longpress = function(conf) {
-	conf.doc = conf.target.ownerDocument || conf.target;
-	conf.minFingers = conf.minFingers || 1;
-	conf.maxFingers = conf.maxFingers || Infinity; // Maximum allowed fingers.
-	if (conf.type === "longpress" || conf.delay) {
-		conf.type = "longpress";
-		conf.ms = conf.delay || 500;
-	} else {
-		conf.type = "tap";
-		conf.ms = conf.timeout || 250;
-	}
-	// Externally accessible data.
-	var self = {
-		type: conf.type,
-		target: conf.target,
-		listener: conf.listener,
-		remove: function() {
-			Event.remove(conf.target, "mousedown", onMouseDown);
-		}
-	};
+	conf.delay = conf.delay || 500;
+	conf.timeout = conf.timeout || 250;
 	// Setting up local variables.
 	var timestamp, timeout;
 	// Tracking the events.
-	var onMouseDown = function (event) {
+	conf.onPointerDown = function (event) {
 		if (root.gestureStart(event, conf)) {
 			timestamp = (new Date).getTime();
 			// Initialize event listeners.
-			Event.add(conf.doc, "mousemove", onMouseMove).listener(event);
-			Event.add(conf.doc, "mouseup", onMouseUp);
+			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
+			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 			// Make sure this is a "longpress" event.
 			if (conf.type !== "longpress") return;
 			timeout = setTimeout(function() {
@@ -61,10 +44,10 @@ root.longpress = function(conf) {
 				self.state = "start";
 				self.fingers = fingers;
 				conf.listener(event, self);
-			}, conf.ms);
+			}, conf.delay);
 		}
 	};
-	var onMouseMove = function (event) {
+	conf.onPointerMove = function (event) {
 		var bbox = conf.bbox;
 		var touches = event.changedTouches || root.getCoords(event);
 		var length = touches.length;
@@ -80,17 +63,17 @@ root.longpress = function(conf) {
 				  Math.abs(x - o.start.x) <= 25 && // Within drift deviance.
 				  Math.abs(y - o.start.y) <= 25)) {
 				// Cancel out this listener.
-				Event.remove(conf.doc, "mousemove", onMouseMove);
+				Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 				conf.cancel = true;
 				return;
 			}
 		}
 	};
-	var onMouseUp = function(event) {
+	conf.onPointerUp = function(event) {
 		if (root.gestureEnd(event, conf)) {
 			clearTimeout(timeout);
-			Event.remove(conf.doc, "mousemove", onMouseMove);
-			Event.remove(conf.doc, "mouseup", onMouseUp);
+			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
+			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 			if (event.cancelBubble && ++event.bubble > 1) return;
 			// Callback release on longpress.
 			if (conf.type === "longpress") {
@@ -103,15 +86,17 @@ root.longpress = function(conf) {
 			// Cancel event due to movement.
 			if (conf.cancel) return;
 			// Ensure delay is within margins.
-			if ((new Date).getTime() - timestamp > conf.ms) return;
+			if ((new Date).getTime() - timestamp > conf.timeout) return;
 			// Send callback.
 			self.state = "tap";
 			self.fingers = conf.gestureFingers;
 			conf.listener(event, self);
 		}
 	};
+	// Generate maintenance commands, and other configurations.
+	var self = root.setup(conf);
 	// Attach events.
-	Event.add(conf.target, "mousedown", onMouseDown);
+	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.
 	return self;
 };
