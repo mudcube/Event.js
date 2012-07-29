@@ -94,6 +94,11 @@ root.devicemotion = function(conf) {
 	return self;
 };
 
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.shake = root.shake;
+Event.Gesture._gestureHandlers.devicemotion = root.devicemotion;
+
 return root;
 
 })(Event.proxy);

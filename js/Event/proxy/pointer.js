@@ -25,7 +25,7 @@ root.pointerdown = function(conf) {
 		conf.listener(event, self);
 	};
 	// Attach events.
-	var self = root.addPointer({}, conf);
+	var self = root.addPointer(conf);
 	Event.add(conf.target, "mousedown", conf.onMouseDown);
 	Event.add(conf.target, "mouseup", conf.onMouseUp);
 	// Return this object.
@@ -38,7 +38,7 @@ root.pointermove = function(conf) {
 		if (isDown) conf.listener(event, self);
 	};
 	// Attach events.
-	var self = root.addPointer({}, conf);
+	var self = root.addPointer(conf);
 	Event.add(conf.target, "mousemove", conf.onMouseMove);
 	// Return this object.
 	return self;
@@ -51,11 +51,17 @@ root.pointerup = function(conf) {
 		conf.listener(event, self);
 	};
 	// Attach events.
-	var self = root.addPointer({}, conf);
+	var self = root.addPointer(conf);
 	Event.add(conf.target, "mouseup", conf.onMouseUp);
 	// Return this object.
 	return self;
 };		
+
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.pointerdown = root.pointerdown;
+Event.Gesture._gestureHandlers.pointermove = root.pointermove;
+Event.Gesture._gestureHandlers.pointerup = root.pointerup;
 
 return root;
 

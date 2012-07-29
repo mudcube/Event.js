@@ -47,6 +47,10 @@ root.mousewheel = function(conf) {
 	return self;
 };
 
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.mousewheel = root.mousewheel;
+
 return root;
 
 })(Event.proxy);

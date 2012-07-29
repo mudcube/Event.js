@@ -18,30 +18,45 @@
 </style>
 <body>
 <div id="test"></div>
-Supported gestures: longpress, doubletap, pinchzoom.
-
+Supported gestures: 
+<li>longpress
+<li>dbltap
+<li>gesture
+<li>swipe
+<li>tap
+<li>drag
 <!-- Pointer events library. -->
-<script src="../js/Pointer/pointer.js"></script>
-<script src="../js/Pointer/gesture.js"></script>
-<script src="../js/Pointer/doubletap.js"></script>
-<script src="../js/Pointer/longpress.js"></script>
-<script src="../js/Pointer/scale.js"></script>
-<script src="../js/Pointer/libs/modernizr-touch.js"></script>
+<script src="../js/Event.js"></script>
 <script>
 
 window.onload = function() {
   var test = document.querySelector('#test');
-  test.addEventListener('gesturelongpress', function(e) {
-    log('gesturelongpress');
+  test.addEventListener('longpress', function(e) {
+    log('longpress', e.state);
+    console.log('longpress', e, e.state);
   });
-  test.addEventListener('gesturedoubletap', function(e) {
-    log('gesturedoubletap');
+  test.addEventListener('dbltap', function(e) {
+    log('dbltap', e.state);
+    console.log('dbltap', e, e.state);
   });
-  test.addEventListener('gesturescale', function(e) {
-    log('gesturescale');
+  test.addEventListener('gesture', function(e) {
+    log('gesture', e.state);
+    console.log('gesture', e, e.state);
   });
-  function log(msg) {
-    test.innerHTML = msg + '<br/>' + test.innerHTML;
+  test.addEventListener('drag', function(e) {
+    log('drag', e.state);
+    console.log('drag', e, e.state);
+  });
+  test.addEventListener('tap', function(e) {
+    log('tap', e.state);
+    console.log('tap', e, e.state);
+  });
+  test.addEventListener('swipe', function(e) {
+    log('swipe', e.state);
+    console.log('swipe', e, e.state);
+  });
+  function log(a,b) {
+    test.innerHTML = a+"-"+b + '<br/>' + test.innerHTML;
   }
 };
 

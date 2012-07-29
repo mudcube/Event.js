@@ -92,6 +92,10 @@ root.swipe = function(conf) {
 	return self;
 };
 
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.swipe = root.swipe;
+
 return root;
 
 })(Event.proxy);

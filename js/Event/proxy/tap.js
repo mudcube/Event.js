@@ -1,14 +1,14 @@
 /*
-	"Tap" and "Tap-Hold" event proxy.
+	"Tap" and "Long press" event proxy.
 	----------------------------------------------------
-	CONFIGURE: hold, cutoff.
+	CONFIGURE: delay (longpress), timeout (tap).
 	----------------------------------------------------
 	Event.add(window, "tap", function(event, self) {
 		console.log(self.fingers);
 	});
 	----------------------------------------------------
 	multi-finger tap // touch an target for <= 250ms.
-	multi-finger taphold // touch an target for >= 500ms
+	multi-finger longpress // touch an target for >= 500ms
 */
 
 if (typeof(Event) === "undefined") var Event = {};
@@ -17,16 +17,16 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 Event.proxy = (function(root) { "use strict";
 
 root.tap = 
-root.taphold = function(conf) {
+root.longpress = function(conf) {
 	conf.doc = conf.target.ownerDocument || conf.target;
 	conf.minFingers = conf.minFingers || 1;
 	conf.maxFingers = conf.maxFingers || Infinity; // Maximum allowed fingers.
-	if (conf.type === "taphold" || conf.hold) {
-		conf.type = "taphold";
-		conf.delay = conf.hold || 500;
+	if (conf.type === "longpress" || conf.delay) {
+		conf.type = "longpress";
+		conf.ms = conf.delay || 500;
 	} else {
 		conf.type = "tap";
-		conf.delay = conf.cutoff || 250;
+		conf.ms = conf.timeout || 250;
 	}
 	// Externally accessible data.
 	var self = {
@@ -46,8 +46,8 @@ root.taphold = function(conf) {
 			// Initialize event listeners.
 			Event.add(conf.doc, "mousemove", onMouseMove).listener(event);
 			Event.add(conf.doc, "mouseup", onMouseUp);
-			// Make sure this is a "taphold" event.
-			if (conf.type !== "taphold") return;
+			// Make sure this is a "longpress" event.
+			if (conf.type !== "longpress") return;
 			timeout = setTimeout(function() {
 				if (event.cancelBubble && ++event.bubble > 1) return;
 				// Make sure no fingers have been changed.
@@ -58,10 +58,10 @@ root.taphold = function(conf) {
 					fingers ++;
 				}
 				// Send callback.
-				self.state = "taphold";
+				self.state = "longpress";
 				self.fingers = fingers;
 				conf.listener(event, self);
-			}, conf.delay);
+			}, conf.ms);
 		}
 	};
 	var onMouseMove = function (event) {
@@ -92,9 +92,9 @@ root.taphold = function(conf) {
 			Event.remove(conf.doc, "mousemove", onMouseMove);
 			Event.remove(conf.doc, "mouseup", onMouseUp);
 			if (event.cancelBubble && ++event.bubble > 1) return;
-			// Callback release on taphold.
-			if (conf.type === "taphold") {
-				if (self.state === "taphold") {
+			// Callback release on longpress.
+			if (conf.type === "longpress") {
+				if (self.state === "longpress") {
 					self.state = "release";
 					conf.listener(event, self);
 				}
@@ -103,7 +103,7 @@ root.taphold = function(conf) {
 			// Cancel event due to movement.
 			if (conf.cancel) return;
 			// Ensure delay is within margins.
-			if ((new Date).getTime() - timestamp > conf.delay) return;
+			if ((new Date).getTime() - timestamp > conf.ms) return;
 			// Send callback.
 			self.state = "tap";
 			self.fingers = conf.gestureFingers;
@@ -115,6 +115,11 @@ root.taphold = function(conf) {
 	// Return this object.
 	return self;
 };
+
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.tap = root.tap;
+Event.Gesture._gestureHandlers.longpress = root.longpress;
 
 return root;
 

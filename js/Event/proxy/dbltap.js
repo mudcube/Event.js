@@ -87,6 +87,11 @@ root.dblclick = function(conf) {
 	return self;
 };
 
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.dbltap = root.dbltap;
+Event.Gesture._gestureHandlers.dblclick = root.dblclick;
+
 return root;
 
 })(Event.proxy);

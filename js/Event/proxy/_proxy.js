@@ -16,7 +16,8 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
-root.addPointer = function(self, conf) {
+root.addPointer = function(conf, self) {
+	self = self || {};
 	conf.doc = conf.target.ownerDocument || conf.target;
 	conf.minFingers = conf.minFingers || conf.fingers || 1;
 	conf.maxFingers = conf.maxFingers || conf.fingers || Infinity; // Maximum allowed fingers.

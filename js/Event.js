@@ -5,26 +5,34 @@
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
 	1  : click, dblclick, dbltap
-	1+ : tap, taphold, drag, swipe
+	1+ : tap, longpress, drag, swipe
 	2+ : pinch, rotate
 	   : mousewheel, devicemotion, shake
 	----------------------------------------------------
 	REQUIREMENT: querySelector, querySelectorAll
 	----------------------------------------------------
-	//* There are two ways to add events with this library.
-	target.addEventListener(); // Retains "this" attribute as target, and overrides native addEventListener.
-	Event.add(); // Attempts to be as fast as possible.
+	*	There are two ways to add/remove events with this library.
+	*	Retains "this" attribute as target, and overrides native addEventListener.
 	----------------------------------------------------
-	//* turn addEventListener prototyping on/off.
-	Event.prototype(true);
+	target.addEventListener(type, listener, useCapture); 
+	target.removeEventListener(type, listener, useCapture);
+
+	// Attempts to perform as fast as possible.
+	Event.add(type, listener, configure); 
+	Event.remove(type, listener, configure);
+
+	*	You can turn prototyping on/off for individual features.
 	----------------------------------------------------
-	//* Single listener.
-	/// optional configuration.
+	Event.modifyAddEventListener = true;
+	Event.modifyQuerySelectorAll = true;
+
+	*	Example of setting up a single listener with a custom configuration.
+	*	optional configuration.
+	----------------------------------------------------
 	var configure = {
-		fingers: 1, // listen for one finger only.
+		fingers: 2, // listen for specifically two fingers.
 		snap: 90 // snap to 90 degree intervals.
 	};
-	
 	/// adding with addEventListener()
 	target.addEventListener("swipe", function(event) {
 		console.log(event.velocity, event.angle, event.fingers);
@@ -34,15 +42,37 @@
 	Event.add("swipe", function(event, self) {
 		console.log(self.velocity, self.angle, self.fingers);
 	}, configure);
+
+	*	Multiple listeners glued together.
+	*	adding with addEventListener()
 	----------------------------------------------------
-	//* Multiple listeners glued together.
-	/// adding with addEventListener()
 	target.addEventListener("click swipe", function(event) { });
 
 	/// adding with Event.add()
 	Event.add(target, "click swipe", function(event, self) { });
+
+	*	Use query selectors to create an event (querySelectorAll)
+	*	adding with querySelectorAll()
 	----------------------------------------------------
-	//* Multiple listeners bound to one callback w/ single configuration.
+	document.querySelectorAll("#element a.link").addEventListener("click", callback);
+
+	/// adding with Event.add()
+	Event.add("#element a.link", "click", callback);
+
+	*	Listen for selector to become available (querySelector)
+	----------------------------------------------------
+	Event.add("body", "ready", callback);
+	// or...
+	Event.add({
+		target: "body", 
+		type: "ready", 
+		timeout: 10000, // set a timeout to stop checking.
+		interval: 30, // set how often to check for element.
+		listener: callback
+	});
+
+	*	Multiple listeners bound to one callback w/ single configuration.
+	----------------------------------------------------
 	var bindings = Event.add({
 		target: target,
 		type: "click swipe",
@@ -61,8 +91,9 @@
 			self.remove(); // remove event.
 		}
 	});
+
+	*	Multiple listeners bound to multiple callbacks w/ single configuration.
 	----------------------------------------------------
-	//* Multiple listeners bound to multiple callbacks w/ single configuration.
 	var bindings = Event.add({
 		target: target,
 		minFingers: 1,
@@ -76,12 +107,13 @@
 			}
 		}
 	});
+
+	*	Multiple listeners bound to multiple callbacks w/ multiple configurations.
 	----------------------------------------------------
-	//* Multiple listeners bound to multiple callbacks w/ multiple configurations.
 	var binding = Event.add({
 		target: target,
 		listeners: {
-			taphold: {
+			longpress: {
 				fingers: 1,
 				wait: 500, // milliseconds
 				listener: function(event, self) {
@@ -98,8 +130,9 @@
 			}
 		}
 	});
+
+	*	Capturing an event and manually forwarding it to a proxy (tiered events).
 	----------------------------------------------------
-	//* Capturing an event and manually forwarding it to a proxy (tiered events).
 	Event.add(target, "down", function(event, self) {
 		var x = event.pageX; // local variables that wont change.
 		var y = event.pageY;
@@ -113,9 +146,10 @@
 		});
 	});
 	----------------------------------------------------
-	//* Event proxies.
-	//  type, fingers, state, start, x, y, position, bbox
-	//  rotation, scale, velocity, angle, hold, cutoff
+
+	*	Event proxies.
+	*	type, fingers, state, start, x, y, position, bbox
+	*	rotation, scale, velocity, angle, delay, timeout
 	----------------------------------------------------
 	/// "Click" :: fingers, minFingers, maxFingers.
 	Event.add(window, "click", function(event, self) {
@@ -137,7 +171,7 @@
 	Event.add(window, "swipe", function(event, self) {
 		console.log(self.type, self.fingers, self.velocity, self.angle);
 	});
-	/// "Tap" and "Tap-Hold" :: fingers, minFingers, maxFingers, hold, cutoff.
+	/// "Tap" and "Tap-Hold" :: fingers, minFingers, maxFingers, delay, timeout.
 	Event.add(window, "tap", function(event, self) {
 		console.log(self.type, self.fingers);
 	});
@@ -153,39 +187,30 @@
 	Event.add(window, "wheel", function(event, self) {
 		console.log(self.type, self.state, self.wheelDelta);
 	});
-	----------------------------------------------------
-	//* Use query selectors to create an event (querySelectorAll)
-	Event.add("#element a.link", "click", callback);
-	document.querySelectorAll("#element a.link").addEventListener("click", callback);
-	----------------------------------------------------
-	//* Listen for query selector to become available (querySelector)
-	Event.add("body", "ready", callback);
-	----------------------------------------------------
-	Event.add({
-		target: "body", 
-		type: "ready", 
-		timeout: 10000, // set a timeout to stop checking.
-		interval: 30, // set how often to check for element.
-		listener: callback
-	});
+
+	*	Stop, prevent and cancel.
 	----------------------------------------------------
 	Event.stop(event); // stop bubble.
 	Event.prevent(event); // prevent default.
 	Event.cancel(event); // stop and prevent.
+
+	*	Track for proper command/control-key for Mac/PC.
 	----------------------------------------------------
-	//* Track for proper command/control-key for Mac/PC.
 	Event.add(window, "keyup keydown", Event.keyTracker);
 	console.log(Event.metaKey);
+
+	*	Test for event features, in this example Drag & Drop file support.
 	----------------------------------------------------
-	//* Test for event features, in this example Drag & Drop file support.
 	console.log(Event.supports('dragstart') && Event.supports('drop') && !!window.FileReader);
-	----------------------------------------------------
 
 */
 
 if (typeof(Event) === "undefined") var Event = {};
 
 Event = (function(root) { "use strict";
+
+root.modifyAddEventListener = true;
+root.modifyQuerySelectorAll = true;
 
 root.add = function(target, type, listener, configure) {
 	return eventHandler(target, type, listener, configure, "add");
@@ -209,95 +234,6 @@ root.prevent = function(event) {
 root.cancel = function(event) {
 	root.stop(event);
 	root.prevent(event);
-};
-
-root.enablePointer = function() {
-	function createCustomEvent(eventName, target, payload) {
-		var event = document.createEvent('Event');
-		event.initEvent(eventName, true, true);
-		for (var k in payload) event[k] = payload[k];
-		target.dispatchEvent(event);
-	};
-	function Pointer(x, y, type, identifier) {
-		this.x = x;
-		this.y = y;
-		this.type = type;
-		this.identifier = identifier;
-	};
-	var PointerTypes = {
-		TOUCH: 'touch',
-		MOUSE: 'mouse'
-	};
-	function getPointerList() {
-		// Note: "this" is the element.
-		var pointers = [];
-		if (this.touchList) {
-			for (var i = 0; i < this.touchList.length; i++) {
-				var touch = this.touchList[i];
-				var pointer = new Pointer(touch.pageX, touch.pageY, PointerTypes.TOUCH, touch.identifier);
-				pointers.push(pointer);
-			}
-		}
-		if (this.mouseEvent) {
-			pointers.push(new Pointer(this.mouseEvent.pageX, this.mouseEvent.pageY, PointerTypes.MOUSE, Infinity));
-		}
-		return pointers;
-	};
-	var primitives = {
-		"mousedown": true, 
-		"mouseup": true, 
-		"mousemove": true,
-		"MSPointerDown": true,
-		"MSPointerMove": true,
-		"MSPointerUp": true,
-		"touchstart": true,
-		"touchend": true,
-		"touchmove": true
-	};
-	var augmentEventListener = function(baseElementClass) {
-		var oldAddEventListener = baseElementClass.prototype.addEventListener;
-		baseElementClass.prototype.addEventListener = function (type, listener, useCapture) {
-		console.log(type)
-			if (primitives[type]) { // handle native events.
-				oldAddEventListener.call(this, normalize(type), listener, useCapture);
-			} else { // handle custom events.
-				if (typeof(useCapture) === "object") {
-					useCapture.call = true;
-				} else {
-					useCapture = {
-						call: true,
-						useCapture: useCapture
-					}
-				}
-				eventHandler(this, type, listener, useCapture, "add");
-			}
-		};
-		var oldRemoveEventListener = baseElementClass.prototype.removeEventListener;
-		baseElementClass.prototype.removeEventListener = function (type, listener, useCapture) {
-			if (primitives[type]) { // handle native events.
-				oldRemoveEventListener.call(this, normalize(type), listener, useCapture);
-			} else { // handle custom events.
-				if (typeof(useCapture) === "object") {
-					useCapture.call = true;
-				} else {
-					useCapture = {
-						call: true,
-						useCapture: useCapture
-					}
-				}
-				eventHandler(this, type, listener, useCapture, "remove");
-			}
-		};
-	};
-	// Note: Firefox doesn't work like other browsers... overriding HTMLElement
-	// doesn't actually affect anything. Special case for Firefox:
-	if (navigator.userAgent.match(/Firefox/)) {
-		// TODO: fix this for the general case.
-		augmentEventListener(HTMLDivElement);
-		augmentEventListener(HTMLCanvasElement);
-	} else {
-		augmentEventListener(HTMLElement);
-	}
 };
 
 // Check to see whether event exists (via @kangax)
@@ -395,7 +331,7 @@ var eventHandler = function(target, type, listener, configure, trigger) {
 	var id = normalize(type) + getID(target) + "." + getID(listener);
 	var useCapture = configure.useCapture || false;
 	// Handle the event.
-	if (detectProxy[type]) { // Fire custom event.
+	if (root.Gesture._gestureHandlers[type]) { // Fire custom event.
 		if (trigger === "remove") { // Remove event listener.
 			if (!wrappers[id]) return; // Already removed.
 			wrappers[id].remove();
@@ -407,8 +343,9 @@ var eventHandler = function(target, type, listener, configure, trigger) {
 				var tmp = listener;
 				var listener = function(event, self) {
 					for (var key in self) event[key] = self[key];
+					event.gesture = self.type;
 					event.target.mouseEvent = event;
-					event.identifier = Infinity;
+					event.identifier = self.identifier || Infinity;
 					event.pointerType = "mouse";
 					event.getPointerList = function() {
 						return [event];
@@ -426,7 +363,7 @@ var eventHandler = function(target, type, listener, configure, trigger) {
 	} else { // Fire native event.
 		if (trigger === "remove") { // Remove event listener.
 			if (!wrappers[id]) return; // Already removed.
-			wrappers[id].remove();
+			target[remove](type, listener, useCapture); 
 			delete wrappers[id];
 		} else if (trigger === "add") { // Attach event listener.
 			if (wrappers[id]) return wrappers[id]; // Already attached.
@@ -469,7 +406,7 @@ var normalize = (function() {
 		"pointerdown": "mousedown", 
 		"pointerup": "mouseup", 
 		"pointermove": "mousemove"
-	};
+	};	
 	/// MSIE Pointer event
 	var mspointer = window.navigator.msPointerEnabled ? {
 		"mousedown": "MSPointerDown",
@@ -481,7 +418,7 @@ var normalize = (function() {
 		"mousedown": "touchstart",
 		"mouseup": "touchend",
 		"mousemove": "touchmove"
-	} : { };
+	} : { };	
 	/// Normalize.
 	return function(type) {
 		if (generalized[type]) type = generalized[type];
@@ -492,32 +429,7 @@ var normalize = (function() {
 		} else {
 			return type;
 		}
-	};
-})();
-
-/// Detect custom event listeners (proxies).
-var detectProxy = (function () {
-	var events = {};
-	var types = [];
-	types.push("pointerdown");
-	types.push("pointermove");
-	types.push("pointerup");
-	types.push("click");
-	types.push("dblclick");
-	types.push("dbltap");
-	types.push("drag");
-	types.push("gesture");
-	types.push("shake");
-	types.push("swipe");
-	types.push("tap");
-	types.push("taphold");
-	types.push("devicemotion");
-	types.push("mousewheel");
-	/// Convert to matching object.
-	for (var n = 0, length = types.length; n < length; n ++) {
-		events[types[n]] = true;
 	}
-	return events; 
 })();
 
 /// Event wrappers, and associated variables.
@@ -535,7 +447,96 @@ var getID = function(object) {
 var add = document.addEventListener ? "addEventListener" : "attachEvent";
 var remove = document.removeEventListener ? "removeEventListener" : "detachEvent";
 
-root.enablePointer();
+/// Pointer.js
+if (root.modifyAddEventListener) (function() {
+	function createCustomEvent(eventName, target, payload) {
+		var event = document.createEvent('Event');
+		event.initEvent(eventName, true, true);
+		for (var k in payload) event[k] = payload[k];
+		target.dispatchEvent(event);
+	};
+	function Pointer(x, y, type, identifier) {
+		this.x = x;
+		this.y = y;
+		this.type = type;
+		this.identifier = identifier;
+	};
+	var PointerTypes = {
+		TOUCH: 'touch',
+		MOUSE: 'mouse'
+	};
+	function getPointerList() {
+		// Note: "this" is the element.
+		var pointers = [];
+		if (this.touchList) {
+			for (var i = 0; i < this.touchList.length; i++) {
+				var touch = this.touchList[i];
+				var pointer = new Pointer(touch.pageX, touch.pageY, PointerTypes.TOUCH, touch.identifier);
+				pointers.push(pointer);
+			}
+		}
+		if (this.mouseEvent) {
+			pointers.push(new Pointer(this.mouseEvent.pageX, this.mouseEvent.pageY, PointerTypes.MOUSE, Infinity));
+		}
+		return pointers;
+	};
+	var primitives = {
+		"mousedown": true, 
+		"mouseup": true, 
+		"mousemove": true,
+		"MSPointerDown": true,
+		"MSPointerMove": true,
+		"MSPointerUp": true,
+		"touchstart": true,
+		"touchend": true,
+		"touchmove": true
+	};
+	var augmentEventListener = function(baseElementClass) {
+		var oldAddEventListener = baseElementClass.prototype.addEventListener;
+		baseElementClass.prototype.addEventListener = function (type, listener, useCapture) {
+			if (primitives[type]) { // handle native events.
+				oldAddEventListener.call(this, normalize(type), listener, useCapture);
+			} else if (root.Gesture._gestureHandlers[type]) { // handle custom events.
+				if (typeof(useCapture) === "object") {
+					useCapture.call = true;
+				} else {
+					useCapture = {
+						call: true,
+						useCapture: useCapture
+					}
+				}
+				eventHandler(this, type, listener, useCapture, "add");
+			} else {
+				console.log(type)
+			}
+		};
+		var oldRemoveEventListener = baseElementClass.prototype.removeEventListener;
+		baseElementClass.prototype.removeEventListener = function (type, listener, useCapture) {
+			if (primitives[type]) { // handle native events.
+				oldRemoveEventListener.call(this, normalize(type), listener, useCapture);
+			} else { // handle custom events.
+				if (typeof(useCapture) === "object") {
+					useCapture.call = true;
+				} else {
+					useCapture = {
+						call: true,
+						useCapture: useCapture
+					}
+				}
+				eventHandler(this, type, listener, useCapture, "remove");
+			}
+		};
+	};
+	// Note: Firefox doesn't work like other browsers... overriding HTMLElement
+	// doesn't actually affect anything. Special case for Firefox:
+	if (navigator.userAgent.match(/Firefox/)) {
+		// TODO: fix this for the general case.
+		augmentEventListener(HTMLDivElement);
+		augmentEventListener(HTMLCanvasElement);
+	} else {
+		augmentEventListener(HTMLElement);
+	}
+})();
 
 return root;
 
@@ -558,7 +559,8 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
-root.addPointer = function(self, conf) {
+root.addPointer = function(conf, self) {
+	self = self || {};
 	conf.doc = conf.target.ownerDocument || conf.target;
 	conf.minFingers = conf.minFingers || conf.fingers || 1;
 	conf.maxFingers = conf.maxFingers || conf.fingers || Infinity; // Maximum allowed fingers.
@@ -568,9 +570,9 @@ root.addPointer = function(self, conf) {
 	self.target = conf.target;
 	self.listener = conf.listener;
 	self.remove = function() {
-		Event.remove(conf.target, "mousedown", conf.onMouseDown);
-		Event.remove(conf.doc, "mousemove", conf.onMouseMove);
-		Event.remove(conf.doc, "mouseup", conf.onMouseUp);
+		if (conf.onMouseDown) Event.remove(conf.target, "mousedown", conf.onMouseDown);
+		if (conf.onMouseMove) Event.remove(conf.doc, "mousemove", conf.onMouseMove);
+		if (conf.onMouseUp) Event.remove(conf.doc, "mouseup", conf.onMouseUp);
 	};
 	self.disable = function(opt) {
 		if (!opt || opt.move) Event.remove(conf.doc, "mousemove", conf.onMouseMove);
@@ -879,6 +881,10 @@ root.click = function(conf) {
 	return self;
 };
 
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.click = root.click;
+
 return root;
 
 })(Event.proxy);
@@ -971,6 +977,11 @@ root.dblclick = function(conf) {
 	return self;
 };
 
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.dbltap = root.dbltap;
+Event.Gesture._gestureHandlers.dblclick = root.dblclick;
+
 return root;
 
 })(Event.proxy);
@@ -987,7 +998,7 @@ return root;
 if (typeof(Event) === "undefined") var Event = {};
 if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
-Event.proxy = (function(root, exports) { "use strict";
+Event.proxy = (function(root) { "use strict";
 
 root.drag = function(conf) {
 	conf.onMouseDown = function (event) {
@@ -1032,7 +1043,7 @@ root.drag = function(conf) {
 		}
 	};
 	// Data accessible externally.
-	var self = root.addPointer({}, conf);
+	var self = root.addPointer(conf);
 	// Attach events.
 	if (conf.event) {
 		conf.onMouseDown(conf.event);
@@ -1043,11 +1054,13 @@ root.drag = function(conf) {
 	return self;
 };
 
-//exports.Gesture._gestureHandlers.drag = root.drag;
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.drag = root.drag;
 
 return root;
 
-})(Event.proxy, window);
+})(Event.proxy);
 /*
 	"Gesture" event proxy (2+ fingers).
 	----------------------------------------------------
@@ -1193,27 +1206,41 @@ root.gesture = function(conf) {
 	return self;
 };
 
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.gesture = root.gesture;
+
 return root;
 
 })(Event.proxy);
+/*
+	"Pointer" event proxy (1+ fingers).
+	----------------------------------------------------
+	CONFIGURE: minFingers, maxFingers.
+	----------------------------------------------------
+	Event.add(window, "gesture", function(event, self) {
+		console.log(self.rotation, self.scale, self.fingers, self.state);
+	});
+*/
+
 if (typeof(Event) === "undefined") var Event = {};
 if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
-var down = false;
+var isDown = false;
 
 root.pointerdown = function(conf) {
 	// Tracking the events.
 	conf.onMouseUp = function (event) {
-		down = false;
+		isDown = false;
 	};
 	conf.onMouseDown = function (event) {
-		down = true;
+		isDown = true;
 		conf.listener(event, self);
 	};
 	// Attach events.
-	var self = root.addPointer({}, conf);
+	var self = root.addPointer(conf);
 	Event.add(conf.target, "mousedown", conf.onMouseDown);
 	Event.add(conf.target, "mouseup", conf.onMouseUp);
 	// Return this object.
@@ -1223,10 +1250,10 @@ root.pointerdown = function(conf) {
 root.pointermove = function(conf) {
 	// Tracking the events.
 	conf.onMouseMove = function (event) {
-		if (down) conf.listener(event, self);
+		if (isDown) conf.listener(event, self);
 	};
 	// Attach events.
-	var self = root.addPointer({}, conf);
+	var self = root.addPointer(conf);
 	Event.add(conf.target, "mousemove", conf.onMouseMove);
 	// Return this object.
 	return self;
@@ -1235,15 +1262,21 @@ root.pointermove = function(conf) {
 root.pointerup = function(conf) {
 	// Tracking the events.
 	conf.onMouseUp = function (event) {
-		down = false;
+		isDown = false;
 		conf.listener(event, self);
 	};
 	// Attach events.
-	var self = root.addPointer({}, conf);
+	var self = root.addPointer(conf);
 	Event.add(conf.target, "mouseup", conf.onMouseUp);
 	// Return this object.
 	return self;
 };		
+
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.pointerdown = root.pointerdown;
+Event.Gesture._gestureHandlers.pointermove = root.pointermove;
+Event.Gesture._gestureHandlers.pointerup = root.pointerup;
 
 return root;
 
@@ -1344,6 +1377,11 @@ root.devicemotion = function(conf) {
 	return self;
 };
 
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.shake = root.shake;
+Event.Gesture._gestureHandlers.devicemotion = root.devicemotion;
+
 return root;
 
 })(Event.proxy);
@@ -1441,20 +1479,24 @@ root.swipe = function(conf) {
 	return self;
 };
 
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.swipe = root.swipe;
+
 return root;
 
 })(Event.proxy);
 /*
-	"Tap" and "Tap-Hold" event proxy.
+	"Tap" and "Long press" event proxy.
 	----------------------------------------------------
-	CONFIGURE: hold, cutoff.
+	CONFIGURE: delay (longpress), timeout (tap).
 	----------------------------------------------------
 	Event.add(window, "tap", function(event, self) {
 		console.log(self.fingers);
 	});
 	----------------------------------------------------
 	multi-finger tap // touch an target for <= 250ms.
-	multi-finger taphold // touch an target for >= 500ms
+	multi-finger longpress // touch an target for >= 500ms
 */
 
 if (typeof(Event) === "undefined") var Event = {};
@@ -1463,16 +1505,16 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 Event.proxy = (function(root) { "use strict";
 
 root.tap = 
-root.taphold = function(conf) {
+root.longpress = function(conf) {
 	conf.doc = conf.target.ownerDocument || conf.target;
 	conf.minFingers = conf.minFingers || 1;
 	conf.maxFingers = conf.maxFingers || Infinity; // Maximum allowed fingers.
-	if (conf.type === "taphold" || conf.hold) {
-		conf.type = "taphold";
-		conf.delay = conf.hold || 500;
+	if (conf.type === "longpress" || conf.delay) {
+		conf.type = "longpress";
+		conf.ms = conf.delay || 500;
 	} else {
 		conf.type = "tap";
-		conf.delay = conf.cutoff || 250;
+		conf.ms = conf.timeout || 250;
 	}
 	// Externally accessible data.
 	var self = {
@@ -1492,8 +1534,8 @@ root.taphold = function(conf) {
 			// Initialize event listeners.
 			Event.add(conf.doc, "mousemove", onMouseMove).listener(event);
 			Event.add(conf.doc, "mouseup", onMouseUp);
-			// Make sure this is a "taphold" event.
-			if (conf.type !== "taphold") return;
+			// Make sure this is a "longpress" event.
+			if (conf.type !== "longpress") return;
 			timeout = setTimeout(function() {
 				if (event.cancelBubble && ++event.bubble > 1) return;
 				// Make sure no fingers have been changed.
@@ -1504,10 +1546,10 @@ root.taphold = function(conf) {
 					fingers ++;
 				}
 				// Send callback.
-				self.state = "taphold";
+				self.state = "longpress";
 				self.fingers = fingers;
 				conf.listener(event, self);
-			}, conf.delay);
+			}, conf.ms);
 		}
 	};
 	var onMouseMove = function (event) {
@@ -1538,9 +1580,9 @@ root.taphold = function(conf) {
 			Event.remove(conf.doc, "mousemove", onMouseMove);
 			Event.remove(conf.doc, "mouseup", onMouseUp);
 			if (event.cancelBubble && ++event.bubble > 1) return;
-			// Callback release on taphold.
-			if (conf.type === "taphold") {
-				if (self.state === "taphold") {
+			// Callback release on longpress.
+			if (conf.type === "longpress") {
+				if (self.state === "longpress") {
 					self.state = "release";
 					conf.listener(event, self);
 				}
@@ -1549,7 +1591,7 @@ root.taphold = function(conf) {
 			// Cancel event due to movement.
 			if (conf.cancel) return;
 			// Ensure delay is within margins.
-			if ((new Date).getTime() - timestamp > conf.delay) return;
+			if ((new Date).getTime() - timestamp > conf.ms) return;
 			// Send callback.
 			self.state = "tap";
 			self.fingers = conf.gestureFingers;
@@ -1561,6 +1603,11 @@ root.taphold = function(conf) {
 	// Return this object.
 	return self;
 };
+
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.tap = root.tap;
+Event.Gesture._gestureHandlers.longpress = root.longpress;
 
 return root;
 
@@ -1613,6 +1660,10 @@ root.mousewheel = function(conf) {
 	// Return this object.
 	return self;
 };
+
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.mousewheel = root.mousewheel;
 
 return root;
 

@@ -61,6 +61,10 @@ root.click = function(conf) {
 	return self;
 };
 
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.click = root.click;
+
 return root;
 
 })(Event.proxy);

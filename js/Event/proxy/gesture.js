@@ -143,6 +143,10 @@ root.gesture = function(conf) {
 	return self;
 };
 
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.gesture = root.gesture;
+
 return root;
 
 })(Event.proxy);

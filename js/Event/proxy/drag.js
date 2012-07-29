@@ -11,7 +11,7 @@
 if (typeof(Event) === "undefined") var Event = {};
 if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
-Event.proxy = (function(root, exports) { "use strict";
+Event.proxy = (function(root) { "use strict";
 
 root.drag = function(conf) {
 	conf.onMouseDown = function (event) {
@@ -56,7 +56,7 @@ root.drag = function(conf) {
 		}
 	};
 	// Data accessible externally.
-	var self = root.addPointer({}, conf);
+	var self = root.addPointer(conf);
 	// Attach events.
 	if (conf.event) {
 		conf.onMouseDown(conf.event);
@@ -67,8 +67,10 @@ root.drag = function(conf) {
 	return self;
 };
 
-//exports.Gesture._gestureHandlers.drag = root.drag;
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.drag = root.drag;
 
 return root;
 
-})(Event.proxy, window);
+})(Event.proxy);
