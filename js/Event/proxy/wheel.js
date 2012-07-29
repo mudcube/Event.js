@@ -1,7 +1,7 @@
 /*
 	"Mouse Wheel" event proxy.
 	----------------------------------------------------
-	Event.add(window, "mousewheel_fix", function(event, self) {
+	Event.add(window, "mousewheel", function(event, self) {
 		console.log(self.state, self.wheelDelta);
 	});
 */
@@ -28,7 +28,7 @@ root.mousewheel = function(conf) {
 	// Tracking the events.
 	var onMouseWheel = function(event) {
 		event = event || window.event;
-		self.state = "wheel";
+		self.state = "start";
 		self.wheelDelta = event.detail ? event.detail * -40 : event.wheelDelta;
 		conf.listener(event, self);
 		clearTimeout(timeout);

@@ -9,11 +9,11 @@
 	2+ : pinch, rotate
 	   : mousewheel, devicemotion, shake
 	----------------------------------------------------
-	REQUIREMENT: querySelector, querySelectorAll
+	REQUIREMENTS: querySelector, querySelectorAll
 	----------------------------------------------------
 	*	There are two ways to add/remove events with this library.
-	*	Retains "this" attribute as target, and overrides native addEventListener.
 	----------------------------------------------------
+	// Retains "this" attribute as target, and overrides native addEventListener.
 	target.addEventListener(type, listener, useCapture); 
 	target.removeEventListener(type, listener, useCapture);
 
@@ -23,37 +23,39 @@
 
 	*	You can turn prototyping on/off for individual features.
 	----------------------------------------------------
-	Event.modifyAddEventListener = true;
-	Event.modifyQuerySelectorAll = true;
+	Event.modifyEventListener = true; // use experimental *EventListener on HTMLElement
+	Event.modifySelectors = true; // use experimental *EventListener on NodeList (from querySelectorAll, getElementsByTagName, ect).
 
 	*	Example of setting up a single listener with a custom configuration.
-	*	optional configuration.
 	----------------------------------------------------
+	// optional configuration.
 	var configure = {
 		fingers: 2, // listen for specifically two fingers.
 		snap: 90 // snap to 90 degree intervals.
 	};
 	// adding with addEventListener()
 	target.addEventListener("swipe", function(event) {
+		// additional variables can be found on the event object.
 		console.log(event.velocity, event.angle, event.fingers);
 	}, configure);
 	
 	// adding with Event.add()
 	Event.add("swipe", function(event, self) {
+		// additional variables can be found on the self object.
 		console.log(self.velocity, self.angle, self.fingers);
 	}, configure);
 
 	*	Multiple listeners glued together.
-	*	adding with addEventListener()
 	----------------------------------------------------
+	// adding with addEventListener()
 	target.addEventListener("click swipe", function(event) { });
 
 	// adding with Event.add()
 	Event.add(target, "click swipe", function(event, self) { });
 
 	*	Use query selectors to create an event (querySelectorAll)
-	*	adding with querySelectorAll()
 	----------------------------------------------------
+	// adding events to NodeList from querySelectorAll()
 	document.querySelectorAll("#element a.link").addEventListener("click", callback);
 
 	// adding with Event.add()
@@ -171,8 +173,12 @@
 	Event.add(window, "swipe", function(event, self) {
 		console.log(self.type, self.fingers, self.velocity, self.angle);
 	});
-	// "Tap" and "Tap-Hold" :: fingers, minFingers, maxFingers, delay, timeout.
+	// "Tap" :: fingers, minFingers, maxFingers, timeout.
 	Event.add(window, "tap", function(event, self) {
+		console.log(self.type, self.fingers);
+	});
+	// "Longpress" :: fingers, minFingers, maxFingers, delay.
+	Event.add(window, "longpress", function(event, self) {
 		console.log(self.type, self.fingers);
 	});
 	//
@@ -209,15 +215,19 @@ if (typeof(Event) === "undefined") var Event = {};
 
 Event = (function(root) { "use strict";
 
-root.modifyAddEventListener = true;
-root.modifyQuerySelectorAll = true;
+// Add custom *EventListener commands to HTMLElements.
+root.modifyEventListener = true;
 
+// Add bulk *EventListener commands on NodeLists from querySelectorAll and others.
+root.modifySelectors = true;
+
+// Event maintenance.
 root.add = function(target, type, listener, configure) {
-	return eventHandler(target, type, listener, configure, "add");
+	return eventManager(target, type, listener, configure, "add");
 };
 
 root.remove = function(target, type, listener, configure) {
-	return eventHandler(target, type, listener, configure, "remove");
+	return eventManager(target, type, listener, configure, "remove");
 };
 
 root.stop = function(event) {
@@ -236,7 +246,7 @@ root.cancel = function(event) {
 	root.prevent(event);
 };
 
-// Check to see whether event exists (via @kangax)
+// Check whether event is natively supported (via @kangax)
 root.supports = function (target, type) {
 	if (typeof(target) === "string") {
 		type = target;
@@ -254,7 +264,7 @@ root.supports = function (target, type) {
 	}
 };
 
-/// Keep track of whether metaKey is being fired.
+/// Keep track of metaKey, the proper ctrlKey for users platform.
 root.metaTracker = (function() {
 	var agent = navigator.userAgent.toLowerCase();
 	var mac = agent.indexOf("macintosh") !== -1;
@@ -272,8 +282,8 @@ root.metaTracker = (function() {
 	};
 })();
 
-/// Event listeners.
-var eventHandler = function(target, type, listener, configure, trigger) {
+/// Handle custom *EventListener commands.
+var eventManager = function(target, type, listener, configure, trigger) {
 	configure = configure || {};
 	// Check for element to load on interval (before onload).
 	if (typeof(target) === "string" && type === "ready") {
@@ -296,7 +306,7 @@ var eventHandler = function(target, type, listener, configure, trigger) {
 		} else { /// Handle multiple targets.
 			var events = {};
 			for (var n = 0, length = target.length; n < length; n ++) {
-				var event = eventHandler(target[n], type, listener, configure, trigger);
+				var event = eventManager(target[n], type, listener, configure, trigger);
 				if (event) events[n] = event;
 			}	
 			return batch(events);
@@ -310,15 +320,15 @@ var eventHandler = function(target, type, listener, configure, trigger) {
 		var events = {};
 		if (typeof(type.length) === "number") { // Handle multiple listeners glued together.
 			for (var n = 0, length = type.length; n < length; n ++) { // Array [type]
-				var event = eventHandler(target, type[n], listener, configure, trigger);
+				var event = eventManager(target, type[n], listener, configure, trigger);
 				if (event) events[type[n]] = event;
 			}
 		} else { // Handle multiple listeners.
 			for (var key in type) { // Object {type}
 				if (typeof(type[key]) === "function") { // without configuration.
-					var event = eventHandler(target, key, type[key], configure, trigger);
+					var event = eventManager(target, key, type[key], configure, trigger);
 				} else { // with configuration.
-					var event = eventHandler(target, key, type[key].listener, type[key], trigger);
+					var event = eventManager(target, key, type[key].listener, type[key], trigger);
 				}
 				if (event) events[key] = event;
 			}
@@ -339,12 +349,11 @@ var eventHandler = function(target, type, listener, configure, trigger) {
 		} else if (trigger === "add") { // Attach event listener.
 			if (wrappers[id]) return wrappers[id]; // Already attached.
 			// Retains "this" orientation.
-			if (configure.call) {
+			if (configure.useCall) {
 				var tmp = listener;
 				var listener = function(event, self) {
 					for (var key in self) event[key] = self[key];
 					event.gesture = self.type;
-					event.target.mouseEvent = event;
 					event.identifier = self.identifier || Infinity;
 					event.pointerType = "mouse";
 					event.getPointerList = function() {
@@ -400,13 +409,8 @@ var batch = function(events) {
 	};
 };
 
-/// Handle naming discrepancies.
+/// Handle naming discrepancies between platforms.
 var normalize = (function() {
-	var generalized = {
-		"pointerdown": "mousedown", 
-		"pointerup": "mouseup", 
-		"pointermove": "mousemove"
-	};	
 	/// MSIE Pointer event
 	var mspointer = window.navigator.msPointerEnabled ? {
 		"mousedown": "MSPointerDown",
@@ -421,7 +425,6 @@ var normalize = (function() {
 	} : { };	
 	/// Normalize.
 	return function(type) {
-		if (generalized[type]) type = generalized[type];
 		if (mspointer[type]) type = mspointer[type];
 		if (touch[type]) type = touch[type];
 		if (!document.addEventListener) { // IE
@@ -432,7 +435,7 @@ var normalize = (function() {
 	}
 })();
 
-/// Event wrappers, and associated variables.
+/// Event wrappers to keep track of all events placed in the window.
 var wrappers = {};
 var counter = 0;
 var getID = function(object) {
@@ -443,98 +446,98 @@ var getID = function(object) {
 	return object.uniqueID;
 };
 
-/// Detect proper native function.
+/// Detect platforms native *EventListener command.
 var add = document.addEventListener ? "addEventListener" : "attachEvent";
 var remove = document.removeEventListener ? "removeEventListener" : "detachEvent";
 
 /// Pointer.js
-if (root.modifyAddEventListener) (function() {
-	function createCustomEvent(eventName, target, payload) {
-		var event = document.createEvent('Event');
-		event.initEvent(eventName, true, true);
-		for (var k in payload) event[k] = payload[k];
-		target.dispatchEvent(event);
-	};
-	function Pointer(x, y, type, identifier) {
-		this.x = x;
-		this.y = y;
-		this.type = type;
-		this.identifier = identifier;
-	};
-	var PointerTypes = {
-		TOUCH: 'touch',
-		MOUSE: 'mouse'
-	};
-	function getPointerList() {
-		// Note: "this" is the element.
-		var pointers = [];
-		if (this.touchList) {
-			for (var i = 0; i < this.touchList.length; i++) {
-				var touch = this.touchList[i];
-				var pointer = new Pointer(touch.pageX, touch.pageY, PointerTypes.TOUCH, touch.identifier);
-				pointers.push(pointer);
-			}
+function Pointer(x, y, type, identifier) {
+	this.x = x;
+	this.y = y;
+	this.type = type;
+	this.identifier = identifier;
+};
+
+var PointerTypes = {
+	TOUCH: 'touch',
+	MOUSE: 'mouse'
+};
+
+root.getPointerList = function () {
+	// Note: "this" is the element.
+	var pointers = [];
+	if (this.touchList) {
+		for (var i = 0; i < this.touchList.length; i++) {
+			var touch = this.touchList[i];
+			var pointer = new Pointer(touch.pageX, touch.pageY, PointerTypes.TOUCH, touch.identifier);
+			pointers.push(pointer);
 		}
-		if (this.mouseEvent) {
-			pointers.push(new Pointer(this.mouseEvent.pageX, this.mouseEvent.pageY, PointerTypes.MOUSE, Infinity));
-		}
-		return pointers;
-	};
-	var primitives = {
-		"mousedown": true, 
-		"mouseup": true, 
-		"mousemove": true,
-		"MSPointerDown": true,
-		"MSPointerMove": true,
-		"MSPointerUp": true,
-		"touchstart": true,
-		"touchend": true,
-		"touchmove": true
-	};
-	var augmentEventListener = function(baseElementClass) {
-		var oldAddEventListener = baseElementClass.prototype.addEventListener;
-		baseElementClass.prototype.addEventListener = function (type, listener, useCapture) {
-			if (primitives[type]) { // handle native events.
-				oldAddEventListener.call(this, normalize(type), listener, useCapture);
-			} else if (root.Gesture._gestureHandlers[type]) { // handle custom events.
-				if (typeof(useCapture) === "object") {
-					useCapture.call = true;
-				} else {
-					useCapture = {
-						call: true,
-						useCapture: useCapture
+	}
+	if (this.mouseEvent) {
+		pointers.push(new Pointer(this.mouseEvent.pageX, this.mouseEvent.pageY, PointerTypes.MOUSE, Infinity));
+	}
+	return pointers;
+};
+
+root.createCustomEvent = function (eventName, target, payload) {
+	var event = document.createEvent('Event');
+	event.initEvent(eventName, true, true);
+	for (var k in payload) event[k] = payload[k];
+	target.dispatchEvent(event);
+};
+
+if (root.modifyEventListener || root.modifySelectors) (function() {
+	/// Allows *EventListener to use custom event proxies.
+	if (root.modifyEventListener) {
+		var augmentEventListener = function(proto) {
+			var recall = function(trigger) { // overwrite native *EventListener's
+				var handle = trigger + "EventListener";
+				var handler = proto[handle];
+				proto[handle] = function (type, listener, useCapture) {
+					if (root.Gesture._gestureHandlers[type]) { // capture custom events.
+						var configure = useCapture;
+						if (typeof(useCapture) === "object") {
+							configure.useCall = true;
+						} else { // convert to configuration object.
+							configure = {
+								useCall: true,
+								useCapture: useCapture
+							}
+						}
+						eventManager(this, type, listener, configure, trigger);
+						handler.call(this, type, listener, useCapture);
+					} else { // use native function.
+						handler.call(this, normalize(type), listener, useCapture);
 					}
-				}
-				eventHandler(this, type, listener, useCapture, "add");
-			} else {
-				console.log(type)
+				};
+			};
+			recall("add");
+			recall("remove");
+		};
+		// NOTE: overwriting HTMLElement doesn't do anything in Firefox.
+		if (navigator.userAgent.match(/Firefox/)) {
+			// TODO: fix Firefox for the general case.
+			augmentEventListener(HTMLDivElement.prototype);
+			augmentEventListener(HTMLCanvasElement.prototype);
+		} else {
+			augmentEventListener(HTMLElement.prototype);
+		}
+		augmentEventListener(document);
+		augmentEventListener(window);
+	}
+	/// Allows querySelectorAll and other NodeLists to perform *EventListener commands in bulk.
+	if (root.modifySelectors) {
+		var proto = NodeList.prototype;
+		proto.removeEventListener = function(type, listener, useCapture) {
+			for (var n = 0, length = this.length; n < length; n ++) {
+				this[n].removeEventListener(type, listener, useCapture);
 			}
 		};
-		var oldRemoveEventListener = baseElementClass.prototype.removeEventListener;
-		baseElementClass.prototype.removeEventListener = function (type, listener, useCapture) {
-			if (primitives[type]) { // handle native events.
-				oldRemoveEventListener.call(this, normalize(type), listener, useCapture);
-			} else { // handle custom events.
-				if (typeof(useCapture) === "object") {
-					useCapture.call = true;
-				} else {
-					useCapture = {
-						call: true,
-						useCapture: useCapture
-					}
-				}
-				eventHandler(this, type, listener, useCapture, "remove");
+		proto.addEventListener = function(type, listener, useCapture) {
+			for (var n = 0, length = this.length; n < length; n ++) {
+				this[n].addEventListener(type, listener, useCapture);
 			}
 		};
-	};
-	// Note: Firefox doesn't work like other browsers... overriding HTMLElement
-	// doesn't actually affect anything. Special case for Firefox:
-	if (navigator.userAgent.match(/Firefox/)) {
-		// TODO: fix this for the general case.
-		augmentEventListener(HTMLDivElement);
-		augmentEventListener(HTMLCanvasElement);
-	} else {
-		augmentEventListener(HTMLElement);
 	}
 })();
 

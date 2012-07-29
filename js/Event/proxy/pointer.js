@@ -13,49 +13,45 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
-var isDown = false;
-
 root.pointerdown = function(conf) {
+	if (conf.target.isPointerEmitter) return;
 	// Tracking the events.
-	conf.onMouseUp = function (event) {
-		isDown = false;
+	conf.onPointerDown = function (event) {
+///		conf.listener(event, self);
+		conf.target.mouseEvent = event;
+		Event.createCustomEvent('pointerdown', event.target, {
+			pointerType: 'mouse',
+			getPointerList: Event.getPointerList.bind(this),
+			originalEvent: event
+		});
 	};
-	conf.onMouseDown = function (event) {
-		isDown = true;
-		conf.listener(event, self);
+	conf.onPointerMove = function (event) {
+//		conf.listener(event, self);
+		if (conf.target.mouseEvent) conf.target.mouseEvent = event;
+		Event.createCustomEvent('pointermove', event.target, {
+			pointerType: 'mouse',
+			getPointerList: Event.getPointerList.bind(this),
+			originalEvent: event
+		});
+	};
+	conf.onPointerUp = function (event) {
+//		conf.listener(event, self);
+		conf.target.mouseEvent = null;
+		Event.createCustomEvent('pointerup', event.target, {
+			pointerType: 'mouse',
+			getPointerList: Event.getPointerList.bind(this),
+			originalEvent: event
+		});
 	};
 	// Attach events.
-	var self = root.addPointer(conf);
-	Event.add(conf.target, "mousedown", conf.onMouseDown);
-	Event.add(conf.target, "mouseup", conf.onMouseUp);
+	var self = root.utility(conf);
+	Event.add(conf.target, "mousedown", conf.onPointerDown);
+	Event.add(conf.target, "mousemove", conf.onPointerMove);
+	Event.add(conf.target, "mouseup", conf.onPointerUp);
 	// Return this object.
+	conf.target.isPointerEmitter = true;
 	return self;
 };
-
-root.pointermove = function(conf) {
-	// Tracking the events.
-	conf.onMouseMove = function (event) {
-		if (isDown) conf.listener(event, self);
-	};
-	// Attach events.
-	var self = root.addPointer(conf);
-	Event.add(conf.target, "mousemove", conf.onMouseMove);
-	// Return this object.
-	return self;
-};		
-
-root.pointerup = function(conf) {
-	// Tracking the events.
-	conf.onMouseUp = function (event) {
-		isDown = false;
-		conf.listener(event, self);
-	};
-	// Attach events.
-	var self = root.addPointer(conf);
-	Event.add(conf.target, "mouseup", conf.onMouseUp);
-	// Return this object.
-	return self;
-};		
 
 Event.Gesture = Event.Gesture || {};
 Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};

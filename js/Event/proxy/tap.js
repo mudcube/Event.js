@@ -1,5 +1,5 @@
 /*
-	"Tap" and "Long press" event proxy.
+	"Tap" and "Longpress" event proxy.
 	----------------------------------------------------
 	CONFIGURE: delay (longpress), timeout (tap).
 	----------------------------------------------------
@@ -58,7 +58,7 @@ root.longpress = function(conf) {
 					fingers ++;
 				}
 				// Send callback.
-				self.state = "longpress";
+				self.state = "start";
 				self.fingers = fingers;
 				conf.listener(event, self);
 			}, conf.ms);
@@ -94,8 +94,8 @@ root.longpress = function(conf) {
 			if (event.cancelBubble && ++event.bubble > 1) return;
 			// Callback release on longpress.
 			if (conf.type === "longpress") {
-				if (self.state === "longpress") {
-					self.state = "release";
+				if (self.state === "start") {
+					self.state = "end";
 					conf.listener(event, self);
 				}
 				return;

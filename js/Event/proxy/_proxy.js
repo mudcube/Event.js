@@ -16,30 +16,28 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
-root.addPointer = function(conf, self) {
-	self = self || {};
+root.utility = function(conf, self) {
 	conf.doc = conf.target.ownerDocument || conf.target;
 	conf.minFingers = conf.minFingers || conf.fingers || 1;
 	conf.maxFingers = conf.maxFingers || conf.fingers || Infinity; // Maximum allowed fingers.
 	conf.position = conf.position || "relative"; // Point to source coordinates from.
 	///
+	self = self || {};
 	self.type = conf.type;
 	self.target = conf.target;
 	self.listener = conf.listener;
 	self.remove = function() {
-		if (conf.onMouseDown) Event.remove(conf.target, "mousedown", conf.onMouseDown);
-		if (conf.onMouseMove) Event.remove(conf.doc, "mousemove", conf.onMouseMove);
-		if (conf.onMouseUp) Event.remove(conf.doc, "mouseup", conf.onMouseUp);
+		if (conf.onPointerDown) Event.remove(conf.target, "mousedown", conf.onPointerDown);
+		if (conf.onPointerMove) Event.remove(conf.doc, "mousemove", conf.onPointerMove);
+		if (conf.onPointerUp) Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 	};
 	self.disable = function(opt) {
-		if (!opt || opt.move) Event.remove(conf.doc, "mousemove", conf.onMouseMove);
-		if (!opt || opt.up) Event.remove(conf.doc, "mouseup", conf.onMouseUp);
-		conf.fingers = 0;
+		if (conf.onPointerMove && (!opt || opt.move)) Event.remove(conf.doc, "mousemove", conf.onPointerMove);
+		if (conf.onPointerUp && (!opt || opt.up)) Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 	};
 	self.enable = function(opt) {
-		if (!opt || opt.move) Event.add(conf.doc, "mousemove", conf.onMouseMove);
-		if (!opt || opt.move) Event.add(conf.doc, "mouseup", conf.onMouseUp);
-		conf.fingers = 1;
+		if (conf.onPointerMove && (!opt || opt.move)) Event.add(conf.doc, "mousemove", conf.onPointerMove);
+		if (conf.onPointerUp && (!opt || opt.move)) Event.add(conf.doc, "mouseup", conf.onPointerUp);
 	};
 	///
 	return self;

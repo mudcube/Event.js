@@ -14,15 +14,15 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 Event.proxy = (function(root) { "use strict";
 
 root.drag = function(conf) {
-	conf.onMouseDown = function (event) {
+	conf.onPointerDown = function (event) {
 		if (root.gestureStart(event, conf)) {
-			Event.add(conf.doc, "mousemove", conf.onMouseMove);
-			Event.add(conf.doc, "mouseup", conf.onMouseUp);
+			Event.add(conf.doc, "mousemove", conf.onPointerMove);
+			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
 		// Process event listener.
-		conf.onMouseMove(event, "down");
+		conf.onPointerMove(event, "down");
 	};
-	conf.onMouseMove = function (event, state) {
+	conf.onPointerMove = function (event, state) {
 		var bbox = conf.bbox;
 		var touches = event.changedTouches || root.getCoords(event);
 		var length = touches.length;
@@ -41,27 +41,23 @@ root.drag = function(conf) {
 			self.x = (touch.pageX + bbox.scrollLeft - o.offsetX) * bbox.scaleX;
 			self.y = (touch.pageY + bbox.scrollTop - o.offsetY) * bbox.scaleY;
 			///
-			if (Event.prototyped) {
-				window._createCustomEvent('drag', self.target, {});
-			} else {
-				conf.listener(event, self);
-			}
+			conf.listener(event, self);
 		}
 	};
-	conf.onMouseUp = function(event) {
+	conf.onPointerUp = function(event) {
 		// Remove tracking for touch.
-		if (root.gestureEnd(event, conf, conf.onMouseMove)) {
-			Event.remove(conf.doc, "mousemove", conf.onMouseMove);
-			Event.remove(conf.doc, "mouseup", conf.onMouseUp);
+		if (root.gestureEnd(event, conf, conf.onPointerMove)) {
+			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
+			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 		}
 	};
-	// Data accessible externally.
-	var self = root.addPointer(conf);
+	// Generate maintenance commands, and other configurations.
+	var self = root.utility(conf);
 	// Attach events.
 	if (conf.event) {
-		conf.onMouseDown(conf.event);
+		conf.onPointerDown(conf.event);
 	} else {
-		Event.add(conf.target, "mousedown", conf.onMouseDown);
+		Event.add(conf.target, "mousedown", conf.onPointerDown);
 	}
 	// Return this object.
 	return self;
