@@ -13,41 +13,52 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
-root.pointerdown = function(conf) {
+root.pointerdown = 
+root.pointermove = 
+root.pointerup = function(conf) {
 	if (conf.target.isPointerEmitter) return;
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
-///		conf.listener(event, self);
-		conf.target.mouseEvent = event;
-		Event.createCustomEvent('pointerdown', event.target, {
-			pointerType: 'mouse',
-			getPointerList: Event.getPointerList.bind(conf.target),
-			originalEvent: event
-		});
+		if (Event.modifyEventListener) {
+			conf.target.mouseEvent = event;
+			Event.createCustomEvent('pointerdown', event.target, {
+				pointerType: 'mouse',
+				getPointerList: Event.getPointerList.bind(conf.target),
+				originalEvent: event
+			});
+		} else {
+			conf.listener(event, self);
+		}
 	};
 	conf.onPointerMove = function (event) {
-//		conf.listener(event, self);
-		if (conf.target.mouseEvent) conf.target.mouseEvent = event;
-		Event.createCustomEvent('pointermove', conf.target, {
-			pointerType: 'mouse',
-			getPointerList: Event.getPointerList.bind(conf.target),
-			originalEvent: event
-		});
+		if (Event.modifyEventListener) {
+			if (conf.target.mouseEvent) conf.target.mouseEvent = event;
+			Event.createCustomEvent('pointermove', conf.target, {
+				pointerType: 'mouse',
+				getPointerList: Event.getPointerList.bind(conf.target),
+				originalEvent: event
+			});
+		} else {
+			conf.listener(event, self);
+		}
 	};
 	conf.onPointerUp = function (event) {
-//		conf.listener(event, self);
-		conf.target.mouseEvent = null;
-		Event.createCustomEvent('pointerup', conf.target, {
-			pointerType: 'mouse',
-			getPointerList: Event.getPointerList.bind(conf.target),
-			originalEvent: event
-		});
+		if (Event.modifyEventListener) {
+			conf.target.mouseEvent = null;
+			Event.createCustomEvent('pointerup', conf.target, {
+				pointerType: 'mouse',
+				getPointerList: Event.getPointerList.bind(conf.target),
+				originalEvent: event
+			});
+		} else {
+			conf.listener(event, self);
+		}
 	};
 	// Generate maintenance commands, and other configurations.
-	var self = root.setup(conf);
+	var self = root.pointerSetup(conf);
 	// Attach events.
 	Event.add(conf.target, "mousedown", conf.onPointerDown);
-	Event.add(conf.doc, "mousemove", conf.onPointerMove);
+	Event.add(conf.target, "mousemove", conf.onPointerMove);
 	Event.add(conf.doc, "mouseup", conf.onPointerUp);
 	// Return this object.
 	conf.target.isPointerEmitter = true;

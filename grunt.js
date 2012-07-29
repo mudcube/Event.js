@@ -1,7 +1,8 @@
 module.exports = function(grunt) {
   grunt.initConfig({
     lint: { all: ['js/*.js'] },
-    concat: { 'build/pointer.js': [
+    concat: {
+    'build/pointer.js': [
       //'js/bind-polyfill.js',
       'js/libs/modernizr-touch.js',
       'js/pointer.js',

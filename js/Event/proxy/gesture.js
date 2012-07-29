@@ -21,7 +21,7 @@ root.gesture = function(conf) {
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
 		var fingers = conf.fingers;
-		if (root.gestureStart(event, conf)) {
+		if (root.pointerStart(event, conf)) {
 			Event.add(conf.doc, "mousemove", conf.onPointerMove);
 			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
@@ -46,7 +46,7 @@ root.gesture = function(conf) {
 		// Update tracker coordinates.
 		for (var i = 0; i < length; i ++) {
 			var touch = touches[i];
-			var sid = touch.identifier || 0;
+			var sid = touch.identifier || Infinity;
 			var pt = points[sid];
 			// Check whether "pt" is used by another gesture.
 			if (!pt) continue; 
@@ -116,7 +116,7 @@ root.gesture = function(conf) {
 	conf.onPointerUp = function(event) {
 		// Remove tracking for touch.
 		var fingers = conf.fingers;
-		if (root.gestureEnd(event, conf)) {
+		if (root.pointerEnd(event, conf)) {
 			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 		}
@@ -128,7 +128,7 @@ root.gesture = function(conf) {
 		}
 	};
 	// Generate maintenance commands, and other configurations.
-	var self = root.setup(conf);
+	var self = root.pointerSetup(conf);
 	// Attach events.
 	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.

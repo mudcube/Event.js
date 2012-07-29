@@ -15,7 +15,7 @@ root.click = function(conf) {
 	var event;
 	// Tracking the events.
 	conf.onPointerDown = function (e) {
-		if (root.gestureStart(e, conf)) {
+		if (root.pointerStart(e, conf)) {
 			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(e);
 			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
@@ -24,7 +24,7 @@ root.click = function(conf) {
 		event = e;
 	};
 	conf.onPointerUp = function(e) {
-		if (root.gestureEnd(e, conf)) {
+		if (root.pointerEnd(e, conf)) {
 			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 			if (event.cancelBubble && ++event.bubble > 1) return;
@@ -42,7 +42,7 @@ root.click = function(conf) {
 		}
 	};
 	// Generate maintenance commands, and other configurations.
-	var self = root.setup(conf);
+	var self = root.pointerSetup(conf);
 	// Attach events.
 	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.

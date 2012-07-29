@@ -24,13 +24,13 @@ root.longpress = function(conf) {
 	var timestamp, timeout;
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
-		if (root.gestureStart(event, conf)) {
+		if (root.pointerStart(event, conf)) {
 			timestamp = (new Date).getTime();
 			// Initialize event listeners.
 			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
 			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 			// Make sure this is a "longpress" event.
-			if (conf.type !== "longpress") return;
+			if (conf.gesture !== "longpress") return;
 			timeout = setTimeout(function() {
 				if (event.cancelBubble && ++event.bubble > 1) return;
 				// Make sure no fingers have been changed.
@@ -53,15 +53,15 @@ root.longpress = function(conf) {
 		var length = touches.length;
 		for (var i = 0; i < length; i ++) {
 			var touch = touches[i];
-			var sid = touch.identifier || 0;
-			var o = conf.tracker[sid];
-			if (!o) continue;
+			var identifier = touch.identifier || Infinity;
+			var pt = conf.tracker[identifier];
+			if (!pt) continue;
 			var x = (touch.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
 			var y = (touch.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
 			if (!(x > 0 && x < bbox.width && // Within target coordinates..
 				  y > 0 && y < bbox.height &&
-				  Math.abs(x - o.start.x) <= 25 && // Within drift deviance.
-				  Math.abs(y - o.start.y) <= 25)) {
+				  Math.abs(x - pt.start.x) <= 25 && // Within drift deviance.
+				  Math.abs(y - pt.start.y) <= 25)) {
 				// Cancel out this listener.
 				Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 				conf.cancel = true;
@@ -70,13 +70,13 @@ root.longpress = function(conf) {
 		}
 	};
 	conf.onPointerUp = function(event) {
-		if (root.gestureEnd(event, conf)) {
+		if (root.pointerEnd(event, conf)) {
 			clearTimeout(timeout);
 			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 			if (event.cancelBubble && ++event.bubble > 1) return;
 			// Callback release on longpress.
-			if (conf.type === "longpress") {
+			if (conf.gesture === "longpress") {
 				if (self.state === "start") {
 					self.state = "end";
 					conf.listener(event, self);
@@ -94,7 +94,7 @@ root.longpress = function(conf) {
 		}
 	};
 	// Generate maintenance commands, and other configurations.
-	var self = root.setup(conf);
+	var self = root.pointerSetup(conf);
 	// Attach events.
 	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.

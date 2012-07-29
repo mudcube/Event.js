@@ -4,11 +4,25 @@
 	----------------------------------------------------
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
+	Pointer Gestures
+	----------------------------------------------------
 	1  : click, dblclick, dbltap
 	1+ : tap, taphold, drag, swipe
 	2+ : pinch, rotate
-	   : mousewheel, devicemotion, shake
 	----------------------------------------------------
+	Gyroscope Gestures
+	----------------------------------------------------
+	* shake
+	----------------------------------------------------
+	Fixes issues with
+	----------------------------------------------------
+	* mousewheel-Firefox uses DOMMouseScroll and does not return wheelDelta. 
+	* devicemotion-Fixes issue where event.acceleration is not returned.
+	----------------------------------------------------
+	Ideas for the future
+	----------------------------------------------------
+	* Keyboard, GamePad, and other input abstractions.
+	* Event batching - i.e. for every x fingers down a new gesture is created.
 */
 
 if (typeof(Event) === "undefined") var Event = {};
@@ -16,15 +30,20 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
-root.setup = function(conf, self) {
-	var type = conf.type.indexOf("pointer") === 0 ? "pointer" : "mouse";
-	conf.doc = conf.target.ownerDocument || conf.target;
-	conf.minFingers = conf.minFingers || conf.fingers || 1;
+/*
+	Create a new pointer instance.
+*/
+
+root.pointerSetup = function(conf, self) {
+	/// Configure.
+	var type = conf.gesture.indexOf("pointer") === 0 && Event.modifyEventListener ? "pointer" : "mouse";
+	conf.doc = conf.target.ownerDocument || conf.target; // Associated document.
+	conf.minFingers = conf.minFingers || conf.fingers || 1; // Minimum required fingers.
 	conf.maxFingers = conf.maxFingers || conf.fingers || Infinity; // Maximum allowed fingers.
-	conf.position = conf.position || "relative"; // Point to source coordinates from.
-	///
+	conf.position = conf.position || "relative"; // Determines what coordinate system points are returned.
+	/// Convenience data and commands.
 	self = self || {};
-	self.type = conf.type;
+	self.gesture = conf.gesture;
 	self.target = conf.target;
 	self.listener = conf.listener;
 	self.remove = function() {
@@ -32,51 +51,54 @@ root.setup = function(conf, self) {
 		if (conf.onPointerMove) Event.remove(conf.doc, type + "move", conf.onPointerMove);
 		if (conf.onPointerUp) Event.remove(conf.doc, type + "up", conf.onPointerUp);
 	};
-	self.disable = function(opt) {
-		if (conf.onPointerMove && (!opt || opt.move)) Event.remove(conf.doc, type + "move", conf.onPointerMove);
-		if (conf.onPointerUp && (!opt || opt.up)) Event.remove(conf.doc, type + "up", conf.onPointerUp);
-	};
 	self.enable = function(opt) {
 		if (conf.onPointerMove && (!opt || opt.move)) Event.add(conf.doc, type + "move", conf.onPointerMove);
 		if (conf.onPointerUp && (!opt || opt.move)) Event.add(conf.doc, type + "up", conf.onPointerUp);
+	};
+	self.disable = function(opt) {
+		if (conf.onPointerMove && (!opt || opt.move)) Event.remove(conf.doc, type + "move", conf.onPointerMove);
+		if (conf.onPointerUp && (!opt || opt.up)) Event.remove(conf.doc, type + "up", conf.onPointerUp);
 	};
 	///
 	return self;
 };
 
-///
-root.gestureStart = function(event, conf) {
+/*
+	Begin proxied pointer command.
+*/
+
+root.pointerStart = function(event, conf) {
 	var addTouchStart = function(touch, sid) {	
 		var bbox = conf.bbox;
-		var o = track[sid] = {};
+		var pt = track[sid] = {};
 		///
 		switch(conf.position) {
 			case "absolute": // Absolute from within window.
-				o.offsetX = 0;
-				o.offsetY = 0;
+				pt.offsetX = 0;
+				pt.offsetY = 0;
 				break;
 			case "difference": // Relative from origin.
-				o.offsetX = touch.pageX;
-				o.offsetY = touch.pageY;
+				pt.offsetX = touch.pageX;
+				pt.offsetY = touch.pageY;
 				break;
 			case "move": // Move target element.
-				o.offsetX = touch.pageX - bbox.x1;
-				o.offsetY = touch.pageY - bbox.y1;
+				pt.offsetX = touch.pageX - bbox.x1;
+				pt.offsetY = touch.pageY - bbox.y1;
 				break;
 			default: // Relative from within target.
-				o.offsetX = bbox.x1;
-				o.offsetY = bbox.y1;
+				pt.offsetX = bbox.x1;
+				pt.offsetY = bbox.y1;
 				break;
 		}
 		///
-		var x = (touch.pageX + bbox.scrollLeft - o.offsetX) * bbox.scaleX;
-		var y = (touch.pageY + bbox.scrollTop - o.offsetY) * bbox.scaleY;
+		var x = (touch.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
+		var y = (touch.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
 		///
-		o.rotation = 0;
-		o.scale = 1;
-		o.startTime = o.moveTime = (new Date).getTime();
-		o.move = { x: x, y: y };
-		o.start = { x: x, y: y };
+		pt.rotation = 0;
+		pt.scale = 1;
+		pt.startTime = pt.moveTime = (new Date).getTime();
+		pt.move = { x: x, y: y };
+		pt.start = { x: x, y: y };
 		///
 		conf.fingers ++;
 	};
@@ -88,7 +110,7 @@ root.gestureStart = function(event, conf) {
 	// Adding touch events to tracking.
 	for (var i = 0; i < length; i ++) {
 		var touch = touches[i];
-		var sid = touch.identifier || 0; // Touch ID.
+		var sid = touch.identifier || Infinity; // Touch ID.
 		// Track the current state of the touches.
 		if (conf.fingers) {
 			if (conf.fingers >= conf.maxFingers) {
@@ -120,57 +142,126 @@ root.gestureStart = function(event, conf) {
 	return isTouchStart;
 };
 
-///
-root.gestureEnd = function(event, conf, callback) {
+/*
+	End proxied pointer command.
+*/
+
+root.pointerEnd = function(event, conf, onPointerUp) {
 	// Record changed touches have ended (iOS changedTouches is not reliable).
 	var touches = event.touches || [];
 	var length = touches.length;
 	var exists = {};
 	for (var i = 0; i < length; i ++) {
 		var touch = touches[i];
-		exists[touch.identifier || 0] = true;
+		exists[touch.identifier || Infinity] = true;
 	}
 	for (var key in conf.tracker) {
 		var track = conf.tracker[key];
 		if (!exists[key] && !track.up) {
-			if (callback) {
-				callback({
+			if (onPointerUp) { // add changedTouches to mouse.
+				event.changedTouches = [{
 					pageX: track.pageX,
 					pageY: track.pageY,
-					changedTouches: [{
-						pageX: track.pageX,
-						pageY: track.pageY,
-						identifier: key 
-					}]
-				}, "up");
+					identifier: key === "Infinity" ? Infinity : key 
+				}];
+				onPointerUp(event, "up");
 			}
 			conf.tracker[key].up = true;
 			conf.fingers --;
 		}
 	}
-/*	var touches = event.changedTouches || root.getCoords(event);
+/*
+	// This should work but fails in Safari on iOS4.
+	var touches = event.changedTouches || root.getCoords(event);
 	var length = touches.length;
 	// Record changed touches have ended (this should work).
 	for (var i = 0; i < length; i ++) {
 		var touch = touches[i];
-		var sid = touch.identifier || 0;
+		var sid = touch.identifier || Infinity;
 		if (conf.tracker[sid]) {
 			conf.tracker[sid].up = true;
 			conf.fingers --;
 		}
-	} */
+	}
+*/
 	// Wait for all fingers to be released.
 	if (conf.fingers !== 0) return false;
-	//
+	// Record total number of fingers gesture used.
 	conf.gestureFingers = 0;
 	for (var sid in conf.tracker) {
 		conf.gestureFingers ++;
 	}
-	// Return state of tracking.
+	// Our pointer gesture has ended.
 	return true;
 };
 
-/// Get target position in space.
+/*
+	Returns mouse coords in an array to match event.*Touches
+	------------------------------------------------------------
+	var touch = event.changedTouches || root.getCoords(event);
+*/
+
+root.getCoords = function(event) {
+	if (typeof(event.pageX) !== "undefined") { // Desktop browsers.
+		root.getCoords = function(event) {
+			return Array(event);
+		};
+	} else { // Internet Explorer <= 8.0
+		root.getCoords = function(event) {
+			event = event || window.event;
+			return Array({
+				pageX: event.clientX + document.documentElement.scrollLeft,
+				pageY: event.clientY + document.documentElement.scrollTop
+			});
+		};
+	}
+	return root.getCoords(event);
+};
+
+/*
+	Returns single coords in an object.
+	------------------------------------------------------------
+	var mouse = root.getCoord(event);
+*/
+
+root.getCoord = function(event) {
+	if ("ontouchstart" in window) { // Mobile browsers.
+		var pX = 0;
+		var pY = 0;
+		root.getCoord = function(event) {
+			var touches = event.changedTouches;
+			if (touches.length) { // ontouchstart + ontouchmove
+				return {
+					x: pX = touches[0].pageX,
+					y: pY = touches[0].pageY
+				};
+			} else { // ontouchend
+				return {
+					x: pX,
+					y: pY
+				};
+			}
+		};
+	} else if(typeof(event.pageX) !== "undefined" && typeof(event.pageY) !== "undefined") { // Desktop browsers.
+		root.getCoord = function(event) {
+			return event;
+		};
+	} else { // Internet Explorer <=8.0
+		root.getCoord = function(event) {
+			event = event || window.event;
+			return {
+				x: event.clientX + document.documentElement.scrollLeft,
+				y: event.clientY + document.documentElement.scrollTop
+			};
+		};
+	}
+	return root.getCoord(event);
+};
+
+/*
+	Get target scale and position in space.	
+*/
+
 root.getBoundingBox = function(o) { 
 	if (o === window || o === document) o = document.body;
 	///
@@ -216,60 +307,26 @@ root.getBoundingBox = function(o) {
 	return bbox;
 };
 
-root.getCoords = function(event) {
-	if (typeof(event.pageX) !== "undefined") { // Desktop browsers.
-		root.getCoords = function(event) {
-			return Array(event);
-		};
-	} else { // Internet Explorer <= 8.0
-		root.getCoords = function(event) {
-			event = event || window.event;
-			return Array({
-				pageX: event.clientX + document.documentElement.scrollLeft,
-				pageY: event.clientY + document.documentElement.scrollTop
-			});
-		};
-	}
-	return root.getCoords(event);
-};
+/*
+	Keep track of metaKey, the proper ctrlKey for users platform.
+*/
 
-/// Legacy function, get single coordinate.
-root.getCoord = function(event) {
-	if ("ontouchstart" in window) { // Mobile browsers.
-		var pX = 0;
-		var pY = 0;
-		root.getCoord = function(event) {
-			var touches = event.changedTouches;
-			if (touches.length) { // ontouchstart + ontouchmove
-				return {
-					x: pX = touches[0].pageX,
-					y: pY = touches[0].pageY
-				};
-			} else { // ontouchend
-				return {
-					x: pX,
-					y: pY
-				};
-			}
-		};
-	} else if(typeof(event.pageX) !== "undefined" && typeof(event.pageY) !== "undefined") { // Desktop browsers.
-		root.getCoord = function(event) {
-			return {
-				x: event.pageX,
-				y: event.pageY
-			};
-		};
-	} else { // Internet Explorer <=8.0
-		root.getCoord = function(event) {
-			event = event || window.event;
-			return {
-				x: event.clientX + document.documentElement.scrollLeft,
-				y: event.clientY + document.documentElement.scrollTop
-			};
-		};
+root.metaTracker = (function() {
+	var agent = navigator.userAgent.toLowerCase();
+	var mac = agent.indexOf("macintosh") !== -1;
+	if (mac && agent.indexOf("khtml") !== -1) { // chrome, safari.
+		var watch = { 91: true, 93: true };
+	} else if (mac && agent.indexOf("firefox") !== -1) {  // mac firefox.
+		var watch = { 224: true };
+	} else { // windows, linux, or mac opera.
+		var watch = { 17: true };
 	}
-	return root.getCoord(event);
-};
+	return function(event) {
+		if (watch[event.keyCode]) {
+			root.metaKey = event.type === "keydown";
+		}
+	};
+})();
 
 return root;
 

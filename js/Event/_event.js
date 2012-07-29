@@ -23,8 +23,8 @@
 
 	*	You can turn prototyping on/off for individual features.
 	----------------------------------------------------
-	Event.modifyEventListener = true; // use experimental *EventListener on HTMLElement
-	Event.modifySelectors = true; // use experimental *EventListener on NodeList (from querySelectorAll, getElementsByTagName, ect).
+	Event.modifyEventListener = true; // add custom *EventListener commands to HTMLElements.
+	Event.modifySelectors = true; // add bulk *EventListener commands on NodeLists from querySelectorAll and others.
 
 	*	Example of setting up a single listener with a custom configuration.
 	----------------------------------------------------
@@ -82,7 +82,7 @@
 		minFingers: 2, // minimum required fingers to start event.
 		maxFingers: 4, // maximum fingers in one event.
 		listener: function(event, self) {
-			console.log(self.type); // will be click or swipe.
+			console.log(self.gesture); // will be click or swipe.
 			console.log(self.x);
 			console.log(self.y);
 			console.log(self.identifier);
@@ -155,43 +155,43 @@
 	----------------------------------------------------
 	// "Click" :: fingers, minFingers, maxFingers.
 	Event.add(window, "click", function(event, self) {
-		console.log(self.type, self.x, self.y);
+		console.log(self.gesture, self.x, self.y);
 	});
 	// "Double-Click" :: fingers, minFingers, maxFingers.
 	Event.add(window, "dblclick", function(event, self) {
-		console.log(self.type, self.x, self.y);
+		console.log(self.gesture, self.x, self.y);
 	});
 	// "Drag" :: fingers, maxFingers, position
 	Event.add(window, "drag", function(event, self) {
-		console.log(self.type, self.fingers, self.state, self.start, self.x, self.y, self.bbox);
+		console.log(self.gesture, self.fingers, self.state, self.start, self.x, self.y, self.bbox);
 	});
 	// "Gesture" :: fingers, minFingers, maxFingers.
 	Event.add(window, "gesture", function(event, self) {
-		console.log(self.type, self.fingers, self.state, self.rotation, self.scale);
+		console.log(self.gesture, self.fingers, self.state, self.rotation, self.scale);
 	});
 	// "Swipe" :: fingers, minFingers, maxFingers, snap, threshold.
 	Event.add(window, "swipe", function(event, self) {
-		console.log(self.type, self.fingers, self.velocity, self.angle);
+		console.log(self.gesture, self.fingers, self.velocity, self.angle);
 	});
 	// "Tap" :: fingers, minFingers, maxFingers, timeout.
 	Event.add(window, "tap", function(event, self) {
-		console.log(self.type, self.fingers);
+		console.log(self.gesture, self.fingers);
 	});
 	// "Longpress" :: fingers, minFingers, maxFingers, delay.
 	Event.add(window, "longpress", function(event, self) {
-		console.log(self.type, self.fingers);
+		console.log(self.gesture, self.fingers);
 	});
 	//
 	Event.add(window, "shake", function(event, self) {
-		console.log(self.type, self.acceleration, self.accelerationIncludingGravity);
+		console.log(self.gesture, self.acceleration, self.accelerationIncludingGravity);
 	});
 	//
 	Event.add(window, "devicemotion", function(event, self) {
-		console.log(self.type, self.acceleration, self.accelerationIncludingGravity);
+		console.log(self.gesture, self.acceleration, self.accelerationIncludingGravity);
 	});
 	//
 	Event.add(window, "wheel", function(event, self) {
-		console.log(self.type, self.state, self.wheelDelta);
+		console.log(self.gesture, self.state, self.wheelDelta);
 	});
 
 	*	Stop, prevent and cancel.
@@ -202,7 +202,7 @@
 
 	*	Track for proper command/control-key for Mac/PC.
 	----------------------------------------------------
-	Event.add(window, "keyup keydown", Event.keyTracker);
+	Event.add(window, "keyup keydown", Event.proxy.metaTracker);
 	console.log(Event.metaKey);
 
 	*	Test for event features, in this example Drag & Drop file support.
@@ -263,24 +263,6 @@ root.supports = function (target, type) {
 		return isSupported;
 	}
 };
-
-/// Keep track of metaKey, the proper ctrlKey for users platform.
-root.metaTracker = (function() {
-	var agent = navigator.userAgent.toLowerCase();
-	var mac = agent.indexOf("macintosh") !== -1;
-	if (mac && agent.indexOf("khtml") !== -1) { // chrome, safari.
-		var watch = { 91: true, 93: true };
-	} else if (mac && agent.indexOf("firefox") !== -1) {  // mac firefox.
-		var watch = { 224: true };
-	} else { // windows, linux, or mac opera.
-		var watch = { 17: true };
-	}
-	return function(event) {
-		if (watch[event.keyCode]) {
-			root.metaKey = event.type === "keydown";
-		}
-	};
-})();
 
 /// Handle custom *EventListener commands.
 var eventManager = function(target, type, listener, configure, trigger) {
@@ -353,7 +335,7 @@ var eventManager = function(target, type, listener, configure, trigger) {
 				var tmp = listener;
 				var listener = function(event, self) {
 					for (var key in self) event[key] = self[key];
-					event.gesture = self.type;
+					event.gesture = self.gesture;
 					event.identifier = self.identifier || Infinity;
 					event.pointerType = "mouse";
 					event.getPointerList = function() {
@@ -363,7 +345,7 @@ var eventManager = function(target, type, listener, configure, trigger) {
 				};
 			}
 			// Create listener proxy.
-			configure.type = type; 
+			configure.gesture = type; 
 			configure.target = target;
 			configure.listener = listener;
 			// Record wrapper.
@@ -450,7 +432,10 @@ var getID = function(object) {
 var add = document.addEventListener ? "addEventListener" : "attachEvent";
 var remove = document.removeEventListener ? "removeEventListener" : "detachEvent";
 
-/// Pointer.js
+/*
+	Pointer.js
+*/
+
 function Pointer(x, y, type, identifier) {
 	this.x = x;
 	this.y = y;
@@ -486,59 +471,58 @@ root.createCustomEvent = function (eventName, target, payload) {
 	target.dispatchEvent(event);
 };
 
-if (root.modifyEventListener || root.modifySelectors) (function() {
-	/// Allows *EventListener to use custom event proxies.
-	if (root.modifyEventListener) {
-		var augmentEventListener = function(proto) {
-			var recall = function(trigger) { // overwrite native *EventListener's
-				var handle = trigger + "EventListener";
-				var handler = proto[handle];
-				proto[handle] = function (type, listener, useCapture) {
-					if (root.Gesture._gestureHandlers[type]) { // capture custom events.
-						var configure = useCapture;
-						if (typeof(useCapture) === "object") {
-							configure.useCall = true;
-						} else { // convert to configuration object.
-							configure = {
-								useCall: true,
-								useCapture: useCapture
-							}
+/// Allows *EventListener to use custom event proxies.
+if (root.modifyEventListener) (function() {
+	var augmentEventListener = function(proto) {
+		var recall = function(trigger) { // overwrite native *EventListener's
+			var handle = trigger + "EventListener";
+			var handler = proto[handle];
+			proto[handle] = function (type, listener, useCapture) {
+				if (root.Gesture._gestureHandlers[type]) { // capture custom events.
+					var configure = useCapture;
+					if (typeof(useCapture) === "object") {
+						configure.useCall = true;
+					} else { // convert to configuration object.
+						configure = {
+							useCall: true,
+							useCapture: useCapture
 						}
-						eventManager(this, type, listener, configure, trigger);
-						handler.call(this, type, listener, useCapture);
-					} else { // use native function.
-						handler.call(this, normalize(type), listener, useCapture);
 					}
-				};
+					eventManager(this, type, listener, configure, trigger);
+					handler.call(this, type, listener, useCapture);
+				} else { // use native function.
+					handler.call(this, normalize(type), listener, useCapture);
+				}
 			};
-			recall("add");
-			recall("remove");
 		};
-		// NOTE: overwriting HTMLElement doesn't do anything in Firefox.
-		if (navigator.userAgent.match(/Firefox/)) {
-			// TODO: fix Firefox for the general case.
-			augmentEventListener(HTMLDivElement.prototype);
-			augmentEventListener(HTMLCanvasElement.prototype);
-		} else {
-			augmentEventListener(HTMLElement.prototype);
+		recall("add");
+		recall("remove");
+	};
+	// NOTE: overwriting HTMLElement doesn't do anything in Firefox.
+	if (navigator.userAgent.match(/Firefox/)) {
+		// TODO: fix Firefox for the general case.
+		augmentEventListener(HTMLDivElement.prototype);
+		augmentEventListener(HTMLCanvasElement.prototype);
+	} else {
+		augmentEventListener(HTMLElement.prototype);
+	}
+	augmentEventListener(document);
+	augmentEventListener(window);
+})();
+
+/// Allows querySelectorAll and other NodeLists to perform *EventListener commands in bulk.
+if (root.modifySelectors) (function() {
+	var proto = NodeList.prototype;
+	proto.removeEventListener = function(type, listener, useCapture) {
+		for (var n = 0, length = this.length; n < length; n ++) {
+			this[n].removeEventListener(type, listener, useCapture);
 		}
-		augmentEventListener(document);
-		augmentEventListener(window);
-	}
-	/// Allows querySelectorAll and other NodeLists to perform *EventListener commands in bulk.
-	if (root.modifySelectors) {
-		var proto = NodeList.prototype;
-		proto.removeEventListener = function(type, listener, useCapture) {
-			for (var n = 0, length = this.length; n < length; n ++) {
-				this[n].removeEventListener(type, listener, useCapture);
-			}
-		};
-		proto.addEventListener = function(type, listener, useCapture) {
-			for (var n = 0, length = this.length; n < length; n ++) {
-				this[n].addEventListener(type, listener, useCapture);
-			}
-		};
-	}
+	};
+	proto.addEventListener = function(type, listener, useCapture) {
+		for (var n = 0, length = this.length; n < length; n ++) {
+			this[n].addEventListener(type, listener, useCapture);
+		}
+	};
 })();
 
 return root;

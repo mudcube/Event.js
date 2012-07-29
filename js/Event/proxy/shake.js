@@ -51,7 +51,7 @@ root.devicemotion = function(conf) {
 		self.acceleration.y = o.y - gravity.y;
 		self.acceleration.z = o.z - gravity.z;
 		///
-		if (conf.type === "devicemotion") {
+		if (conf.gesture === "devicemotion") {
 			return conf.listener(e, self);
 		} 
 		var data = "xyz";

@@ -20,7 +20,7 @@ root.swipe = function(conf) {
 	conf.threshold = conf.threshold || 1; // velocity threshold.
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
-		if (root.gestureStart(event, conf)) {
+		if (root.pointerStart(event, conf)) {
 			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
 			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
@@ -30,7 +30,7 @@ root.swipe = function(conf) {
 		var length = touches.length;
 		for (var i = 0; i < length; i ++) {
 			var touch = touches[i];
-			var sid = touch.identifier || 0;
+			var sid = touch.identifier || Infinity;
 			var o = conf.tracker[sid];
 			// Identifier defined outside of listener.
 			if (!o) continue; 
@@ -40,7 +40,7 @@ root.swipe = function(conf) {
 		}
 	};
 	conf.onPointerUp = function(event) {
-		if (root.gestureEnd(event, conf)) {
+		if (root.pointerEnd(event, conf)) {
 			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 			///
@@ -70,12 +70,13 @@ root.swipe = function(conf) {
 				self.angle = -((((degree1 / conf.snap + 0.5) >> 0) * conf.snap || 360) - 360);
 				self.velocity = velocity1;
 				self.fingers = conf.gestureFingers;
+				self.state = "swipe";
 				conf.listener(event, self);
 			}
 		}
 	};
 	// Generate maintenance commands, and other configurations.
-	var self = root.setup(conf);
+	var self = root.pointerSetup(conf);
 	// Attach events.
 	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.

@@ -3,28 +3,45 @@
   <meta name="viewport" content="width=device-width">
 </head>
 <style>
-  body {
+  html, body {
+  	font-family: arial;
+  	margin: 0;
     overflow: hidden;
+    width: 100%;
+    height: 100%;
+  }
+  div.container {
+  	position: absolute; right: 0; background: #000; color: #fff; z-index: 1; padding-bottom: 0.5em;
+  }
+  div.header {
+	background: #ff0; color: #000; padding: 0.5em; margin-bottom: 0.25em;
   }
   #test {
+  	padding: 1em;
     background: green;
-    width: 480px;
-    height: 480px;
+    width: 100%;
+    height: 100%;
     margin: 0 auto;
     overflow: hidden;
     color: white;
     -ms-touch-action: none;
   }
+  li {
+  	list-style-type: square;
+  	padding: 0.15em 0.5em;
+  }
 </style>
 <body>
-<div id="test"></div>
-Supported gestures: 
+<div class="container">
+<div class="header">Supported gestures</div>
 <li>longpress
 <li>dbltap
 <li>gesture
 <li>swipe
 <li>tap
 <li>drag
+</div>
+<div id="test"></div>
 <!-- Pointer events library. -->
 <script src="../js/Event.js"></script>
 <script>
@@ -32,31 +49,36 @@ Supported gestures:
 window.onload = function() {
   var test = document.querySelector('#test');
   test.addEventListener('longpress', function(e) {
-    log('longpress', e.state);
+    log(e, "gesture", "identifier", "state", "x", "y");
     console.log('longpress', e, e.state);
   });
   test.addEventListener('dbltap', function(e) {
-    log('dbltap', e.state);
-    console.log('dbltap', e, e.state);
+    log(e, "gesture", "identifier", "state", "x", "y");
+    console.log('dbltap', e);
   });
   test.addEventListener('gesture', function(e) {
-    log('gesture', e.state);
+    log(e, "gesture", "identifier", "state");
     console.log('gesture', e, e.state);
   });
   test.addEventListener('drag', function(e) {
-    log('drag', e.state);
+  	e.preventDefault();
+    log(e, "gesture", "identifier", "state", "x", "y");
     console.log('drag', e, e.state);
   });
   test.addEventListener('tap', function(e) {
-    log('tap', e.state);
-    console.log('tap', e, e.state);
+    log(e, "gesture", "identifier", "state", "x", "y");
+    console.log('tap', e);
   });
   test.addEventListener('swipe', function(e) {
-    log('swipe', e.state);
-    console.log('swipe', e, e.state);
+    log(e, "gesture", "identifier", "state", "angle", "velocity");
+    console.log('swipe', e, e.state, e.angle, e.velocity);
   });
-  function log(a,b) {
-    test.innerHTML = a+"-"+b + '<br/>' + test.innerHTML;
+  function log(e) {	
+  	var text = "";
+	for (var n = 1, length = arguments.length; n < length; n ++) {
+		text += "&nbsp;&nbsp;&nbsp;&nbsp;" + arguments[n] + "(" + String(e[arguments[n]]).toUpperCase() + ")";
+	}
+	test.innerHTML = text + '<br/>' + test.innerHTML;
   }
 };
 

@@ -3,7 +3,7 @@
 	----------------------------------------------------
 	Event.add(window, "dblclick", function(event, self) {});
 	----------------------------------------------------
-	Touch an target twice for <= 700ms, with less than 15 pixel drift.
+	Touch an target twice for <= 700ms, with less than 25 pixel drift.
 */
 
 if (typeof(Event) === "undefined") var Event = {};
@@ -33,7 +33,7 @@ root.dblclick = function(conf) {
 				time0 = 0;
 			}, delay);
 		}
-		if (root.gestureStart(event, conf)) {
+		if (root.pointerStart(event, conf)) {
 			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
 			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
@@ -57,13 +57,13 @@ root.dblclick = function(conf) {
 		}
 	};
 	conf.onPointerUp = function(event) {
-		if (root.gestureEnd(event, conf)) {
+		if (root.pointerEnd(event, conf)) {
 			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 		}
 		if (time0 && time1) {
 			if (time1 <= delay && !(event.cancelBubble && ++event.bubble > 1)) {
-				self.state = conf.type;
+				self.state = conf.gesture;
 				conf.listener(event, self);
 			}
 			clearTimeout(timeout);
@@ -71,7 +71,7 @@ root.dblclick = function(conf) {
 		}
 	};
 	// Generate maintenance commands, and other configurations.
-	var self = root.setup(conf);
+	var self = root.pointerSetup(conf);
 	// Attach events.
 	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.

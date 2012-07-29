@@ -1,3 +1,8 @@
+var PointerTypes = {
+	TOUCH: 'touch',
+	MOUSE: 'mouse'
+};
+
 window.addEventListener('load', function() {
   example = document.querySelector('#test');
 });
@@ -169,10 +174,10 @@ module('gesture');
 
 test('doubletap should work based on pointer events', function() {
   expect(1);
-  example.addEventListener('gesturedoubletap', function(e) {
+  example.addEventListener('dbltap', function(e) {
     start();
     ok(true, 'doubletap fired!');
-    example.removeEventListener('gesturedoubletap', arguments.callee);
+    example.removeEventListener('dbltap', arguments.callee);
   });
   synthesizeEvent('pointerdown', {getPointerList: mockGetPointerList});
   setTimeout(function() {
@@ -184,9 +189,9 @@ test('doubletap should work based on pointer events', function() {
 test('doubletap should not fire if the delay between pointerdowns is too large', function() {
   var didFire = false;
   expect(1);
-  example.addEventListener('gesturedoubletap', function(e) {
+  example.addEventListener('dbltap', function(e) {
     didFire = true;
-    example.removeEventListener('gesturedoubletap', arguments.callee);
+    example.removeEventListener('dbltap', arguments.callee);
   });
   synthesizeEvent('pointerdown', {getPointerList: mockGetPointerList});
   setTimeout(function() {
@@ -200,10 +205,10 @@ test('doubletap should not fire if the delay between pointerdowns is too large',
 });
 
 test('longpress should work based on pointers', function() {
-  example.addEventListener('gesturelongpress', function(e) {
+  example.addEventListener('longpress', function(e) {
     start();
     ok(true, 'longpress fired!');
-    example.removeEventListener('gesturelongpress', arguments.callee);
+    example.removeEventListener('longpress', arguments.callee);
   });
   synthesizeEvent('pointerdown', {getPointerList: mockGetPointerList});
   stop();
