@@ -45,7 +45,7 @@ https://github.com/borismus/pointer.js.
     <script src="js/Vector2.js"></script>
     <script src="js/ShipMovingTouch.js"></script>
     <script src="js/BulletSebs.js"></script>
-	<script src="../js/Pointer.js"></script>
+	<script src="../js/Event.js"></script>
     <script>
 // shim layer with setTimeout fallback
 window.requestAnimFrame = (function(){
@@ -199,7 +199,7 @@ function makeBullet() {
 }
 
 function onPointerDown(e) {
-  pointers = e.getPointerList();
+  pointers = e.pointers;
 
   for(var i = 0; i<pointers.length; i++){
     var pointer =pointers[i]; 
@@ -220,7 +220,7 @@ function onPointerDown(e) {
 
 function onPointerMove(e) {
   // Prevent the browser from doing its default thing (scroll, zoom)
-  pointers = e.getPointerList();
+  pointers = e.pointers;
 
   for(var i = 0; i<pointers.length; i++){
     var pointer =pointers[i]; 
@@ -236,9 +236,14 @@ function onPointerMove(e) {
 
 } 
 
+var PointerTypes = {
+	TOUCH: 'touch',
+	MOUSE: 'mouse'
+};
+
 function onPointerUp(e) { 
 
-  pointers = e.getPointerList(); 
+  pointers = [];
   if (pointers.length == 0) {
     leftPointerID = -1; 
     if (e.pointerType == PointerTypes.pointer) {

@@ -14,11 +14,10 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
-root.shake =
-root.devicemotion = function(conf) {
+root.shake = function(conf) {
 	// Externally accessible data.
 	var self = {
-		type: "devicemotion",
+		gesture: "devicemotion",
 		acceleration: {},
 		accelerationIncludingGravity: {},
 		target: conf.target,
@@ -106,7 +105,6 @@ root.devicemotion = function(conf) {
 Event.Gesture = Event.Gesture || {};
 Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
 Event.Gesture._gestureHandlers.shake = root.shake;
-Event.Gesture._gestureHandlers.devicemotion = root.devicemotion;
 
 return root;
 

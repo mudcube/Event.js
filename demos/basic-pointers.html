@@ -33,7 +33,7 @@ Move your mouse or finger around on the green area.
   });
   test.addEventListener('pointermove', function(e) {
     log('pointermove, pointerType: ' + e.pointerType);
-    log('pointer count: ' + e.getPointerList().length);
+    log('pointer count: ' + e.pointers.length);
   });
   test.addEventListener('pointerup', function(e) {
     log('pointerup, pointerType: ' + e.pointerType);

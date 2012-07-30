@@ -34,12 +34,15 @@
 <body>
 <div class="container">
 <div class="header">Supported gestures</div>
-<li>longpress
+<li>click
+<li>drag
 <li>dbltap
 <li>gesture
+<li>longpress
+<li>shake
 <li>swipe
 <li>tap
-<li>drag
+<li>wheel
 </div>
 <div id="test"></div>
 <!-- Pointer events library. -->
@@ -48,37 +51,49 @@
 
 window.onload = function() {
   var test = document.querySelector('#test');
-  test.addEventListener('longpress', function(e) {
-    log(e, "gesture", "identifier", "state", "x", "y");
-    console.log('longpress', e, e.state);
-  });
-  test.addEventListener('dbltap', function(e) {
-    log(e, "gesture", "identifier", "state", "x", "y");
-    console.log('dbltap', e);
-  });
-  test.addEventListener('gesture', function(e) {
-    log(e, "gesture", "identifier", "state");
-    console.log('gesture', e, e.state);
-  });
-  test.addEventListener('drag', function(e) {
-  	e.preventDefault();
-    log(e, "gesture", "identifier", "state", "x", "y");
-    console.log('drag', e, e.state);
-  });
-  test.addEventListener('tap', function(e) {
-    log(e, "gesture", "identifier", "state", "x", "y");
-    console.log('tap', e);
-  });
-  test.addEventListener('swipe', function(e) {
-    log(e, "gesture", "identifier", "state", "angle", "velocity");
-    console.log('swipe', e, e.state, e.angle, e.velocity);
-  });
+	test.addEventListener("click", function(event) {
+		if (!event.gesture) return; //- figure out how to override native events entirely
+		log(event, "gesture", "identifier", "state", "x", "y");
+	});
+	// "Double-Click" :: fingers, minFingers, maxFingers.
+	test.addEventListener("dbltap", function(event) {
+		if (!event.gesture) return; //- figure out how to override native events entirely
+		log(event, "gesture", "identifier", "state", "x", "y");
+	});
+	// "Drag" :: fingers, maxFingers, position
+	test.addEventListener("drag", function(event) {
+		log(event, "gesture", "identifier", "state", "fingers", "state", "x", "y");
+	});
+	// "Gesture" :: fingers, minFingers, maxFingers.
+	test.addEventListener("gesture", "identifier", "state", function(event) {
+		log(event, "gesture", "identifier", "state", "fingers", "rotation", "scale");
+	});
+	// "Swipe" :: fingers, minFingers, maxFingers, snap, threshold.
+	test.addEventListener("swipe", function(event) {
+		log(event, "gesture", "identifier", "state", "fingers", "velocity", "angle");
+	});
+	// "Tap" :: fingers, minFingers, maxFingers, timeout.
+	test.addEventListener("tap", function(event) {
+		log(event, "gesture", "identifier", "state", "fingers", "x", "y");
+	});
+	// "Longpress" :: fingers, minFingers, maxFingers, delay.
+	test.addEventListener("longpress", function(event) {
+		log(event, "gesture", "identifier", "state", "fingers", "x", "y");
+	});
+	//
+	test.addEventListener("shake", function(event) {
+		log(event, "gesture", "identifier", "state");
+	});
+	//
+	test.addEventListener("wheel", function(event) {
+		log(event, "gesture", "state", "wheelDelta");
+	});
   function log(e) {	
   	var text = "";
 	for (var n = 1, length = arguments.length; n < length; n ++) {
 		text += "&nbsp;&nbsp;&nbsp;&nbsp;" + arguments[n] + "(" + String(e[arguments[n]]).toUpperCase() + ")";
 	}
-	test.innerHTML = text + '<br/>' + test.innerHTML;
+	test.innerHTML = text + '<br/>' + test.innerHTML.substr(0, 10000);
   }
 };
 

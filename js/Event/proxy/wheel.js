@@ -1,7 +1,7 @@
 /*
 	"Mouse Wheel" event proxy.
 	----------------------------------------------------
-	Event.add(window, "mousewheel", function(event, self) {
+	Event.add(window, "wheel", function(event, self) {
 		console.log(self.state, self.wheelDelta);
 	});
 */
@@ -11,12 +11,14 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
-root.mousewheel = function(conf) {
+root.wheel = function(conf) {
 	// Configure event listener.
+	var interval;
 	var timeout = conf.timeout || 150;
+	var count = 0;
 	// Externally accessible data.
 	var self = {
-		type: "mousewheel",
+		gesture: "wheel",
 		state: "start",
 		wheelDelta: 0,
 		target: conf.target,
@@ -28,18 +30,23 @@ root.mousewheel = function(conf) {
 	// Tracking the events.
 	var onMouseWheel = function(event) {
 		event = event || window.event;
-		self.state = "start";
+		self.state = count++ ? "change" : "start";
 		self.wheelDelta = event.detail ? event.detail * -40 : event.wheelDelta;
 		if (Event.modifyEventListener) {
 			Event.createPointerEvent(event, self, conf);
 		} else {
 			conf.listener(event, self);
 		}
-		clearTimeout(timeout);
-		timeout = setTimeout(function() {
+		clearTimeout(interval);
+		interval = setTimeout(function() {
+			count = 0;
 			self.state = "end";
 			self.wheelDelta = 0;
-			conf.listener(event, self);
+			if (Event.modifyEventListener) {
+				Event.createPointerEvent(event, self, conf);
+			} else {
+				conf.listener(event, self);
+			}
 		}, timeout);
 	};
 	// Attach events.
@@ -53,7 +60,7 @@ root.mousewheel = function(conf) {
 
 Event.Gesture = Event.Gesture || {};
 Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
-Event.Gesture._gestureHandlers.mousewheel = root.mousewheel;
+Event.Gesture._gestureHandlers.wheel = root.wheel;
 
 return root;
 

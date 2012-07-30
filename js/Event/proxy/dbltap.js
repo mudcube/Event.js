@@ -76,6 +76,7 @@ root.dblclick = function(conf) {
 	};
 	// Generate maintenance commands, and other configurations.
 	var self = root.pointerSetup(conf);
+	self.state = "dblclick";
 	// Attach events.
 	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.

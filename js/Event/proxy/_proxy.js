@@ -212,6 +212,9 @@ root.getCoords = function(event) {
 	if (typeof(event.pageX) !== "undefined") { // Desktop browsers.
 		root.getCoords = function(event) {
 			return Array({
+				type: "mouse",
+				x: event.pageX,
+				y: event.pageY,
 				pageX: event.pageX,
 				pageY: event.pageY,
 				identifier: Infinity
@@ -221,6 +224,9 @@ root.getCoords = function(event) {
 		root.getCoords = function(event) {
 			event = event || window.event;
 			return Array({
+				type: "mouse",
+				x: event.clientX + document.documentElement.scrollLeft,
+				y: event.clientY + document.documentElement.scrollTop,
 				pageX: event.clientX + document.documentElement.scrollLeft,
 				pageY: event.clientY + document.documentElement.scrollTop,
 				identifier: Infinity

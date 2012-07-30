@@ -47,6 +47,7 @@ root.click = function(conf) {
 	};
 	// Generate maintenance commands, and other configurations.
 	var self = root.pointerSetup(conf);
+	self.state = "click";
 	// Attach events.
 	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.

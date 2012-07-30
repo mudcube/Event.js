@@ -30,13 +30,14 @@ var CanvasDrawr = function(options) {
     },
 
     preDraw: function(event) {
-      var pointers = event.getPointerList();
+      var pointers = event.pointers;
       $.each(pointers, function(i, pointer) {
 
         var id      = pointer.identifier || 0, 
         colors  = ["red", "green", "yellow", "blue", "magenta", "orangered"],
         mycolor = colors[Math.floor(Math.random() * colors.length)];
 
+console.log(pointer)
         lines[id] = { x     : pointer.x - offset.left, 
           y     : pointer.y - offset.top, 
           color : mycolor
@@ -48,7 +49,7 @@ var CanvasDrawr = function(options) {
 
     draw: function(event) {
       var e = event, hmm = {};
-      var pointers = event.getPointerList();
+      var pointers = event.pointers;
       $.each(pointers, function(i, pointer) {
         var id = pointer.identifier || 0,
         moveX = pointer.x - offset.left - lines[id].x,

@@ -720,6 +720,9 @@ root.getCoords = function(event) {
 	if (typeof(event.pageX) !== "undefined") { // Desktop browsers.
 		root.getCoords = function(event) {
 			return Array({
+				type: "mouse",
+				x: event.pageX,
+				y: event.pageY,
 				pageX: event.pageX,
 				pageY: event.pageY,
 				identifier: Infinity
@@ -729,6 +732,9 @@ root.getCoords = function(event) {
 		root.getCoords = function(event) {
 			event = event || window.event;
 			return Array({
+				type: "mouse",
+				x: event.clientX + document.documentElement.scrollLeft,
+				y: event.clientY + document.documentElement.scrollTop,
 				pageX: event.clientX + document.documentElement.scrollLeft,
 				pageY: event.clientY + document.documentElement.scrollTop,
 				identifier: Infinity
@@ -900,6 +906,7 @@ root.click = function(conf) {
 	};
 	// Generate maintenance commands, and other configurations.
 	var self = root.pointerSetup(conf);
+	self.state = "click";
 	// Attach events.
 	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.
@@ -991,6 +998,7 @@ root.dblclick = function(conf) {
 	};
 	// Generate maintenance commands, and other configurations.
 	var self = root.pointerSetup(conf);
+	self.state = "dblclick";
 	// Attach events.
 	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.
@@ -1045,6 +1053,7 @@ root.drag = function(conf) {
 			self.state = state || "move";
 			self.identifier = identifier;
 			self.start = pt.start;
+			self.fingers = 1; // TODO(mud): option to track as single set, or individually.
 			self.x = (pt.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
 			self.y = (pt.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
 			///
@@ -1258,6 +1267,7 @@ root.pointerup = function(conf) {
 	if (conf.target.isPointerEmitter) return;
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
+		self.gesture = "pointerdown";
 		if (Event.modifyEventListener) {
 			Event.createPointerEvent(event, self, conf);
 		} else {
@@ -1265,13 +1275,17 @@ root.pointerup = function(conf) {
 		}
 	};
 	conf.onPointerMove = function (event) {
-		if (Event.modifyEventListener) {
-			Event.createPointerEvent(event, self, conf);
-		} else {
-			conf.listener(event, self);
+		if (self.gesture !== "pointerup") {
+			self.gesture = "pointermove";
+			if (Event.modifyEventListener) {
+				Event.createPointerEvent(event, self, conf);
+			} else {
+				conf.listener(event, self);
+			}
 		}
 	};
 	conf.onPointerUp = function (event) {
+		self.gesture = "pointerup";
 		if (Event.modifyEventListener) {
 			Event.createPointerEvent(event, self, conf);
 		} else {
@@ -1280,6 +1294,7 @@ root.pointerup = function(conf) {
 	};
 	// Generate maintenance commands, and other configurations.
 	var self = root.pointerSetup(conf);
+	self.gesture = "pointerup";
 	// Attach events.
 	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	Event.add(conf.target, "mousemove", conf.onPointerMove);
@@ -1314,11 +1329,10 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
-root.shake =
-root.devicemotion = function(conf) {
+root.shake = function(conf) {
 	// Externally accessible data.
 	var self = {
-		type: "devicemotion",
+		gesture: "devicemotion",
 		acceleration: {},
 		accelerationIncludingGravity: {},
 		target: conf.target,
@@ -1406,7 +1420,6 @@ root.devicemotion = function(conf) {
 Event.Gesture = Event.Gesture || {};
 Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
 Event.Gesture._gestureHandlers.shake = root.shake;
-Event.Gesture._gestureHandlers.devicemotion = root.devicemotion;
 
 return root;
 
@@ -1633,7 +1646,7 @@ return root;
 /*
 	"Mouse Wheel" event proxy.
 	----------------------------------------------------
-	Event.add(window, "mousewheel", function(event, self) {
+	Event.add(window, "wheel", function(event, self) {
 		console.log(self.state, self.wheelDelta);
 	});
 */
@@ -1643,12 +1656,14 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
-root.mousewheel = function(conf) {
+root.wheel = function(conf) {
 	// Configure event listener.
+	var interval;
 	var timeout = conf.timeout || 150;
+	var count = 0;
 	// Externally accessible data.
 	var self = {
-		type: "mousewheel",
+		gesture: "wheel",
 		state: "start",
 		wheelDelta: 0,
 		target: conf.target,
@@ -1660,18 +1675,23 @@ root.mousewheel = function(conf) {
 	// Tracking the events.
 	var onMouseWheel = function(event) {
 		event = event || window.event;
-		self.state = "start";
+		self.state = count++ ? "change" : "start";
 		self.wheelDelta = event.detail ? event.detail * -40 : event.wheelDelta;
 		if (Event.modifyEventListener) {
 			Event.createPointerEvent(event, self, conf);
 		} else {
 			conf.listener(event, self);
 		}
-		clearTimeout(timeout);
-		timeout = setTimeout(function() {
+		clearTimeout(interval);
+		interval = setTimeout(function() {
+			count = 0;
 			self.state = "end";
 			self.wheelDelta = 0;
-			conf.listener(event, self);
+			if (Event.modifyEventListener) {
+				Event.createPointerEvent(event, self, conf);
+			} else {
+				conf.listener(event, self);
+			}
 		}, timeout);
 	};
 	// Attach events.
@@ -1685,7 +1705,7 @@ root.mousewheel = function(conf) {
 
 Event.Gesture = Event.Gesture || {};
 Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
-Event.Gesture._gestureHandlers.mousewheel = root.mousewheel;
+Event.Gesture._gestureHandlers.wheel = root.wheel;
 
 return root;
 

@@ -121,17 +121,17 @@ function draw() {
 */	
 
 function onPointerDown(e) {
-  touches = e.getPointerList(); 
+  touches = e.pointers;
 }
 
 function onPointerMove(e) {
   // Prevent the browser from doing its default thing (scroll, zoom)
   e.preventDefault();
-  touches = e.getPointerList(); 
+  touches = e.pointers;
 } 
 
 function onPointerUp(e) { 
-  touches = e.getPointerList(); 
+  touches = [];
 }
 
 
