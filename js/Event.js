@@ -385,16 +385,24 @@ var batch = function(events) {
 	};
 };
 
+if (window.navigator.msPointerEnabled) {
+	root.pointerType = "mspointer";
+} else if (root.supports("touchstart")) {
+	root.pointerType = "touch";
+} else { ///
+	root.pointerType = "mouse";
+}
+
 /// Handle naming discrepancies between platforms.
 var normalize = (function() {
 	/// MSIE Pointer event
-	var mspointer = window.navigator.msPointerEnabled ? {
+	var mspointer = root.pointerType === "mspointer" ? {
 		"mousedown": "MSPointerDown",
 		"mousemove": "MSPointerMove",
 		"mouseup": "MSPointerUp"
 	} : { };
 	/// Touch event
-	var touch = root.supports("touchstart") ? {
+	var touch = root.pointerType === "touch" ? {
 		"mousedown": "touchstart",
 		"mouseup": "touchend",
 		"mousemove": "touchmove"
@@ -432,12 +440,15 @@ var remove = document.removeEventListener ? "removeEventListener" : "detachEvent
 	Modified from; https://github.com/borismus/pointer.js
 */
 
-root.createPointerEvent = function (event, self, conf) {
+root.createPointerEvent = function (event, self, conf, skip) {
 	var eventName = self.gesture;
 	var target = self.target;
-	self.pointers = event.targetTouches || root.proxy.getCoords(event);
-	self.pageX = self.pointers[0].pageX;
-	self.pageY = self.pointers[0].pageY;
+	var pts = event.targetTouches || root.proxy.getCoords(event);
+	var pt = pts[0];
+	///
+	self.pointers = skip ? [] : pts;
+	self.pageX = pt.pageX;
+	self.pageY = pt.pageY;
 	self.x = self.pageX;
 	self.y = self.pageY;
 	self.identifier = conf.identifier;
@@ -554,6 +565,7 @@ root.pointerSetup = function(conf, self) {
 	self.gesture = conf.gesture;
 	self.target = conf.target;
 	self.listener = conf.listener;
+	self.pointerType = Event.pointerType;
 	self.remove = function() {
 		if (conf.onPointerDown) Event.remove(conf.target, type + "down", conf.onPointerDown);
 		if (conf.onPointerMove) Event.remove(conf.doc, type + "move", conf.onPointerMove);
@@ -1266,7 +1278,9 @@ root.pointermove =
 root.pointerup = function(conf) {
 	if (conf.target.isPointerEmitter) return;
 	// Tracking the events.
+	var isDown = true;
 	conf.onPointerDown = function (event) {
+		isDown = false;
 		self.gesture = "pointerdown";
 		if (Event.modifyEventListener) {
 			Event.createPointerEvent(event, self, conf);
@@ -1275,19 +1289,18 @@ root.pointerup = function(conf) {
 		}
 	};
 	conf.onPointerMove = function (event) {
-		if (self.gesture !== "pointerup") {
-			self.gesture = "pointermove";
-			if (Event.modifyEventListener) {
-				Event.createPointerEvent(event, self, conf);
-			} else {
-				conf.listener(event, self);
-			}
+		self.gesture = "pointermove";
+		if (Event.modifyEventListener) {
+			Event.createPointerEvent(event, self, conf, isDown);
+		} else {
+			conf.listener(event, self);
 		}
 	};
 	conf.onPointerUp = function (event) {
+		isDown = true;
 		self.gesture = "pointerup";
 		if (Event.modifyEventListener) {
-			Event.createPointerEvent(event, self, conf);
+			Event.createPointerEvent(event, self, conf, true);
 		} else {
 			conf.listener(event, self);
 		}

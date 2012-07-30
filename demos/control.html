@@ -243,7 +243,7 @@ var PointerTypes = {
 
 function onPointerUp(e) { 
 
-  pointers = [];
+  pointers = e.pointers;
   if (pointers.length == 0) {
     leftPointerID = -1; 
     if (e.pointerType == PointerTypes.pointer) {

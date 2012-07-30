@@ -46,6 +46,7 @@ root.pointerSetup = function(conf, self) {
 	self.gesture = conf.gesture;
 	self.target = conf.target;
 	self.listener = conf.listener;
+	self.pointerType = Event.pointerType;
 	self.remove = function() {
 		if (conf.onPointerDown) Event.remove(conf.target, type + "down", conf.onPointerDown);
 		if (conf.onPointerMove) Event.remove(conf.doc, type + "move", conf.onPointerMove);

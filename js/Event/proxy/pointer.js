@@ -18,7 +18,9 @@ root.pointermove =
 root.pointerup = function(conf) {
 	if (conf.target.isPointerEmitter) return;
 	// Tracking the events.
+	var isDown = true;
 	conf.onPointerDown = function (event) {
+		isDown = false;
 		self.gesture = "pointerdown";
 		if (Event.modifyEventListener) {
 			Event.createPointerEvent(event, self, conf);
@@ -27,19 +29,18 @@ root.pointerup = function(conf) {
 		}
 	};
 	conf.onPointerMove = function (event) {
-		if (self.gesture !== "pointerup") {
-			self.gesture = "pointermove";
-			if (Event.modifyEventListener) {
-				Event.createPointerEvent(event, self, conf);
-			} else {
-				conf.listener(event, self);
-			}
+		self.gesture = "pointermove";
+		if (Event.modifyEventListener) {
+			Event.createPointerEvent(event, self, conf, isDown);
+		} else {
+			conf.listener(event, self);
 		}
 	};
 	conf.onPointerUp = function (event) {
+		isDown = true;
 		self.gesture = "pointerup";
 		if (Event.modifyEventListener) {
-			Event.createPointerEvent(event, self, conf);
+			Event.createPointerEvent(event, self, conf, true);
 		} else {
 			conf.listener(event, self);
 		}
