@@ -331,7 +331,7 @@ var eventManager = function(target, type, listener, configure, trigger) {
 		} else if (trigger === "add") { // Attach event listener.
 			if (wrappers[id]) return wrappers[id]; // Already attached.
 			// Retains "this" orientation.
-			if (configure.useCall) {
+			if (configure.useCall && !root.modifyEventListener) {
 				var tmp = listener;
 				var listener = function(event, self) {
 					for (var key in self) event[key] = self[key];
@@ -385,32 +385,30 @@ var batch = function(events) {
 	};
 };
 
-if (window.navigator.msPointerEnabled) {
-	root.pointerType = "mspointer";
-} else if (root.supports("touchstart")) {
-	root.pointerType = "touch";
-} else { ///
-	root.pointerType = "mouse";
-}
-
 /// Handle naming discrepancies between platforms.
 var normalize = (function() {
-	/// MSIE Pointer event
-	var mspointer = root.pointerType === "mspointer" ? {
-		"mousedown": "MSPointerDown",
-		"mousemove": "MSPointerMove",
-		"mouseup": "MSPointerUp"
-	} : { };
-	/// Touch event
-	var touch = root.pointerType === "touch" ? {
-		"mousedown": "touchstart",
-		"mouseup": "touchend",
-		"mousemove": "touchmove"
-	} : { };	
-	/// Normalize.
+	var translate = {};
 	return function(type) {
-		if (mspointer[type]) type = mspointer[type];
-		if (touch[type]) type = touch[type];
+		if (!root.pointerType) {
+			if (window.navigator.msPointerEnabled) {
+				root.pointerType = "mspointer";
+				translate = {
+					"mousedown": "MSPointerDown",
+					"mousemove": "MSPointerMove",
+					"mouseup": "MSPointerUp"
+				};
+			} else if (root.supports("touchstart")) {
+				root.pointerType = "touch";
+				translate = {
+					"mousedown": "touchstart",
+					"mouseup": "touchend",
+					"mousemove": "touchmove"
+				};	
+			} else {
+				root.pointerType = "mouse";
+			}
+		}	
+		if (translate[type]) type = translate[type];
 		if (!document.addEventListener) { // IE
 			return "on" + type;
 		} else {
@@ -440,19 +438,21 @@ var remove = document.removeEventListener ? "removeEventListener" : "detachEvent
 	Modified from; https://github.com/borismus/pointer.js
 */
 
-root.createPointerEvent = function (event, self, conf, skip) {
+root.createPointerEvent = function (event, self, conf, preventRecord) {
 	var eventName = self.gesture;
 	var target = self.target;
-	var pts = event.targetTouches || root.proxy.getCoords(event);
-	var pt = pts[0];
+	var pts = event.changedTouches || root.proxy.getCoords(event);
 	///
-	self.pointers = skip ? [] : pts;
-	self.pageX = pt.pageX;
-	self.pageY = pt.pageY;
-	self.x = self.pageX;
-	self.y = self.pageY;
+	if (pts.length) {
+		var pt = pts[0];
+		self.pointers = preventRecord ? [] : pts;
+		self.pageX = pt.pageX;
+		self.pageY = pt.pageY;
+		self.x = self.pageX;
+		self.y = self.pageY;
+	}
+	///
 	self.identifier = conf.identifier;
-	///
 	var newEvent = document.createEvent("Event");
 	newEvent.initEvent(eventName, true, true);
 	newEvent.originalEvent = event;
@@ -627,15 +627,15 @@ root.pointerStart = function(event, conf) {
 	var track = conf.tracker;
 	var touches = event.changedTouches || root.getCoords(event);
 	var length = touches.length;
-	var ids = [];
 	// Adding touch events to tracking.
 	for (var i = 0; i < length; i ++) {
 		var touch = touches[i];
 		var sid = touch.identifier || Infinity; // Touch ID.
-		ids.push(sid); // generate batch id.
 		// Track the current state of the touches.
 		if (conf.fingers) {
 			if (conf.fingers >= conf.maxFingers) {
+				var ids = [];
+				for (var sid in conf.tracker) ids.push(sid);
 				conf.identifier = ids.join(",");
 				return isTouchStart;
 			}
@@ -662,7 +662,10 @@ root.pointerStart = function(event, conf) {
 		}
 	}
 	///
+	var ids = [];
+	for (var sid in conf.tracker) ids.push(sid);
 	conf.identifier = ids.join(",");
+	///
 	return isTouchStart;
 };
 
@@ -1121,7 +1124,6 @@ var RAD_DEG = Math.PI / 180;
 
 root.gesture = function(conf) {
 	conf.minFingers = conf.minFingers || conf.fingers || 2;
-	conf.maxFingers = conf.maxFingers || conf.fingers || 2;
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
 		var fingers = conf.fingers;

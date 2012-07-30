@@ -108,15 +108,15 @@ root.pointerStart = function(event, conf) {
 	var track = conf.tracker;
 	var touches = event.changedTouches || root.getCoords(event);
 	var length = touches.length;
-	var ids = [];
 	// Adding touch events to tracking.
 	for (var i = 0; i < length; i ++) {
 		var touch = touches[i];
 		var sid = touch.identifier || Infinity; // Touch ID.
-		ids.push(sid); // generate batch id.
 		// Track the current state of the touches.
 		if (conf.fingers) {
 			if (conf.fingers >= conf.maxFingers) {
+				var ids = [];
+				for (var sid in conf.tracker) ids.push(sid);
 				conf.identifier = ids.join(",");
 				return isTouchStart;
 			}
@@ -143,7 +143,10 @@ root.pointerStart = function(event, conf) {
 		}
 	}
 	///
+	var ids = [];
+	for (var sid in conf.tracker) ids.push(sid);
 	conf.identifier = ids.join(",");
+	///
 	return isTouchStart;
 };
 

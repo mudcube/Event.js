@@ -331,7 +331,7 @@ var eventManager = function(target, type, listener, configure, trigger) {
 		} else if (trigger === "add") { // Attach event listener.
 			if (wrappers[id]) return wrappers[id]; // Already attached.
 			// Retains "this" orientation.
-			if (configure.useCall) {
+			if (configure.useCall && !root.modifyEventListener) {
 				var tmp = listener;
 				var listener = function(event, self) {
 					for (var key in self) event[key] = self[key];
@@ -385,32 +385,30 @@ var batch = function(events) {
 	};
 };
 
-if (window.navigator.msPointerEnabled) {
-	root.pointerType = "mspointer";
-} else if (root.supports("touchstart")) {
-	root.pointerType = "touch";
-} else { ///
-	root.pointerType = "mouse";
-}
-
 /// Handle naming discrepancies between platforms.
 var normalize = (function() {
-	/// MSIE Pointer event
-	var mspointer = root.pointerType === "mspointer" ? {
-		"mousedown": "MSPointerDown",
-		"mousemove": "MSPointerMove",
-		"mouseup": "MSPointerUp"
-	} : { };
-	/// Touch event
-	var touch = root.pointerType === "touch" ? {
-		"mousedown": "touchstart",
-		"mouseup": "touchend",
-		"mousemove": "touchmove"
-	} : { };	
-	/// Normalize.
+	var translate = {};
 	return function(type) {
-		if (mspointer[type]) type = mspointer[type];
-		if (touch[type]) type = touch[type];
+		if (!root.pointerType) {
+			if (window.navigator.msPointerEnabled) {
+				root.pointerType = "mspointer";
+				translate = {
+					"mousedown": "MSPointerDown",
+					"mousemove": "MSPointerMove",
+					"mouseup": "MSPointerUp"
+				};
+			} else if (root.supports("touchstart")) {
+				root.pointerType = "touch";
+				translate = {
+					"mousedown": "touchstart",
+					"mouseup": "touchend",
+					"mousemove": "touchmove"
+				};	
+			} else {
+				root.pointerType = "mouse";
+			}
+		}	
+		if (translate[type]) type = translate[type];
 		if (!document.addEventListener) { // IE
 			return "on" + type;
 		} else {
@@ -440,19 +438,21 @@ var remove = document.removeEventListener ? "removeEventListener" : "detachEvent
 	Modified from; https://github.com/borismus/pointer.js
 */
 
-root.createPointerEvent = function (event, self, conf, skip) {
+root.createPointerEvent = function (event, self, conf, preventRecord) {
 	var eventName = self.gesture;
 	var target = self.target;
-	var pts = event.targetTouches || root.proxy.getCoords(event);
-	var pt = pts[0];
+	var pts = event.changedTouches || root.proxy.getCoords(event);
 	///
-	self.pointers = skip ? [] : pts;
-	self.pageX = pt.pageX;
-	self.pageY = pt.pageY;
-	self.x = self.pageX;
-	self.y = self.pageY;
+	if (pts.length) {
+		var pt = pts[0];
+		self.pointers = preventRecord ? [] : pts;
+		self.pageX = pt.pageX;
+		self.pageY = pt.pageY;
+		self.x = self.pageX;
+		self.y = self.pageY;
+	}
+	///
 	self.identifier = conf.identifier;
-	///
 	var newEvent = document.createEvent("Event");
 	newEvent.initEvent(eventName, true, true);
 	newEvent.originalEvent = event;

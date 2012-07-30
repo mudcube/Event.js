@@ -17,7 +17,6 @@ var RAD_DEG = Math.PI / 180;
 
 root.gesture = function(conf) {
 	conf.minFingers = conf.minFingers || conf.fingers || 2;
-	conf.maxFingers = conf.maxFingers || conf.fingers || 2;
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
 		var fingers = conf.fingers;
