@@ -4,7 +4,6 @@
 // TODO: support more of the touch API: touch{enter, leave, cancel}
 // https://github.com/borismus/MagicTouch
 
-var magictouch;
 var tuio = {
 	cursors: [],
 	// Data structure for associating cursors with objects
@@ -94,66 +93,64 @@ function tuio_callback(type, sid, fid, x, y, angle) {
 
 /////////////////
 
-(function() {
-	magictouch = function (visible) {
-		ontouchstart = ontouchmove = ontouchend = true;
+var magictouch = function (visible) {
+	ontouchstart = ontouchmove = ontouchend = true;
+	///
+	var canvas = document.createElement("canvas");
+	if (!canvas.getContext) return;
+	var ctx = canvas.getContext('2d');
+	var touches = [];
+	var PI_2 = Math.PI * 2;
+	///
+	function update(event) {
+		if (event) {
+			Event.prevent(event);
+			touches = event.touches;
+		}
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		ctx.font = "15px arial";
+		ctx.textBaseline = "middle";
+		ctx.textAlign = "center";
 		///
-		var canvas = document.createElement("canvas");
-		if (!canvas.getContext) return;
-		var ctx = canvas.getContext('2d');
-		var touches = [];
-		var PI_2 = Math.PI * 2;
-		///
-		function update(event) {
-			if (event) {
-				Event.prevent(event);
-				touches = event.touches;
-			}
-			ctx.clearRect(0, 0, canvas.width, canvas.height);
-			ctx.font = "15px arial";
-			ctx.textBaseline = "middle";
-			ctx.textAlign = "center";
-			///
-			for (var i = 0, length = touches.length; i < length; i ++) {
-				var touch = touches[i];
-				var px = touch.pageX;
-				var py = touch.pageY;
-				ctx.beginPath();
-				ctx.arc(px, py, 20, 0, PI_2, true);
-				ctx.fillStyle = "rgba(200, 200, 200, 0.2)";
-				ctx.fill();
-				ctx.fillStyle = "rgba(0, 0, 0, 1)";
-				ctx.fillText(touch.fid || i, px, py);
-				ctx.lineWidth = 2.0;
-				ctx.strokeStyle = "rgba(200, 0, 200, 1)";
-				ctx.stroke();
-			}
-		};
-		///
-		if (typeof(ontouchstart) === "undefined") return;
-		if (typeof(ontouchstart) === "object") return;
-		var object = document.createElement("object");
-		object.id = "tuio";
-		object.type = "application/x-tuio";
-		object.style.cssText = "width: 1px; height: 1px; opacity: 0; position: absolute; top: 0; left: 0;";
-		document.body.appendChild(object);
-		//
-		if (visible === false) return;
-		///
-		canvas.id = "magictouch";
-		canvas.style.cssText = "pointer-events: none; top: 0; left: 0; z-index: 999999; position: absolute;";
-		document.body.appendChild(canvas);
-		/////
-		Event.add(document.body, 'touchstart', update);
-		Event.add(document.body, 'touchmove', update);
-		Event.add(document.body, 'touchend', update);
-		Event.add(window, 'resize', function (event) {
-			var w = window.innerWidth;
-			var h = window.innerHeight;
-			canvas.width = w;
-			canvas.height = h;
-		}).listener();
-		///
-		update();
+		for (var i = 0, length = touches.length; i < length; i ++) {
+			var touch = touches[i];
+			var px = touch.pageX;
+			var py = touch.pageY;
+			ctx.beginPath();
+			ctx.arc(px, py, 20, 0, PI_2, true);
+			ctx.fillStyle = "rgba(200, 200, 200, 0.2)";
+			ctx.fill();
+			ctx.fillStyle = "rgba(0, 0, 0, 1)";
+			ctx.fillText(touch.fid || i, px, py);
+			ctx.lineWidth = 2.0;
+			ctx.strokeStyle = "rgba(200, 0, 200, 1)";
+			ctx.stroke();
+		}
 	};
-})();
+	///
+	if (typeof(ontouchstart) === "undefined") return;
+	if (typeof(ontouchstart) === "object") return;
+	var object = document.createElement("object");
+	object.id = "tuio";
+	object.type = "application/x-tuio";
+	object.style.cssText = "width: 1px; height: 1px; opacity: 0; position: absolute; top: 0; left: 0;";
+	document.body.appendChild(object);
+	//
+	if (visible === false) return;
+	///
+	canvas.id = "magictouch";
+	canvas.style.cssText = "pointer-events: none; top: 0; left: 0; z-index: 999999; position: absolute;";
+	document.body.appendChild(canvas);
+	/////
+	Event.add(document.body, 'touchstart', update);
+	Event.add(document.body, 'touchmove', update);
+	Event.add(document.body, 'touchend', update);
+	Event.add(window, 'resize', function (event) {
+		var w = window.innerWidth;
+		var h = window.innerHeight;
+		canvas.width = w;
+		canvas.height = h;
+	}).listener();
+	///
+	update();
+};
