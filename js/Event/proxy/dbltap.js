@@ -64,7 +64,11 @@ root.dblclick = function(conf) {
 		if (time0 && time1) {
 			if (time1 <= delay && !(event.cancelBubble && ++event.bubble > 1)) {
 				self.state = conf.gesture;
-				conf.listener(event, self);
+				if (Event.modifyEventListener) {
+					Event.createPointerEvent(event, self, conf);
+				} else {
+					conf.listener(event, self);
+				}
 			}
 			clearTimeout(timeout);
 			time0 = time1 = 0;

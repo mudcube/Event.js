@@ -27,7 +27,7 @@ root.click = function(conf) {
 		if (root.pointerEnd(e, conf)) {
 			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
-			if (event.cancelBubble && ++event.bubble > 1) return;
+			if (event.cancelBubble && ++ event.bubble > 1) return;
 			var touches = event.changedTouches || root.getCoords(event);
 			var touch = touches[0];
 			var bbox = conf.bbox;
@@ -37,7 +37,11 @@ root.click = function(conf) {
 			if (ax > 0 && ax < bbox.width && // Within target coordinates.
 				ay > 0 && ay < bbox.height &&
 				bbox.scrollTop === newbbox.scrollTop) {
-				conf.listener(event, self);
+				if (Event.modifyEventListener) {
+					Event.createPointerEvent(event, self, conf);
+				} else {
+					conf.listener(event, self);
+				}
 			}
 		}
 	};

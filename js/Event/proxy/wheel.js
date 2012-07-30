@@ -30,7 +30,11 @@ root.mousewheel = function(conf) {
 		event = event || window.event;
 		self.state = "start";
 		self.wheelDelta = event.detail ? event.detail * -40 : event.wheelDelta;
-		conf.listener(event, self);
+		if (Event.modifyEventListener) {
+			Event.createPointerEvent(event, self, conf);
+		} else {
+			conf.listener(event, self);
+		}
 		clearTimeout(timeout);
 		timeout = setTimeout(function() {
 			self.state = "end";

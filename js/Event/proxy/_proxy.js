@@ -107,13 +107,16 @@ root.pointerStart = function(event, conf) {
 	var track = conf.tracker;
 	var touches = event.changedTouches || root.getCoords(event);
 	var length = touches.length;
+	var ids = [];
 	// Adding touch events to tracking.
 	for (var i = 0; i < length; i ++) {
 		var touch = touches[i];
 		var sid = touch.identifier || Infinity; // Touch ID.
+		ids.push(sid); // generate batch id.
 		// Track the current state of the touches.
 		if (conf.fingers) {
 			if (conf.fingers >= conf.maxFingers) {
+				conf.identifier = ids.join(",");
 				return isTouchStart;
 			}
 			var fingers = 0; // Finger ID.
@@ -139,6 +142,7 @@ root.pointerStart = function(event, conf) {
 		}
 	}
 	///
+	conf.identifier = ids.join(",");
 	return isTouchStart;
 };
 
@@ -187,10 +191,13 @@ root.pointerEnd = function(event, conf, onPointerUp) {
 	// Wait for all fingers to be released.
 	if (conf.fingers !== 0) return false;
 	// Record total number of fingers gesture used.
+	var ids = [];
 	conf.gestureFingers = 0;
 	for (var sid in conf.tracker) {
 		conf.gestureFingers ++;
+		ids.push(sid);
 	}
+	conf.identifier = ids.join(",");
 	// Our pointer gesture has ended.
 	return true;
 };
@@ -204,14 +211,19 @@ root.pointerEnd = function(event, conf, onPointerUp) {
 root.getCoords = function(event) {
 	if (typeof(event.pageX) !== "undefined") { // Desktop browsers.
 		root.getCoords = function(event) {
-			return Array(event);
+			return Array({
+				pageX: event.pageX,
+				pageY: event.pageY,
+				identifier: Infinity
+			});
 		};
 	} else { // Internet Explorer <= 8.0
 		root.getCoords = function(event) {
 			event = event || window.event;
 			return Array({
 				pageX: event.clientX + document.documentElement.scrollLeft,
-				pageY: event.clientY + document.documentElement.scrollTop
+				pageY: event.clientY + document.documentElement.scrollTop,
+				identifier: Infinity
 			});
 		};
 	}

@@ -20,36 +20,21 @@ root.pointerup = function(conf) {
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
 		if (Event.modifyEventListener) {
-			conf.target.mouseEvent = event;
-			Event.createCustomEvent('pointerdown', event.target, {
-				pointerType: 'mouse',
-				getPointerList: Event.getPointerList.bind(conf.target),
-				originalEvent: event
-			});
+			Event.createPointerEvent(event, self, conf);
 		} else {
 			conf.listener(event, self);
 		}
 	};
 	conf.onPointerMove = function (event) {
 		if (Event.modifyEventListener) {
-			if (conf.target.mouseEvent) conf.target.mouseEvent = event;
-			Event.createCustomEvent('pointermove', conf.target, {
-				pointerType: 'mouse',
-				getPointerList: Event.getPointerList.bind(conf.target),
-				originalEvent: event
-			});
+			Event.createPointerEvent(event, self, conf);
 		} else {
 			conf.listener(event, self);
 		}
 	};
 	conf.onPointerUp = function (event) {
 		if (Event.modifyEventListener) {
-			conf.target.mouseEvent = null;
-			Event.createCustomEvent('pointerup', conf.target, {
-				pointerType: 'mouse',
-				getPointerList: Event.getPointerList.bind(conf.target),
-				originalEvent: event
-			});
+			Event.createPointerEvent(event, self, conf);
 		} else {
 			conf.listener(event, self);
 		}

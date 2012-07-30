@@ -71,7 +71,11 @@ root.swipe = function(conf) {
 				self.velocity = velocity1;
 				self.fingers = conf.gestureFingers;
 				self.state = "swipe";
-				conf.listener(event, self);
+				if (Event.modifyEventListener) {
+					Event.createPointerEvent(event, self, conf);
+				} else {
+					conf.listener(event, self);
+				}
 			}
 		}
 	};

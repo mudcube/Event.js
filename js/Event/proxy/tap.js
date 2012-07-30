@@ -43,7 +43,11 @@ root.longpress = function(conf) {
 				// Send callback.
 				self.state = "start";
 				self.fingers = fingers;
-				conf.listener(event, self);
+				if (Event.modifyEventListener) {
+					Event.createPointerEvent(event, self, conf);
+				} else {
+					conf.listener(event, self);
+				}
 			}, conf.delay);
 		}
 	};
@@ -79,7 +83,11 @@ root.longpress = function(conf) {
 			if (conf.gesture === "longpress") {
 				if (self.state === "start") {
 					self.state = "end";
-					conf.listener(event, self);
+					if (Event.modifyEventListener) {
+						Event.createPointerEvent(event, self, conf);
+					} else {
+						conf.listener(event, self);
+					}
 				}
 				return;
 			}
@@ -90,7 +98,11 @@ root.longpress = function(conf) {
 			// Send callback.
 			self.state = "tap";
 			self.fingers = conf.gestureFingers;
-			conf.listener(event, self);
+			if (Event.modifyEventListener) {
+				Event.createPointerEvent(event, self, conf);
+			} else {
+				conf.listener(event, self);
+			}
 		}
 	};
 	// Generate maintenance commands, and other configurations.

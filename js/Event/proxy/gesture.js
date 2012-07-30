@@ -34,7 +34,11 @@ root.gesture = function(conf) {
 			var sids = ""; //- FIXME(mud): can generate duplicate IDs.
 			for (var key in conf.tracker) sids += key;
 			self.identifier = parseInt(sids);
-			conf.listener(event, self);
+			if (Event.modifyEventListener) {
+				Event.createPointerEvent(event, self, conf);
+			} else {
+				conf.listener(event, self);
+			}
 		}
 	};
 	///
@@ -111,7 +115,11 @@ root.gesture = function(conf) {
 		self.scale = scale / conf.fingers;
 		self.rotation = rotation / conf.fingers;
 		self.state = "change";
-		conf.listener(event, self);
+		if (Event.modifyEventListener) {
+			Event.createPointerEvent(event, self, conf);
+		} else {
+			conf.listener(event, self);
+		}
 	};
 	conf.onPointerUp = function(event) {
 		// Remove tracking for touch.
@@ -124,7 +132,11 @@ root.gesture = function(conf) {
 		if (fingers === conf.minFingers && conf.fingers < conf.minFingers) {
 			self.fingers = conf.fingers;
 			self.state = "end";
-			conf.listener(event, self);
+			if (Event.modifyEventListener) {
+				Event.createPointerEvent(event, self, conf);
+			} else {
+				conf.listener(event, self);
+			}
 		}
 	};
 	// Generate maintenance commands, and other configurations.

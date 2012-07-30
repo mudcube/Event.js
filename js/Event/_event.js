@@ -335,12 +335,6 @@ var eventManager = function(target, type, listener, configure, trigger) {
 				var tmp = listener;
 				var listener = function(event, self) {
 					for (var key in self) event[key] = self[key];
-					event.gesture = self.gesture;
-					event.identifier = self.identifier || Infinity;
-					event.pointerType = "mouse";
-					event.getPointerList = function() {
-						return [event];
-					};
 					return tmp.call(target, event);
 				};
 			}
@@ -434,41 +428,25 @@ var remove = document.removeEventListener ? "removeEventListener" : "detachEvent
 
 /*
 	Pointer.js
+	------------------------
+	Modified from; https://github.com/borismus/pointer.js
 */
 
-function Pointer(x, y, type, identifier) {
-	this.x = x;
-	this.y = y;
-	this.type = type;
-	this.identifier = identifier;
-};
-
-var PointerTypes = {
-	TOUCH: 'touch',
-	MOUSE: 'mouse'
-};
-
-root.getPointerList = function () {
-	// Note: "this" is the element.
-	var pointers = [];
-	if (this.touchList) {
-		for (var i = 0; i < this.touchList.length; i++) {
-			var touch = this.touchList[i];
-			var pointer = new Pointer(touch.pageX, touch.pageY, PointerTypes.TOUCH, touch.identifier);
-			pointers.push(pointer);
-		}
-	}
-	if (this.mouseEvent) {
-		pointers.push(new Pointer(this.mouseEvent.pageX, this.mouseEvent.pageY, PointerTypes.MOUSE, Infinity));
-	}
-	return pointers;
-};
-
-root.createCustomEvent = function (eventName, target, payload) {
-	var event = document.createEvent('Event');
-	event.initEvent(eventName, true, true);
-	for (var k in payload) event[k] = payload[k];
-	target.dispatchEvent(event);
+root.createPointerEvent = function (event, self, conf) {
+	var eventName = self.gesture;
+	var target = self.target;
+	self.pointers = event.targetTouches || root.proxy.getCoords(event);
+	self.pageX = self.pointers[0].pageX;
+	self.pageY = self.pointers[0].pageY;
+	self.x = self.pageX;
+	self.y = self.pageY;
+	self.identifier = conf.identifier;
+	///
+	var newEvent = document.createEvent("Event");
+	newEvent.initEvent(eventName, true, true);
+	newEvent.originalEvent = event;
+	for (var k in self) newEvent[k] = self[k];
+	target.dispatchEvent(newEvent);
 };
 
 /// Allows *EventListener to use custom event proxies.

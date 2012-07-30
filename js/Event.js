@@ -335,12 +335,6 @@ var eventManager = function(target, type, listener, configure, trigger) {
 				var tmp = listener;
 				var listener = function(event, self) {
 					for (var key in self) event[key] = self[key];
-					event.gesture = self.gesture;
-					event.identifier = self.identifier || Infinity;
-					event.pointerType = "mouse";
-					event.getPointerList = function() {
-						return [event];
-					};
 					return tmp.call(target, event);
 				};
 			}
@@ -434,41 +428,25 @@ var remove = document.removeEventListener ? "removeEventListener" : "detachEvent
 
 /*
 	Pointer.js
+	------------------------
+	Modified from; https://github.com/borismus/pointer.js
 */
 
-function Pointer(x, y, type, identifier) {
-	this.x = x;
-	this.y = y;
-	this.type = type;
-	this.identifier = identifier;
-};
-
-var PointerTypes = {
-	TOUCH: 'touch',
-	MOUSE: 'mouse'
-};
-
-root.getPointerList = function () {
-	// Note: "this" is the element.
-	var pointers = [];
-	if (this.touchList) {
-		for (var i = 0; i < this.touchList.length; i++) {
-			var touch = this.touchList[i];
-			var pointer = new Pointer(touch.pageX, touch.pageY, PointerTypes.TOUCH, touch.identifier);
-			pointers.push(pointer);
-		}
-	}
-	if (this.mouseEvent) {
-		pointers.push(new Pointer(this.mouseEvent.pageX, this.mouseEvent.pageY, PointerTypes.MOUSE, Infinity));
-	}
-	return pointers;
-};
-
-root.createCustomEvent = function (eventName, target, payload) {
-	var event = document.createEvent('Event');
-	event.initEvent(eventName, true, true);
-	for (var k in payload) event[k] = payload[k];
-	target.dispatchEvent(event);
+root.createPointerEvent = function (event, self, conf) {
+	var eventName = self.gesture;
+	var target = self.target;
+	self.pointers = event.targetTouches || root.proxy.getCoords(event);
+	self.pageX = self.pointers[0].pageX;
+	self.pageY = self.pointers[0].pageY;
+	self.x = self.pageX;
+	self.y = self.pageY;
+	self.identifier = conf.identifier;
+	///
+	var newEvent = document.createEvent("Event");
+	newEvent.initEvent(eventName, true, true);
+	newEvent.originalEvent = event;
+	for (var k in self) newEvent[k] = self[k];
+	target.dispatchEvent(newEvent);
 };
 
 /// Allows *EventListener to use custom event proxies.
@@ -637,13 +615,16 @@ root.pointerStart = function(event, conf) {
 	var track = conf.tracker;
 	var touches = event.changedTouches || root.getCoords(event);
 	var length = touches.length;
+	var ids = [];
 	// Adding touch events to tracking.
 	for (var i = 0; i < length; i ++) {
 		var touch = touches[i];
 		var sid = touch.identifier || Infinity; // Touch ID.
+		ids.push(sid); // generate batch id.
 		// Track the current state of the touches.
 		if (conf.fingers) {
 			if (conf.fingers >= conf.maxFingers) {
+				conf.identifier = ids.join(",");
 				return isTouchStart;
 			}
 			var fingers = 0; // Finger ID.
@@ -669,6 +650,7 @@ root.pointerStart = function(event, conf) {
 		}
 	}
 	///
+	conf.identifier = ids.join(",");
 	return isTouchStart;
 };
 
@@ -717,10 +699,13 @@ root.pointerEnd = function(event, conf, onPointerUp) {
 	// Wait for all fingers to be released.
 	if (conf.fingers !== 0) return false;
 	// Record total number of fingers gesture used.
+	var ids = [];
 	conf.gestureFingers = 0;
 	for (var sid in conf.tracker) {
 		conf.gestureFingers ++;
+		ids.push(sid);
 	}
+	conf.identifier = ids.join(",");
 	// Our pointer gesture has ended.
 	return true;
 };
@@ -734,14 +719,19 @@ root.pointerEnd = function(event, conf, onPointerUp) {
 root.getCoords = function(event) {
 	if (typeof(event.pageX) !== "undefined") { // Desktop browsers.
 		root.getCoords = function(event) {
-			return Array(event);
+			return Array({
+				pageX: event.pageX,
+				pageY: event.pageY,
+				identifier: Infinity
+			});
 		};
 	} else { // Internet Explorer <= 8.0
 		root.getCoords = function(event) {
 			event = event || window.event;
 			return Array({
 				pageX: event.clientX + document.documentElement.scrollLeft,
-				pageY: event.clientY + document.documentElement.scrollTop
+				pageY: event.clientY + document.documentElement.scrollTop,
+				identifier: Infinity
 			});
 		};
 	}
@@ -890,7 +880,7 @@ root.click = function(conf) {
 		if (root.pointerEnd(e, conf)) {
 			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
-			if (event.cancelBubble && ++event.bubble > 1) return;
+			if (event.cancelBubble && ++ event.bubble > 1) return;
 			var touches = event.changedTouches || root.getCoords(event);
 			var touch = touches[0];
 			var bbox = conf.bbox;
@@ -900,7 +890,11 @@ root.click = function(conf) {
 			if (ax > 0 && ax < bbox.width && // Within target coordinates.
 				ay > 0 && ay < bbox.height &&
 				bbox.scrollTop === newbbox.scrollTop) {
-				conf.listener(event, self);
+				if (Event.modifyEventListener) {
+					Event.createPointerEvent(event, self, conf);
+				} else {
+					conf.listener(event, self);
+				}
 			}
 		}
 	};
@@ -985,7 +979,11 @@ root.dblclick = function(conf) {
 		if (time0 && time1) {
 			if (time1 <= delay && !(event.cancelBubble && ++event.bubble > 1)) {
 				self.state = conf.gesture;
-				conf.listener(event, self);
+				if (Event.modifyEventListener) {
+					Event.createPointerEvent(event, self, conf);
+				} else {
+					conf.listener(event, self);
+				}
 			}
 			clearTimeout(timeout);
 			time0 = time1 = 0;
@@ -1050,7 +1048,11 @@ root.drag = function(conf) {
 			self.x = (pt.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
 			self.y = (pt.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
 			///
-			conf.listener(event, self);
+			if (Event.modifyEventListener) {
+				Event.createPointerEvent(event, self, conf);
+			} else {
+				conf.listener(event, self);
+			}
 		}
 	};
 	conf.onPointerUp = function(event) {
@@ -1115,7 +1117,11 @@ root.gesture = function(conf) {
 			var sids = ""; //- FIXME(mud): can generate duplicate IDs.
 			for (var key in conf.tracker) sids += key;
 			self.identifier = parseInt(sids);
-			conf.listener(event, self);
+			if (Event.modifyEventListener) {
+				Event.createPointerEvent(event, self, conf);
+			} else {
+				conf.listener(event, self);
+			}
 		}
 	};
 	///
@@ -1192,7 +1198,11 @@ root.gesture = function(conf) {
 		self.scale = scale / conf.fingers;
 		self.rotation = rotation / conf.fingers;
 		self.state = "change";
-		conf.listener(event, self);
+		if (Event.modifyEventListener) {
+			Event.createPointerEvent(event, self, conf);
+		} else {
+			conf.listener(event, self);
+		}
 	};
 	conf.onPointerUp = function(event) {
 		// Remove tracking for touch.
@@ -1205,7 +1215,11 @@ root.gesture = function(conf) {
 		if (fingers === conf.minFingers && conf.fingers < conf.minFingers) {
 			self.fingers = conf.fingers;
 			self.state = "end";
-			conf.listener(event, self);
+			if (Event.modifyEventListener) {
+				Event.createPointerEvent(event, self, conf);
+			} else {
+				conf.listener(event, self);
+			}
 		}
 	};
 	// Generate maintenance commands, and other configurations.
@@ -1245,36 +1259,21 @@ root.pointerup = function(conf) {
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
 		if (Event.modifyEventListener) {
-			conf.target.mouseEvent = event;
-			Event.createCustomEvent('pointerdown', event.target, {
-				pointerType: 'mouse',
-				getPointerList: Event.getPointerList.bind(conf.target),
-				originalEvent: event
-			});
+			Event.createPointerEvent(event, self, conf);
 		} else {
 			conf.listener(event, self);
 		}
 	};
 	conf.onPointerMove = function (event) {
 		if (Event.modifyEventListener) {
-			if (conf.target.mouseEvent) conf.target.mouseEvent = event;
-			Event.createCustomEvent('pointermove', conf.target, {
-				pointerType: 'mouse',
-				getPointerList: Event.getPointerList.bind(conf.target),
-				originalEvent: event
-			});
+			Event.createPointerEvent(event, self, conf);
 		} else {
 			conf.listener(event, self);
 		}
 	};
 	conf.onPointerUp = function (event) {
 		if (Event.modifyEventListener) {
-			conf.target.mouseEvent = null;
-			Event.createCustomEvent('pointerup', conf.target, {
-				pointerType: 'mouse',
-				getPointerList: Event.getPointerList.bind(conf.target),
-				originalEvent: event
-			});
+			Event.createPointerEvent(event, self, conf);
 		} else {
 			conf.listener(event, self);
 		}
@@ -1353,7 +1352,12 @@ root.devicemotion = function(conf) {
 		self.acceleration.z = o.z - gravity.z;
 		///
 		if (conf.gesture === "devicemotion") {
-			return conf.listener(e, self);
+			if (Event.modifyEventListener) {
+				Event.createPointerEvent(e, self, conf);
+			} else {
+				conf.listener(e, self);
+			}
+			return;
 		} 
 		var data = "xyz";
 		var now = (new Date).getTime();
@@ -1374,7 +1378,11 @@ root.devicemotion = function(conf) {
 					DELTA.count ++;
 					// Check whether delta count has enough shakes.
 					if (DELTA.count === shakes) {
-						conf.listener(e, self);
+						if (Event.modifyEventListener) {
+							Event.createPointerEvent(e, self, conf);
+						} else {
+							conf.listener(e, self);
+						}
 						// Reset tracking.
 						lastShake = now;
 						DELTA.value = 0;
@@ -1476,7 +1484,11 @@ root.swipe = function(conf) {
 				self.velocity = velocity1;
 				self.fingers = conf.gestureFingers;
 				self.state = "swipe";
-				conf.listener(event, self);
+				if (Event.modifyEventListener) {
+					Event.createPointerEvent(event, self, conf);
+				} else {
+					conf.listener(event, self);
+				}
 			}
 		}
 	};
@@ -1540,7 +1552,11 @@ root.longpress = function(conf) {
 				// Send callback.
 				self.state = "start";
 				self.fingers = fingers;
-				conf.listener(event, self);
+				if (Event.modifyEventListener) {
+					Event.createPointerEvent(event, self, conf);
+				} else {
+					conf.listener(event, self);
+				}
 			}, conf.delay);
 		}
 	};
@@ -1576,7 +1592,11 @@ root.longpress = function(conf) {
 			if (conf.gesture === "longpress") {
 				if (self.state === "start") {
 					self.state = "end";
-					conf.listener(event, self);
+					if (Event.modifyEventListener) {
+						Event.createPointerEvent(event, self, conf);
+					} else {
+						conf.listener(event, self);
+					}
 				}
 				return;
 			}
@@ -1587,7 +1607,11 @@ root.longpress = function(conf) {
 			// Send callback.
 			self.state = "tap";
 			self.fingers = conf.gestureFingers;
-			conf.listener(event, self);
+			if (Event.modifyEventListener) {
+				Event.createPointerEvent(event, self, conf);
+			} else {
+				conf.listener(event, self);
+			}
 		}
 	};
 	// Generate maintenance commands, and other configurations.
@@ -1638,7 +1662,11 @@ root.mousewheel = function(conf) {
 		event = event || window.event;
 		self.state = "start";
 		self.wheelDelta = event.detail ? event.detail * -40 : event.wheelDelta;
-		conf.listener(event, self);
+		if (Event.modifyEventListener) {
+			Event.createPointerEvent(event, self, conf);
+		} else {
+			conf.listener(event, self);
+		}
 		clearTimeout(timeout);
 		timeout = setTimeout(function() {
 			self.state = "end";

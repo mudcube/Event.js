@@ -41,7 +41,11 @@ root.drag = function(conf) {
 			self.x = (pt.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
 			self.y = (pt.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
 			///
-			conf.listener(event, self);
+			if (Event.modifyEventListener) {
+				Event.createPointerEvent(event, self, conf);
+			} else {
+				conf.listener(event, self);
+			}
 		}
 	};
 	conf.onPointerUp = function(event) {
