@@ -269,21 +269,25 @@ var eventManager = function(target, type, listener, configure, trigger) {
 	configure = configure || {};
 	// Check for element to load on interval (before onload).
 	if (typeof(target) === "string" && type === "ready") {
+		var time = (new Date).getTime();
 		var timeout = configure.timeout;
-		var speed = configure.interval || 1000 / 60;
+		var ms = configure.interval || 1000 / 60;
 		var interval = setInterval(function() {
+			if ((new Date).getTime() - time > timeout) {
+				clearInterval(interval);
+			}
 			if (document.querySelector(target)) {
 				clearInterval(interval);
 				listener();
 			}
-		}, speed);
+		}, ms);
 		return;
 	}
 	// Get DOM element from Query Selector.
 	if (typeof(target) === "string") {
 		target = document.querySelectorAll(target);
-		if (target.length === 0) return;
-		if (target.length === 1) {
+		if (target.length === 0) return createError("Missing target on listener!"); // No results.
+		if (target.length === 1) { // Single target.
 			target = target[0];
 		} else { /// Handle multiple targets.
 			var events = {};
@@ -291,7 +295,7 @@ var eventManager = function(target, type, listener, configure, trigger) {
 				var event = eventManager(target[n], type, listener, configure, trigger);
 				if (event) events[n] = event;
 			}	
-			return batch(events);
+			return createBatchCommands(events);
 		}
 	}
 	// Check for multiple events in one string.
@@ -315,10 +319,10 @@ var eventManager = function(target, type, listener, configure, trigger) {
 				if (event) events[key] = event;
 			}
 		}
-		return batch(events);
+		return createBatchCommands(events);
 	}
 	// Ensure listener is a function.
-	if (typeof(listener) !== "function") return;
+	if (typeof(listener) !== "function") return createError("Listener is not a function!");
 	// Generate a unique wrapper identifier.
 	var useCapture = configure.useCapture || false;
 	var id = normalize(type) + getID(target) + "." + getID(listener) + "." + (useCapture ? 1 : 0);
@@ -346,14 +350,13 @@ var eventManager = function(target, type, listener, configure, trigger) {
 			wrappers[id] = root.proxy[type](configure); 
 		}
 	} else { // Fire native event.
+		var type = normalize(type);
 		if (trigger === "remove") { // Remove event listener.
 			if (!wrappers[id]) return; // Already removed.
 			target[remove](type, listener, useCapture); 
 			delete wrappers[id];
 		} else if (trigger === "add") { // Attach event listener.
 			if (wrappers[id]) return wrappers[id]; // Already attached.
-			var type = normalize(type);
-			// Attach listener.
 			target[add](type, listener, useCapture); 
 			// Record wrapper.
 			wrappers[id] = { 
@@ -370,7 +373,7 @@ var eventManager = function(target, type, listener, configure, trigger) {
 };
 
 /// Perform batch actions on multiple events.
-var batch = function(events) {
+var createBatchCommands = function(events) {
 	return {
 		remove: function() { // Remove multiple events.
 			for (var key in events) {
@@ -383,6 +386,13 @@ var batch = function(events) {
 			}
 		}
 	};
+};
+
+/// Display error message in console.
+var createError = function(message) {
+	if (typeof(console) === "undefined") return;
+	if (typeof(console.error) === "undefined") return;
+	console.error(message);
 };
 
 /// Handle naming discrepancies between platforms.
@@ -423,7 +433,7 @@ var counter = 0;
 var getID = function(object) {
 	if (object === window) return "#window";
 	if (object === document) return "#document";
-	if (!object) return console.log("Missing target on listener!");
+	if (!object) return createError("Missing target on listener!");
 	if (!object.uniqueID) object.uniqueID = "id" + counter ++;
 	return object.uniqueID;
 };
@@ -442,7 +452,6 @@ root.createPointerEvent = function (event, self, preventRecord) {
 	var eventName = self.gesture;
 	var target = self.target;
 	var pts = event.changedTouches || root.proxy.getCoords(event);
-	///
 	if (pts.length) {
 		var pt = pts[0];
 		self.pointers = preventRecord ? [] : pts;
