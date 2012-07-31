@@ -31,22 +31,24 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 Event.proxy = (function(root) { "use strict";
 
 /*
-	Create a new pointer instance.
+	Create a new pointer gesture instance.
 */
 
 root.pointerSetup = function(conf, self) {
 	/// Configure.
-	var type = conf.gesture.indexOf("pointer") === 0 && Event.modifyEventListener ? "pointer" : "mouse";
 	conf.doc = conf.target.ownerDocument || conf.target; // Associated document.
 	conf.minFingers = conf.minFingers || conf.fingers || 1; // Minimum required fingers.
 	conf.maxFingers = conf.maxFingers || conf.fingers || Infinity; // Maximum allowed fingers.
 	conf.position = conf.position || "relative"; // Determines what coordinate system points are returned.
-	/// Convenience data and commands.
+	/// Convenience data.
 	self = self || {};
 	self.gesture = conf.gesture;
 	self.target = conf.target;
-	self.listener = conf.listener;
 	self.pointerType = Event.pointerType;
+	///
+	if (Event.modifyEventListener) conf.listener = Event.createPointerEvent;
+	/// Convenience commands.
+	var type = self.gesture.indexOf("pointer") === 0 && Event.modifyEventListener ? "pointer" : "mouse";
 	self.remove = function() {
 		if (conf.onPointerDown) Event.remove(conf.target, type + "down", conf.onPointerDown);
 		if (conf.onPointerMove) Event.remove(conf.doc, type + "move", conf.onPointerMove);
@@ -68,7 +70,7 @@ root.pointerSetup = function(conf, self) {
 	Begin proxied pointer command.
 */
 
-root.pointerStart = function(event, conf) {
+root.pointerStart = function(event, self, conf) {
 	var addTouchStart = function(touch, sid) {	
 		var bbox = conf.bbox;
 		var pt = track[sid] = {};
@@ -117,7 +119,7 @@ root.pointerStart = function(event, conf) {
 			if (conf.fingers >= conf.maxFingers) {
 				var ids = [];
 				for (var sid in conf.tracker) ids.push(sid);
-				conf.identifier = ids.join(",");
+				self.identifier = ids.join(",");
 				return isTouchStart;
 			}
 			var fingers = 0; // Finger ID.
@@ -145,7 +147,7 @@ root.pointerStart = function(event, conf) {
 	///
 	var ids = [];
 	for (var sid in conf.tracker) ids.push(sid);
-	conf.identifier = ids.join(",");
+	self.identifier = ids.join(",");
 	///
 	return isTouchStart;
 };
@@ -154,7 +156,7 @@ root.pointerStart = function(event, conf) {
 	End proxied pointer command.
 */
 
-root.pointerEnd = function(event, conf, onPointerUp) {
+root.pointerEnd = function(event, self, conf, onPointerUp) {
 	// Record changed touches have ended (iOS changedTouches is not reliable).
 	var touches = event.touches || [];
 	var length = touches.length;
@@ -201,7 +203,7 @@ root.pointerEnd = function(event, conf, onPointerUp) {
 		conf.gestureFingers ++;
 		ids.push(sid);
 	}
-	conf.identifier = ids.join(",");
+	self.identifier = ids.join(",");
 	// Our pointer gesture has ended.
 	return true;
 };

@@ -51,11 +51,7 @@ root.shake = function(conf) {
 		self.acceleration.z = o.z - gravity.z;
 		///
 		if (conf.gesture === "devicemotion") {
-			if (Event.modifyEventListener) {
-				Event.createPointerEvent(e, self, conf);
-			} else {
-				conf.listener(e, self);
-			}
+			conf.listener(e, self);
 			return;
 		} 
 		var data = "xyz";
@@ -77,11 +73,7 @@ root.shake = function(conf) {
 					DELTA.count ++;
 					// Check whether delta count has enough shakes.
 					if (DELTA.count === shakes) {
-						if (Event.modifyEventListener) {
-							Event.createPointerEvent(e, self, conf);
-						} else {
-							conf.listener(e, self);
-						}
+						conf.listener(e, self);
 						// Reset tracking.
 						lastShake = now;
 						DELTA.value = 0;

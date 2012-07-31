@@ -438,7 +438,7 @@ var remove = document.removeEventListener ? "removeEventListener" : "detachEvent
 	Modified from; https://github.com/borismus/pointer.js
 */
 
-root.createPointerEvent = function (event, self, conf, preventRecord) {
+root.createPointerEvent = function (event, self, preventRecord) {
 	var eventName = self.gesture;
 	var target = self.target;
 	var pts = event.changedTouches || root.proxy.getCoords(event);
@@ -452,7 +452,6 @@ root.createPointerEvent = function (event, self, conf, preventRecord) {
 		self.y = self.pageY;
 	}
 	///
-	self.identifier = conf.identifier;
 	var newEvent = document.createEvent("Event");
 	newEvent.initEvent(eventName, true, true);
 	newEvent.originalEvent = event;

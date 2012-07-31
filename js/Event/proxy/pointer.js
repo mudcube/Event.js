@@ -22,32 +22,19 @@ root.pointerup = function(conf) {
 	conf.onPointerDown = function (event) {
 		isDown = false;
 		self.gesture = "pointerdown";
-		if (Event.modifyEventListener) {
-			Event.createPointerEvent(event, self, conf);
-		} else {
-			conf.listener(event, self);
-		}
+		conf.listener(event, self);
 	};
 	conf.onPointerMove = function (event) {
 		self.gesture = "pointermove";
-		if (Event.modifyEventListener) {
-			Event.createPointerEvent(event, self, conf, isDown);
-		} else {
-			conf.listener(event, self);
-		}
+		conf.listener(event, self, isDown);
 	};
 	conf.onPointerUp = function (event) {
 		isDown = true;
 		self.gesture = "pointerup";
-		if (Event.modifyEventListener) {
-			Event.createPointerEvent(event, self, conf, true);
-		} else {
-			conf.listener(event, self);
-		}
+		conf.listener(event, self, true);
 	};
 	// Generate maintenance commands, and other configurations.
 	var self = root.pointerSetup(conf);
-	self.gesture = "pointerup";
 	// Attach events.
 	Event.add(conf.target, "mousedown", conf.onPointerDown);
 	Event.add(conf.target, "mousemove", conf.onPointerMove);

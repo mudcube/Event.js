@@ -20,7 +20,7 @@ root.gesture = function(conf) {
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
 		var fingers = conf.fingers;
-		if (root.pointerStart(event, conf)) {
+		if (root.pointerStart(event, self, conf)) {
 			Event.add(conf.doc, "mousemove", conf.onPointerMove);
 			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
@@ -33,11 +33,7 @@ root.gesture = function(conf) {
 			var sids = ""; //- FIXME(mud): can generate duplicate IDs.
 			for (var key in conf.tracker) sids += key;
 			self.identifier = parseInt(sids);
-			if (Event.modifyEventListener) {
-				Event.createPointerEvent(event, self, conf);
-			} else {
-				conf.listener(event, self);
-			}
+			conf.listener(event, self);
 		}
 	};
 	///
@@ -114,16 +110,12 @@ root.gesture = function(conf) {
 		self.scale = scale / conf.fingers;
 		self.rotation = rotation / conf.fingers;
 		self.state = "change";
-		if (Event.modifyEventListener) {
-			Event.createPointerEvent(event, self, conf);
-		} else {
-			conf.listener(event, self);
-		}
+		conf.listener(event, self);
 	};
 	conf.onPointerUp = function(event) {
 		// Remove tracking for touch.
 		var fingers = conf.fingers;
-		if (root.pointerEnd(event, conf)) {
+		if (root.pointerEnd(event, self, conf)) {
 			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 		}
@@ -131,11 +123,7 @@ root.gesture = function(conf) {
 		if (fingers === conf.minFingers && conf.fingers < conf.minFingers) {
 			self.fingers = conf.fingers;
 			self.state = "end";
-			if (Event.modifyEventListener) {
-				Event.createPointerEvent(event, self, conf);
-			} else {
-				conf.listener(event, self);
-			}
+			conf.listener(event, self);
 		}
 	};
 	// Generate maintenance commands, and other configurations.

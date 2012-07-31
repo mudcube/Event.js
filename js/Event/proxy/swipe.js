@@ -20,7 +20,7 @@ root.swipe = function(conf) {
 	conf.threshold = conf.threshold || 1; // velocity threshold.
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
-		if (root.pointerStart(event, conf)) {
+		if (root.pointerStart(event, self, conf)) {
 			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
 			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
@@ -40,7 +40,7 @@ root.swipe = function(conf) {
 		}
 	};
 	conf.onPointerUp = function(event) {
-		if (root.pointerEnd(event, conf)) {
+		if (root.pointerEnd(event, self, conf)) {
 			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 			///
@@ -71,11 +71,7 @@ root.swipe = function(conf) {
 				self.velocity = velocity1;
 				self.fingers = conf.gestureFingers;
 				self.state = "swipe";
-				if (Event.modifyEventListener) {
-					Event.createPointerEvent(event, self, conf);
-				} else {
-					conf.listener(event, self);
-				}
+				conf.listener(event, self);
 			}
 		}
 	};

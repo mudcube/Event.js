@@ -24,7 +24,7 @@ root.longpress = function(conf) {
 	var timestamp, timeout;
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
-		if (root.pointerStart(event, conf)) {
+		if (root.pointerStart(event, self, conf)) {
 			timestamp = (new Date).getTime();
 			// Initialize event listeners.
 			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
@@ -43,11 +43,7 @@ root.longpress = function(conf) {
 				// Send callback.
 				self.state = "start";
 				self.fingers = fingers;
-				if (Event.modifyEventListener) {
-					Event.createPointerEvent(event, self, conf);
-				} else {
-					conf.listener(event, self);
-				}
+				conf.listener(event, self);
 			}, conf.delay);
 		}
 	};
@@ -74,7 +70,7 @@ root.longpress = function(conf) {
 		}
 	};
 	conf.onPointerUp = function(event) {
-		if (root.pointerEnd(event, conf)) {
+		if (root.pointerEnd(event, self, conf)) {
 			clearTimeout(timeout);
 			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
@@ -83,11 +79,7 @@ root.longpress = function(conf) {
 			if (conf.gesture === "longpress") {
 				if (self.state === "start") {
 					self.state = "end";
-					if (Event.modifyEventListener) {
-						Event.createPointerEvent(event, self, conf);
-					} else {
-						conf.listener(event, self);
-					}
+					conf.listener(event, self);
 				}
 				return;
 			}
@@ -98,11 +90,7 @@ root.longpress = function(conf) {
 			// Send callback.
 			self.state = "tap";
 			self.fingers = conf.gestureFingers;
-			if (Event.modifyEventListener) {
-				Event.createPointerEvent(event, self, conf);
-			} else {
-				conf.listener(event, self);
-			}
+			conf.listener(event, self);
 		}
 	};
 	// Generate maintenance commands, and other configurations.

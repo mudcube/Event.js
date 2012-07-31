@@ -17,15 +17,15 @@ root.dblclick = function(conf) {
 	// Setting up local variables.
 	var delay = 700; // in milliseconds
 	var time0, time1, timeout; 
-	var touch0, touch1;
+	var pointer0, pointer1;
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
-		var touches = event.changedTouches || root.getCoords(event);
+		var pointers = event.changedTouches || root.getCoords(event);
 		if (time0 && !time1) { // Click #2
-			touch1 = touches[0];
+			pointer1 = pointers[0];
 			time1 = (new Date).getTime() - time0;
 		} else { // Click #1
-			touch0 = touches[0];
+			pointer0 = pointers[0];
 			time0 = (new Date).getTime();
 			time1 = 0;
 			clearTimeout(timeout);
@@ -33,23 +33,23 @@ root.dblclick = function(conf) {
 				time0 = 0;
 			}, delay);
 		}
-		if (root.pointerStart(event, conf)) {
+		if (root.pointerStart(event, self, conf)) {
 			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
 			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
 	};
 	conf.onPointerMove = function (event) {
 		if (time0 && !time1) {
-			var touches = event.changedTouches || root.getCoords(event);
-			touch1 = touches[0];
+			var pointers = event.changedTouches || root.getCoords(event);
+			pointer1 = pointers[0];
 		}
 		var bbox = conf.bbox;
-		var ax = (touch1.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
-		var ay = (touch1.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+		var ax = (pointer1.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
+		var ay = (pointer1.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
 		if (!(ax > 0 && ax < bbox.width && // Within target coordinates..
 			  ay > 0 && ay < bbox.height &&
-			  Math.abs(touch1.pageX - touch0.pageX) <= 25 && // Within drift deviance.
-			  Math.abs(touch1.pageY - touch0.pageY) <= 25)) {
+			  Math.abs(pointer1.pageX - pointer0.pageX) <= 25 && // Within drift deviance.
+			  Math.abs(pointer1.pageY - pointer0.pageY) <= 25)) {
 			// Cancel out this listener.
 			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 			clearTimeout(timeout);
@@ -57,18 +57,14 @@ root.dblclick = function(conf) {
 		}
 	};
 	conf.onPointerUp = function(event) {
-		if (root.pointerEnd(event, conf)) {
+		if (root.pointerEnd(event, self, conf)) {
 			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 		}
 		if (time0 && time1) {
 			if (time1 <= delay && !(event.cancelBubble && ++event.bubble > 1)) {
 				self.state = conf.gesture;
-				if (Event.modifyEventListener) {
-					Event.createPointerEvent(event, self, conf);
-				} else {
-					conf.listener(event, self);
-				}
+				conf.listener(event, self);
 			}
 			clearTimeout(timeout);
 			time0 = time1 = 0;

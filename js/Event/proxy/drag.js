@@ -15,7 +15,7 @@ Event.proxy = (function(root) { "use strict";
 
 root.drag = function(conf) {
 	conf.onPointerDown = function (event) {
-		if (root.pointerStart(event, conf)) {
+		if (root.pointerStart(event, self, conf)) {
 			Event.add(conf.doc, "mousemove", conf.onPointerMove);
 			Event.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
@@ -42,11 +42,7 @@ root.drag = function(conf) {
 			self.x = (pt.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
 			self.y = (pt.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
 			///
-			if (Event.modifyEventListener) {
-				Event.createPointerEvent(event, self, conf);
-			} else {
-				conf.listener(event, self);
-			}
+			conf.listener(event, self);
 		}
 	};
 	conf.onPointerUp = function(event) {

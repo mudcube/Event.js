@@ -32,21 +32,13 @@ root.wheel = function(conf) {
 		event = event || window.event;
 		self.state = count++ ? "change" : "start";
 		self.wheelDelta = event.detail ? event.detail * -40 : event.wheelDelta;
-		if (Event.modifyEventListener) {
-			Event.createPointerEvent(event, self, conf);
-		} else {
-			conf.listener(event, self);
-		}
+		conf.listener(event, self);
 		clearTimeout(interval);
 		interval = setTimeout(function() {
 			count = 0;
 			self.state = "end";
 			self.wheelDelta = 0;
-			if (Event.modifyEventListener) {
-				Event.createPointerEvent(event, self, conf);
-			} else {
-				conf.listener(event, self);
-			}
+			conf.listener(event, self);
 		}, timeout);
 	};
 	// Attach events.
