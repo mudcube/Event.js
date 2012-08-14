@@ -14,6 +14,7 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 Event.proxy = (function(root) { "use strict";
 
 root.drag = function(conf) {
+	conf.gesture = "drag";
 	conf.onPointerDown = function (event) {
 		if (root.pointerStart(event, self, conf)) {
 			Event.add(conf.doc, "mousemove", conf.onPointerMove);
@@ -47,7 +48,7 @@ root.drag = function(conf) {
 	};
 	conf.onPointerUp = function(event) {
 		// Remove tracking for touch.
-		if (root.pointerEnd(event, conf, conf.onPointerMove)) {
+		if (root.pointerEnd(event, self, conf, conf.onPointerMove)) {
 			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
 		}
