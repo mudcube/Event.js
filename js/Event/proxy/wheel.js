@@ -31,7 +31,7 @@ root.wheel = function(conf) {
 	var onMouseWheel = function(event) {
 		event = event || window.event;
 		self.state = count++ ? "change" : "start";
-		self.wheelDelta = event.detail ? event.detail * -40 : event.wheelDelta;
+		self.wheelDelta = event.detail ? event.detail * -20 : event.wheelDelta;
 		conf.listener(event, self);
 		clearTimeout(interval);
 		interval = setTimeout(function() {

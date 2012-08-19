@@ -289,14 +289,16 @@ var eventManager = function(target, type, listener, configure, trigger) {
 		if (target.length === 0) return createError("Missing target on listener!"); // No results.
 		if (target.length === 1) { // Single target.
 			target = target[0];
-		} else { /// Handle multiple targets.
-			var events = {};
-			for (var n = 0, length = target.length; n < length; n ++) {
-				var event = eventManager(target[n], type, listener, configure, trigger);
-				if (event) events[n] = event;
-			}	
-			return createBatchCommands(events);
 		}
+	}
+	/// Handle multiple targets.
+	if (target.length > 1) { 
+		var events = {};
+		for (var n = 0, length = target.length; n < length; n ++) {
+			var event = eventManager(target[n], type, listener, configure, trigger);
+			if (event) events[n] = event;
+		}	
+		return createBatchCommands(events);
 	}
 	// Check for multiple events in one string.
 	if (type.indexOf && type.indexOf(" ") !== -1) type = type.split(" ");
