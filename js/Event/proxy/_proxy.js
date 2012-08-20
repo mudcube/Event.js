@@ -48,6 +48,7 @@ root.pointerSetup = function(conf, self) {
 	///
 	if (Event.modifyEventListener) conf.listener = Event.createPointerEvent;
 	/// Convenience commands.
+	var fingers = 0;
 	var type = self.gesture.indexOf("pointer") === 0 && Event.modifyEventListener ? "pointer" : "mouse";
 	self.remove = function() {
 		if (conf.onPointerDown) Event.remove(conf.target, type + "down", conf.onPointerDown);
@@ -57,10 +58,13 @@ root.pointerSetup = function(conf, self) {
 	self.enable = function(opt) {
 		if (conf.onPointerMove && (!opt || opt.move)) Event.add(conf.doc, type + "move", conf.onPointerMove);
 		if (conf.onPointerUp && (!opt || opt.move)) Event.add(conf.doc, type + "up", conf.onPointerUp);
+		conf.fingers = fingers;
 	};
 	self.disable = function(opt) {
+		fingers = conf.fingers;
 		if (conf.onPointerMove && (!opt || opt.move)) Event.remove(conf.doc, type + "move", conf.onPointerMove);
 		if (conf.onPointerUp && (!opt || opt.up)) Event.remove(conf.doc, type + "up", conf.onPointerUp);
+		conf.fingers = 0;
 	};
 	///
 	return self;

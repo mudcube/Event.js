@@ -203,7 +203,7 @@
 	*	Track for proper command/control-key for Mac/PC.
 	----------------------------------------------------
 	Event.add(window, "keyup keydown", Event.proxy.metaTracker);
-	console.log(Event.metaKey);
+	console.log(Event.proxy.metaKey);
 
 	*	Test for event features, in this example Drag & Drop file support.
 	----------------------------------------------------
