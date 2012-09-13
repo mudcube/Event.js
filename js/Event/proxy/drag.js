@@ -13,6 +13,18 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
+root.dragElement = function(that, event) {
+	root.drag({
+		event: event,
+		target: that,
+		position: "move",
+		listener: function(event, self) {
+			that.style.left = self.x + "px";
+			that.style.top = self.y + "px";
+		}
+	});
+};
+
 root.drag = function(conf) {
 	conf.gesture = "drag";
 	conf.onPointerDown = function (event) {

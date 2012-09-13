@@ -9,6 +9,8 @@
 	2+ : pinch, rotate
 	   : mousewheel, devicemotion, shake
 	----------------------------------------------------
+	TODO: switch configuration to 4th argument on addEventListener
+	----------------------------------------------------
 	REQUIREMENTS: querySelector, querySelectorAll
 	----------------------------------------------------
 	*	There are two ways to add/remove events with this library.
@@ -258,7 +260,7 @@ root.supports = function (target, type) {
 	if (target.setAttribute && target.removeAttribute) {
 		target.setAttribute(type, "");
 		var isSupported = typeof target[type] === "function";
-		if (typeof target[type] !== "undefined") target[type] = undefined;
+		if (typeof target[type] !== "undefined") target[type] = null;
 		target.removeAttribute(type);
 		return isSupported;
 	}
