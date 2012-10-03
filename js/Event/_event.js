@@ -90,8 +90,8 @@
 			console.log(self.identifier);
 			console.log(self.start);
 			console.log(self.fingers); // somewhere between "2" and "4".
-			self.disable(); // disable event.
-			self.enable(); // enable event.
+			self.pause(); // disable event.
+			self.resume(); // enable event.
 			self.remove(); // remove event.
 		}
 	});

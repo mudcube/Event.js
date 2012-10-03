@@ -60,12 +60,12 @@ root.pointerSetup = function(conf, self) {
 		if (conf.onPointerMove) Event.remove(conf.doc, type + "move", conf.onPointerMove);
 		if (conf.onPointerUp) Event.remove(conf.doc, type + "up", conf.onPointerUp);
 	};
-	self.enable = function(opt) {
+	self.resume = function(opt) {
 		if (conf.onPointerMove && (!opt || opt.move)) Event.add(conf.doc, type + "move", conf.onPointerMove);
 		if (conf.onPointerUp && (!opt || opt.move)) Event.add(conf.doc, type + "up", conf.onPointerUp);
 		conf.fingers = fingers;
 	};
-	self.disable = function(opt) {
+	self.pause = function(opt) {
 		fingers = conf.fingers;
 		if (conf.onPointerMove && (!opt || opt.move)) Event.remove(conf.doc, type + "move", conf.onPointerMove);
 		if (conf.onPointerUp && (!opt || opt.up)) Event.remove(conf.doc, type + "up", conf.onPointerUp);
@@ -283,7 +283,10 @@ root.getCoord = function(event) {
 		};
 	} else if(typeof(event.pageX) !== "undefined" && typeof(event.pageY) !== "undefined") { // Desktop browsers.
 		root.getCoord = function(event) {
-			return event;
+			return {
+				x: event.pageX,
+				y: event.pageY
+			};
 		};
 	} else { // Internet Explorer <=8.0
 		root.getCoord = function(event) {
