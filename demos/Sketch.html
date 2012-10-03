@@ -10,13 +10,25 @@ div.controls {
 	-webkit-transition-property: opacity;
 	-webkit-transition-duration: .4s;
 	position: absolute; 
-	top: 0;
+	top: 10px;
+	left: 10px;
 	z-index: 100;
 	padding: 15px;
-	opacity: 0.5;
+	border-radius: 10px;
+	background: #3333;
+	background: -webkit-gradient(linear, left top, left 250, from(#555), to(#888));
+	box-shadow: 0 0 10px #000;
+	border: 1px solid #888;
+	color: #fff;
 }
-div.controls:hover {
-	opacity: 1;
+div.controls div span {
+	display: inline-block;
+	width: 80px;
+	text-align: right;
+	padding-right: 10px;
+}
+div.controls div {
+	padding: 10px;
 }
 div#areaDraw {
 	width: 100%;
@@ -34,22 +46,23 @@ div#areaDraw {
 <div class="controls">
  <input type="button" onclick="sketch.setTool('eraser')" style="" value="Eraser">
  <input type="button" onclick="sketch.setTool('brush')" style="" value="Brush">
+ <p>
+	 <div>
+		 <span>Radius</span>
+		 <input type="range" onchange="sketch.style.lineWidth = this.value;" value="5" min="1" max="25" title="Radius">
+	 </div>
+	 <div>
+		 <span>Alpha</span>
+		 <input type="range" onchange="sketch.style.globalAlpha = parseInt(this.value) / 100;" value="50" min="0" max="100" title="Alpha">
+	 </div>
+	 <div>
+		 <span>Zoom</span>
+		 <input type="range" onchange="sketch.zoom = this.value / 100; sketch.redrawFast();" value="100" min="50" max="200" title="Alpha">
+	 </div>
+ </p>
  <input type="button" onclick="sketch.redrawAnimate()" style="" value="Animate">
  <input type="button" onclick="sketch.redrawFast()" style="" value="Redraw">
  <input type="button" onclick="sketch.clearRecording()" style="" value="Clear">
- <p><br>
- <div style="position: relative; top: 0; left: 0; float: left; margin: 0 10px 0 0">
-	 <input type="button" style="" value="Radius">
-	 <input type="range" onchange="sketch.style.lineWidth = this.value;" value="5" min="1" max="25" title="Radius">
- </div>
- <div style="position: relative; top: 0; left: 0; float: left; margin: 0 10px 0 0">
-	 <input type="button" style="" value="Alpha">
-	 <input type="range" onchange="sketch.style.globalAlpha = parseInt(this.value) / 100;" value="50" min="0" max="100" title="Alpha">
- </div>
- <div style="position: relative; top: 0; left: 0; float: left; margin: 0 10px 0 0">
-	 <input type="button" style="" value="Zoom">
-	 <input type="range" onchange="sketch.zoom = this.value / 100; sketch.redrawFast();" value="100" min="50" max="200" title="Alpha">
- </div>
 </div>
 <script type="text/javascript">
 
