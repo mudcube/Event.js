@@ -267,7 +267,7 @@ root.supports = function (target, type) {
 };
 
 /// Handle custom *EventListener commands.
-var eventManager = function(target, type, listener, configure, trigger) {
+var eventManager = function(target, type, listener, configure, trigger, fromOverwrite) {
 	configure = configure || {};
 	// Check for element to load on interval (before onload).
 	if (typeof(target) === "string" && type === "ready") {
@@ -350,6 +350,7 @@ var eventManager = function(target, type, listener, configure, trigger) {
 			configure.gesture = type; 
 			configure.target = target;
 			configure.listener = listener;
+			configure.fromOverwrite = fromOverwrite;
 			// Record wrapper.
 			wrappers[id] = root.proxy[type](configure); 
 		}
@@ -489,7 +490,7 @@ if (root.modifyEventListener) (function() {
 							useCapture: useCapture
 						}
 					}
-					eventManager(this, type, listener, configure, trigger);
+					eventManager(this, type, listener, configure, trigger, true);
 					handler.call(this, type, listener, useCapture);
 				} else { // use native function.
 					handler.call(this, normalize(type), listener, useCapture);

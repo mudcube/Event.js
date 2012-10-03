@@ -46,7 +46,7 @@ root.pointerSetup = function(conf, self) {
 	self.target = conf.target;
 	self.pointerType = Event.pointerType;
 	///
-	if (Event.modifyEventListener) conf.listener = Event.createPointerEvent;
+	if (Event.modifyEventListener && conf.fromOverwrite) conf.listener = Event.createPointerEvent;
 	/// Convenience commands.
 	var fingers = 0;
 	var type = self.gesture.indexOf("pointer") === 0 && Event.modifyEventListener ? "pointer" : "mouse";
@@ -196,7 +196,7 @@ root.pointerEnd = function(event, self, conf, onPointerUp) {
 		}
 	}
 /*
-	// This should work but fails in Safari on iOS4.
+	// This should work but fails in Safari on iOS4 so not using it.
 	var touches = event.changedTouches || root.getCoords(event);
 	var length = touches.length;
 	// Record changed touches have ended (this should work).

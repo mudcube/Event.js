@@ -1,0 +1,132 @@
+html {
+	font-size: 100%;
+	-webkit-text-size-adjust: 100%;
+	-ms-text-size-adjust: 100%;
+	user-select: none;
+	o-user-select: none;
+	-webkit-user-select: none;
+	height: 100%;
+}
+
+html, body {
+	color: #fff;
+	background: #000 url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAALklEQVQ4T2NUUlL6z4AH3Lt3D580A+OoAcMiDICRjDcdAKMZfzoYNYCBceiHAQDsuisx5wDZVAAAAABJRU5ErkJggg==');
+	margin: 0;
+	min-width: 100%;
+	min-height: 100%;
+	font-family: helvetica;
+}
+canvas {
+	position: absolute; 
+	left: 0;
+	top: 0;
+}
+
+/* DRAWING AREA */
+
+#container {
+	min-width: 100%;
+	min-height: 100%;
+	position: absolute;
+	overflow: scroll;
+}
+
+/* TEXT AREA */
+
+div.textareaWrapper {
+	-webkit-transition-property: opacity;
+	-webkit-transition-duration: .25s;
+	opacity: 1;
+	display: none;
+	z-index: 100;
+	border: 1px solid rgba(255,182,00,1);
+	padding: 6px;
+	position: absolute;
+	background: rgba(255,255,255,0.15);
+}
+div.textareaWrapper div {
+	background: url("../media/bbox_controls.png");
+	z-index: 1;
+	position: absolute;
+	cursor: pointer;
+	min-width: 20px;
+	min-height: 20px;
+	-webkit-user-select: none;
+	padding: 2px;
+}
+div.textareaWrapper div.top.left {
+	background-position: 2px -53px;
+}
+div.textareaWrapper div.top.left:hover {
+	background-position: -138px -53px;
+}
+div.textareaWrapper div.top.right {
+	background-position: -63px -53px;
+}
+div.textareaWrapper div.top.right:hover {
+	background-position: -203px -53px;
+}
+div.textareaWrapper div.bottom.left {
+	background-position: -68px -98px;
+}
+div.textareaWrapper div.bottom.left:hover {
+	background-position: -208px -98px;
+}
+div.textareaWrapper div.bottom.right {
+	background-position: 7px -98px;
+}
+div.textareaWrapper div.bottom.right:hover {
+	background-position: -133px -98px;
+}
+div.textareaWrapper div.top {
+	top: -8px;
+}
+div.textareaWrapper div.left {
+	left: -8px;
+}
+div.textareaWrapper div.right {
+	right: -8px;
+}
+div.textareaWrapper div.bottom {
+	bottom: -8px;
+}
+div.textareaWrapper div.textarea {
+	z-index: 0;
+	word-wrap: break-word;
+	white-space: pre-wrap;
+	position: static;
+	outline: none;
+	color: rgba(255, 0, 0, 1);
+	cursor: text;
+	background: none;
+	-webkit-user-select: text;
+}
+
+/* INPUT */
+
+button, input[type="button"]  {
+	-webkit-font-smoothing: antialiased;
+	-webkit-transition-property: all;
+	-webkit-transition-duration: .25s;
+	font-weight: bold;
+	border: none;
+	font-size: 16px;
+	font-family: Optima;
+	margin: 0.15em;
+	text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+	border-radius: 5px;
+	color: #fff;
+	padding: 0.3em 0.5em;
+	background: #e64910;
+	position: relative;
+	cursor:pointer;
+	background-image: -webkit-gradient(  linear,  left top,  left bottom,  color-stop(0, rgba(0,0,0,0)),  color-stop(1, rgba(0,0,0,0.25)) );
+	box-shadow: inset 1px 1px 0 rgba(255,255,255,0.25);
+}
+button:hover, input[type="button"]:hover {
+	cursor: pointer;
+	background-color: #61d33a;
+}
+button:active, input[type="button"]:active {
+	background-color: #41b31a;
+}

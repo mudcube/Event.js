@@ -27,20 +27,21 @@ Move your mouse or finger around on the green area.
 <script src="../js/Event.js"></script>
 <script>
 
-  var test = document.querySelector('#test');
-  test.addEventListener('pointerdown', function(e) {
-    log('pointerdown, pointerType: ' + e.pointerType);
-  });
-  test.addEventListener('pointermove', function(e) {
-    log('pointermove, pointerType: ' + e.pointerType);
-    log('pointer count: ' + e.pointers.length);
-  });
-  test.addEventListener('pointerup', function(e) {
-    log('pointerup, pointerType: ' + e.pointerType);
-  });
-
-  function log(msg) {
-    test.innerHTML = msg + '<br/>' + test.innerHTML;
-  }
+window.onload = function() {
+	var test = document.querySelector('#test');
+	test.addEventListener('pointerdown', function(e) {
+		log('pointerdown, pointerType: ' + e.pointerType);
+	});
+	test.addEventListener('pointermove', function(e) {
+		log('pointermove, pointerType: ' + e.pointerType);
+		log('pointer count: ' + e.pointers.length);
+	});
+	test.addEventListener('pointerup', function(e) {
+		log('pointerup, pointerType: ' + e.pointerType);
+	});
+	function log(msg) {
+		test.innerHTML = msg + '<br/>' + test.innerHTML;
+	}
+};
 
 </script>

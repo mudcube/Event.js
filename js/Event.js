@@ -265,7 +265,7 @@ root.supports = function (target, type) {
 };
 
 /// Handle custom *EventListener commands.
-var eventManager = function(target, type, listener, configure, trigger) {
+var eventManager = function(target, type, listener, configure, trigger, fromOverwrite) {
 	configure = configure || {};
 	// Check for element to load on interval (before onload).
 	if (typeof(target) === "string" && type === "ready") {
@@ -348,6 +348,7 @@ var eventManager = function(target, type, listener, configure, trigger) {
 			configure.gesture = type; 
 			configure.target = target;
 			configure.listener = listener;
+			configure.fromOverwrite = fromOverwrite;
 			// Record wrapper.
 			wrappers[id] = root.proxy[type](configure); 
 		}
@@ -487,7 +488,7 @@ if (root.modifyEventListener) (function() {
 							useCapture: useCapture
 						}
 					}
-					eventManager(this, type, listener, configure, trigger);
+					eventManager(this, type, listener, configure, trigger, true);
 					handler.call(this, type, listener, useCapture);
 				} else { // use native function.
 					handler.call(this, normalize(type), listener, useCapture);
@@ -526,7 +527,9 @@ if (root.modifySelectors) (function() {
 
 return root;
 
-})(Event);
+})(Event);
+
+
 /*
 	----------------------------------------------------
 	Event.proxy : 0.4.2 : 2012/07/29 : MIT License
@@ -575,7 +578,7 @@ root.pointerSetup = function(conf, self) {
 	self.target = conf.target;
 	self.pointerType = Event.pointerType;
 	///
-	if (Event.modifyEventListener) conf.listener = Event.createPointerEvent;
+	if (Event.modifyEventListener && conf.fromOverwrite) conf.listener = Event.createPointerEvent;
 	/// Convenience commands.
 	var type = self.gesture.indexOf("pointer") === 0 && Event.modifyEventListener ? "pointer" : "mouse";
 	self.remove = function() {
@@ -883,7 +886,9 @@ root.metaTracker = (function() {
 
 return root;
 
-})(Event.proxy);
+})(Event.proxy);
+
+
 /*
 	"Click" event proxy.
 	----------------------------------------------------
@@ -942,7 +947,9 @@ Event.Gesture._gestureHandlers.click = root.click;
 
 return root;
 
-})(Event.proxy);
+})(Event.proxy);
+
+
 /*
 	"Double-Click" aka "Double-Tap" event proxy.
 	----------------------------------------------------
@@ -1031,7 +1038,9 @@ Event.Gesture._gestureHandlers.dblclick = root.dblclick;
 
 return root;
 
-})(Event.proxy);
+})(Event.proxy);
+
+
 /*
 	"Drag" event proxy (1+ fingers).
 	----------------------------------------------------
@@ -1105,7 +1114,9 @@ Event.Gesture._gestureHandlers.drag = root.drag;
 
 return root;
 
-})(Event.proxy);
+})(Event.proxy);
+
+
 /*
 	"Gesture" event proxy (2+ fingers).
 	----------------------------------------------------
@@ -1248,7 +1259,9 @@ Event.Gesture._gestureHandlers.gesture = root.gesture;
 
 return root;
 
-})(Event.proxy);
+})(Event.proxy);
+
+
 /*
 	"Pointer" event proxy (1+ fingers).
 	----------------------------------------------------
@@ -1303,7 +1316,9 @@ Event.Gesture._gestureHandlers.pointerup = root.pointerup;
 
 return root;
 
-})(Event.proxy);
+})(Event.proxy);
+
+
 /*
 	"Device Motion" and "Shake" event proxy.
 	----------------------------------------------------
@@ -1406,7 +1421,9 @@ Event.Gesture._gestureHandlers.shake = root.shake;
 
 return root;
 
-})(Event.proxy);
+})(Event.proxy);
+
+
 /*
 	"Swipe" event proxy (1+ fingers).
 	----------------------------------------------------
@@ -1498,7 +1515,9 @@ Event.Gesture._gestureHandlers.swipe = root.swipe;
 
 return root;
 
-})(Event.proxy);
+})(Event.proxy);
+
+
 /*
 	"Tap" and "Longpress" event proxy.
 	----------------------------------------------------
@@ -1609,7 +1628,9 @@ Event.Gesture._gestureHandlers.longpress = root.longpress;
 
 return root;
 
-})(Event.proxy);
+})(Event.proxy);
+
+
 /*
 	"Mouse Wheel" event proxy.
 	----------------------------------------------------
@@ -1668,4 +1689,6 @@ Event.Gesture._gestureHandlers.wheel = root.wheel;
 
 return root;
 
-})(Event.proxy);
+})(Event.proxy);
+
+
