@@ -10,8 +10,12 @@
     width: 100%;
     height: 100%;
   }
-  div.container {
+  div#container {
   	position: absolute; right: 0; background: #000; color: #fff; z-index: 1; padding-bottom: 0.5em;
+  	width: 120px;
+  }
+  div#container span {
+  	padding-left: 5px;
   }
   div.header {
 	background: #ff0; color: #000; padding: 0.5em; margin-bottom: 0.25em;
@@ -32,17 +36,8 @@
   }
 </style>
 <body>
-<div class="container">
-	<div class="header">Supported gestures</div>
-	<input value="click" type="checkbox" checked>click<br>
-	<input value="drag" type="checkbox">drag<br>
-	<input value="dbltap" type="checkbox" checked>dbltap<br>
-	<input value="gesture" type="checkbox" checked>gesture<br>
-	<input value="longpress" type="checkbox" checked>longpress<br>
-	<input value="shake" type="checkbox" checked>shake<br>
-	<input value="swipe" type="checkbox" checked>swipe<br>
-	<input value="tap" type="checkbox" checked>tap<br>
-	<input value="wheel" type="checkbox">wheel<br>
+<div id="container">
+	<div class="header">Gestures</div>
 </div>
 <div id="test"></div>
 <!-- Pointer events library. -->
@@ -50,59 +45,73 @@
 <script src="../inc/MagicTouch.js"></script>
 <script>
 
+var gestures = { // listeners for various event types.
+	gesture: function (event) { // fingers, minFingers, maxFingers
+		log(event, "gesture", "identifier", "state", "fingers", "rotation", "scale");
+	},
+	click: function (event) { 
+		if (!event.gesture) return; //- figure out how to override native events entirely
+		log(event, "gesture", "identifier", "state", "x", "y");
+	},
+	dbltap: function (event) { // fingers, minFingers, maxFingers
+		if (!event.gesture) return; //- figure out how to override native events entirely
+		log(event, "gesture", "identifier", "state", "x", "y");
+	},
+	swipe: function (event) { // fingers, minFingers, maxFingers, snap, threshold
+		log(event, "gesture", "identifier", "state", "fingers", "velocity", "angle");
+	},
+	tap: function (event) { // fingers, minFingers, maxFingers, timeout.
+		log(event, "gesture", "identifier", "state", "fingers", "x", "y");
+	},
+	longpress: function (event) { // fingers, minFingers, maxFingers, delay.
+		log(event, "gesture", "identifier", "state", "fingers", "x", "y");
+	},
+	shake: function (event) {
+		log(event, "gesture", "identifier", "state");
+	},
+	drag: function (event) { // fingers, maxFingers, position
+		log(event, "gesture", "identifier", "state", "fingers", "state", "x", "y");
+	},
+	wheel: function (event) {
+		log(event, "gesture", "state", "wheelDelta");
+	}
+};
+
+function log(e) {
+	var text = "";
+	for (var n = 1, length = arguments.length; n < length; n++) {
+		text += "&nbsp;&nbsp;&nbsp;&nbsp;" + arguments[n] + "(" + String(e[arguments[n]]).toUpperCase() + ")";
+	}
+	test.innerHTML = text + '<br/>' + test.innerHTML.substr(0, 10000);
+};
+
 window.onload = function () {
 //	magictouch(false);
 	///
+	var container = document.querySelector("#container");
 	var test = document.querySelector('#test');
-	// "Gesture" :: fingers, minFingers, maxFingers.
-	test.addEventListener("gesture", function (event) {
-		log(event, "gesture", "identifier", "state", "fingers", "rotation", "scale");
-	});
-	//
-	test.addEventListener("click", function (event) {
-		if (!event.gesture) return; //- figure out how to override native events entirely
-		log(event, "gesture", "identifier", "state", "x", "y");
-	});
-	// "Double-Click" :: fingers, minFingers, maxFingers.
-	test.addEventListener("dbltap", function (event) {
-		console.log(1)
-		if (!event.gesture) return; //- figure out how to override native events entirely
-		log(event, "gesture", "identifier", "state", "x", "y");
-	});
-	// "Swipe" :: fingers, minFingers, maxFingers, snap, threshold.
-	test.addEventListener("swipe", function (event) {
-		log(event, "gesture", "identifier", "state", "fingers", "velocity", "angle");
-	});
-	// "Tap" :: fingers, minFingers, maxFingers, timeout.
-	test.addEventListener("tap", function (event) {
-		log(event, "gesture", "identifier", "state", "fingers", "x", "y");
-	});
-	// "Longpress" :: fingers, minFingers, maxFingers, delay.
-	test.addEventListener("longpress", function (event) {
-		log(event, "gesture", "identifier", "state", "fingers", "x", "y");
-	});
-	//
-	test.addEventListener("shake", function (event) {
-		log(event, "gesture", "identifier", "state");
-	});
-	//
-/*	// "Drag" :: fingers, maxFingers, position
-	test.addEventListener("drag", function (event) {
-		log(event, "gesture", "identifier", "state", "fingers", "state", "x", "y");
-	});
-	test.addEventListener("wheel", function (event) {
-		log(event, "gesture", "state", "wheelDelta");
-	});*/
-	
-	window.addEventListener("contextmenu", Event.prevent)
-
-	function log(e) {
-		var text = "";
-		for (var n = 1, length = arguments.length; n < length; n++) {
-			text += "&nbsp;&nbsp;&nbsp;&nbsp;" + arguments[n] + "(" + String(e[arguments[n]]).toUpperCase() + ")";
-		}
-		test.innerHTML = text + '<br/>' + test.innerHTML.substr(0, 10000);
+	for (var key in gestures) {
+		var input = document.createElement("input");
+		input.value = key;
+		input.type = "checkbox";
+		input.checked = true;
+		input.onchange = function() {
+			if (this.checked) {
+				test.addEventListener(this.value, gestures[this.value]);
+			} else {
+				test.removeEventListener(this.value, gestures[this.value]);
+			}
+		};
+		var span = document.createElement("span");
+		span.innerHTML = key;
+		var div = document.createElement("div");
+		div.appendChild(input);
+		div.appendChild(span);
+		container.appendChild(div);
+		test.addEventListener(key, gestures[key]);
 	}
+	///
+	window.addEventListener("contextmenu", Event.prevent)
 };
 
 </script>
