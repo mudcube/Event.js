@@ -1,7 +1,8 @@
 /*
 	----------------------------------------------------
-	Sketch.js : 0.1 : 2012/04/20 : http://mudcu.be
+	Sketch.js : 0.1 : 2012/09/01
 	----------------------------------------------------
+	https://github.com/mudcube/Sketch.js
 */
 
 var Sketch = function(config) { "use strict";
@@ -296,8 +297,8 @@ var Sketch = function(config) { "use strict";
 			this.styleCache = clone(this.style);
 		}
 		layer1.style.display = "block";
-		ctx1.canvas.width = ctx1.canvas.width;
-		ctx2.canvas.width = ctx2.canvas.width;
+		ctx1.clearRect(0, 0, innerWidth, innerHeight);
+		ctx2.clearRect(0, 0, innerWidth, innerHeight);
 		this.rendering = true;
 	};
 	this.layerRestore = function() {
