@@ -1,3 +1,9 @@
+/*
+	Tests ported from Pointer.js
+	------------------------------------
+	http://smus.com/mouse-touch-pointer/
+*/
+
 var PointerTypes = {
 	TOUCH: 'touch',
 	MOUSE: 'mouse'
@@ -16,14 +22,16 @@ function synthesizeEvent(eventName, extras) {
   example.dispatchEvent(event);
 }
 
-function mockGetPointerList() {
-  return [{
-    x: 30,
-    y: 50,
-    type: PointerTypes.TOUCH,
-    identifier: 3
-  }];
-}
+var mockGetPointerList = {
+	pointers: [{
+		x: 30,
+		y: 50,
+		type: PointerTypes.TOUCH,
+		identifier: 3
+	}],
+	pageX: 30, 
+	pageY: 50
+};
 
 module('pointer');
 
@@ -66,7 +74,7 @@ if (Modernizr.touch) {
   test('multi-touch events should create multi-pointer events at proper coords', function() {
     example.addEventListener('pointermove', function(e) {
       start();
-      var pointers = e.getPointerList();
+      var pointers = e.pointers;
       equal(pointers.length, 2, 'two pointers');
       var second = pointers[1];
       equal(second.x, 300, 'second x corresponds');
@@ -124,7 +132,7 @@ if (!Modernizr.touch) {
   test('mousedown position should be passed to pointer event', function() {
     example.addEventListener('pointerdown', function(e) {
       start();
-      var pointers = e.getPointerList();
+      var pointers = e.pointers;
       equal(pointers.length, 1, 'expecting one pointer');
       var point = pointers[0];
       equal(point.x, 300, 'x coordinate is right!');
@@ -139,7 +147,7 @@ if (!Modernizr.touch) {
   test('getPointerList should only show mouse if down', function() {
     example.addEventListener('pointermove', function(e) {
       start();
-      var pointers = e.getPointerList();
+      var pointers = e.pointers;
       equal(pointers.length, 0, 'expecting no pointer');
       example.removeEventListener('pointermove', arguments.callee);
     });
@@ -179,9 +187,11 @@ test('doubletap should work based on pointer events', function() {
     ok(true, 'doubletap fired!');
     example.removeEventListener('dbltap', arguments.callee);
   });
-  synthesizeEvent('pointerdown', {getPointerList: mockGetPointerList});
+  synthesizeEvent('mousedown', mockGetPointerList);
+  synthesizeEvent('mouseup', mockGetPointerList);
   setTimeout(function() {
-    synthesizeEvent('pointerdown', {getPointerList: mockGetPointerList});
+    synthesizeEvent('mousedown', mockGetPointerList);
+	synthesizeEvent('mouseup', mockGetPointerList);
   }, 200);
   stop();
 });
@@ -193,9 +203,11 @@ test('doubletap should not fire if the delay between pointerdowns is too large',
     didFire = true;
     example.removeEventListener('dbltap', arguments.callee);
   });
-  synthesizeEvent('pointerdown', {getPointerList: mockGetPointerList});
+  synthesizeEvent('mousedown', mockGetPointerList);
+  synthesizeEvent('mouseup', mockGetPointerList);
   setTimeout(function() {
-    synthesizeEvent('pointerdown', {getPointerList: mockGetPointerList});
+	synthesizeEvent('mousedown', mockGetPointerList);
+	synthesizeEvent('mouseup', mockGetPointerList);
     setTimeout(function() {
       start();
       equal(didFire, false, 'doubletap should not fire!')
@@ -210,7 +222,7 @@ test('longpress should work based on pointers', function() {
     ok(true, 'longpress fired!');
     example.removeEventListener('longpress', arguments.callee);
   });
-  synthesizeEvent('pointerdown', {getPointerList: mockGetPointerList});
+  synthesizeEvent('mousedown', mockGetPointerList);
   stop();
 });
 
@@ -220,9 +232,9 @@ test('longpress should not work if released too early', function() {
     didLongPress = true;
     example.removeEventListener('gesturelongpress', arguments.callee);
   });
-  synthesizeEvent('pointerdown', {getPointerList: mockGetPointerList});
+  synthesizeEvent('mousedown', mockGetPointerList);
   setTimeout(function() {
-    synthesizeEvent('pointerup', {getPointerList: mockGetPointerList});
+    synthesizeEvent('mouseup', mockGetPointerList);
     setTimeout(function() {
       start();
       equal(didLongPress, false, 'longpress didnt fire: released early!');

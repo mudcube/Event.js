@@ -9,6 +9,8 @@
 	2+ : pinch, rotate
 	   : mousewheel, devicemotion, shake
 	----------------------------------------------------
+	TODO: switch configuration to 4th argument on addEventListener
+	----------------------------------------------------
 	REQUIREMENTS: querySelector, querySelectorAll
 	----------------------------------------------------
 	*	There are two ways to add/remove events with this library.
@@ -88,8 +90,8 @@
 			console.log(self.identifier);
 			console.log(self.start);
 			console.log(self.fingers); // somewhere between "2" and "4".
-			self.disable(); // disable event.
-			self.enable(); // enable event.
+			self.pause(); // disable event.
+			self.resume(); // enable event.
 			self.remove(); // remove event.
 		}
 	});
@@ -203,7 +205,7 @@
 	*	Track for proper command/control-key for Mac/PC.
 	----------------------------------------------------
 	Event.add(window, "keyup keydown", Event.proxy.metaTracker);
-	console.log(Event.metaKey);
+	console.log(Event.proxy.metaKey);
 
 	*	Test for event features, in this example Drag & Drop file support.
 	----------------------------------------------------
@@ -258,7 +260,7 @@ root.supports = function (target, type) {
 	if (target.setAttribute && target.removeAttribute) {
 		target.setAttribute(type, "");
 		var isSupported = typeof target[type] === "function";
-		if (typeof target[type] !== "undefined") target[type] = undefined;
+		if (typeof target[type] !== "undefined") target[type] = null;
 		target.removeAttribute(type);
 		return isSupported;
 	}
@@ -580,19 +582,28 @@ root.pointerSetup = function(conf, self) {
 	///
 	if (Event.modifyEventListener && conf.fromOverwrite) conf.listener = Event.createPointerEvent;
 	/// Convenience commands.
+	var fingers = 0;
 	var type = self.gesture.indexOf("pointer") === 0 && Event.modifyEventListener ? "pointer" : "mouse";
+	self.proxy = function(listener) {
+		self.defaultListener = conf.listener;
+		conf.listener = listener;
+		listener(conf.event, self);
+	};
 	self.remove = function() {
 		if (conf.onPointerDown) Event.remove(conf.target, type + "down", conf.onPointerDown);
 		if (conf.onPointerMove) Event.remove(conf.doc, type + "move", conf.onPointerMove);
 		if (conf.onPointerUp) Event.remove(conf.doc, type + "up", conf.onPointerUp);
 	};
-	self.enable = function(opt) {
+	self.resume = function(opt) {
 		if (conf.onPointerMove && (!opt || opt.move)) Event.add(conf.doc, type + "move", conf.onPointerMove);
 		if (conf.onPointerUp && (!opt || opt.move)) Event.add(conf.doc, type + "up", conf.onPointerUp);
+		conf.fingers = fingers;
 	};
-	self.disable = function(opt) {
+	self.pause = function(opt) {
+		fingers = conf.fingers;
 		if (conf.onPointerMove && (!opt || opt.move)) Event.remove(conf.doc, type + "move", conf.onPointerMove);
 		if (conf.onPointerUp && (!opt || opt.up)) Event.remove(conf.doc, type + "up", conf.onPointerUp);
+		conf.fingers = 0;
 	};
 	///
 	return self;
@@ -637,7 +648,13 @@ root.pointerStart = function(event, self, conf) {
 		///
 		conf.fingers ++;
 	};
-	//
+	///
+	conf.event = event;
+	if (self.defaultListener) {
+		conf.listener = self.defaultListener;
+		delete self.defaultListener;
+	}
+	///
 	var isTouchStart = !conf.fingers;
 	var track = conf.tracker;
 	var touches = event.changedTouches || root.getCoords(event);
@@ -713,7 +730,7 @@ root.pointerEnd = function(event, self, conf, onPointerUp) {
 		}
 	}
 /*
-	// This should work but fails in Safari on iOS4.
+	// This should work but fails in Safari on iOS4 so not using it.
 	var touches = event.changedTouches || root.getCoords(event);
 	var length = touches.length;
 	// Record changed touches have ended (this should work).
@@ -800,7 +817,10 @@ root.getCoord = function(event) {
 		};
 	} else if(typeof(event.pageX) !== "undefined" && typeof(event.pageY) !== "undefined") { // Desktop browsers.
 		root.getCoord = function(event) {
-			return event;
+			return {
+				x: event.pageX,
+				y: event.pageY
+			};
 		};
 	} else { // Internet Explorer <=8.0
 		root.getCoord = function(event) {
@@ -1055,6 +1075,18 @@ if (typeof(Event) === "undefined") var Event = {};
 if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
+
+root.dragElement = function(that, event) {
+	root.drag({
+		event: event,
+		target: that,
+		position: "move",
+		listener: function(event, self) {
+			that.style.left = self.x + "px";
+			that.style.top = self.y + "px";
+		}
+	});
+};
 
 root.drag = function(conf) {
 	conf.gesture = "drag";
@@ -1664,7 +1696,7 @@ root.wheel = function(conf) {
 	var onMouseWheel = function(event) {
 		event = event || window.event;
 		self.state = count++ ? "change" : "start";
-		self.wheelDelta = event.detail ? event.detail * -40 : event.wheelDelta;
+		self.wheelDelta = event.detail ? event.detail * -20 : event.wheelDelta;
 		conf.listener(event, self);
 		clearTimeout(interval);
 		interval = setTimeout(function() {
