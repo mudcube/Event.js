@@ -2,6 +2,27 @@
 	----------------------------------------------------
 	Color Space : 1.2 : 2012.07.17 : http://mudcu.be
 	----------------------------------------------------
+	RGBA <-> HSLA  <-> W3
+	RGBA <-> HSVA
+	RGBA <-> CMY   <-> CMYK
+	RGBA <-> HEX24 <-> W3
+	RGBA <-> HEX32
+	RGBA <-> W3
+	----------------------------------------------------
+	Examples
+	----------------------------------------------------
+	Color.Space(0x99ff0000, "HEX32>RGBA>HSLA>W3"); // outputs "hsla(60,100%,17%,0.6)"
+	Color.Space(0xFF0000, "HEX24>RGB>HSL"); // convert hex24 to HSL object.
+	----------------------------------------------------
+	W3 values
+	----------------------------------------------------
+	rgb(255,0,0)
+	rgba(255,0,0,1)
+	rgb(100%,0%,0%)
+	rgba(100%,0%,0%,1)
+	hsl(120, 100%, 50%)
+	hsla(120, 100%, 50%, 1)
+	#000000
 */
 
 if (typeof(Color) === "undefined") Color = {};
@@ -13,7 +34,11 @@ var DEG_RAD = Math.PI / 180;
 var RAD_DEG = 1 / DEG_RAD;
 
 var functions = {};
-var shortcuts = {};
+var shortcuts = {
+	"HEX>HSLA": "HEX24>RGBA>HSLA",
+	"HEX>CMYK": "HEX>RGB>CMY>CMYK",
+	"RGB>CMYK": "RGB>CMY>CMYK"
+};
 
 var root = Color.Space = function(color, route) {
 	if (shortcuts[route]) { // shortcut available
