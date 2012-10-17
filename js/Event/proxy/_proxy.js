@@ -353,7 +353,7 @@ root.getBoundingBox = function(o) {
 	Keep track of metaKey, the proper ctrlKey for users platform.
 */
 
-root.metaTracker = (function() {
+(function() {
 	var agent = navigator.userAgent.toLowerCase();
 	var mac = agent.indexOf("macintosh") !== -1;
 	if (mac && agent.indexOf("khtml") !== -1) { // chrome, safari.
@@ -363,7 +363,10 @@ root.metaTracker = (function() {
 	} else { // windows, linux, or mac opera.
 		var watch = { 17: true };
 	}
-	return function(event) {
+	root.isMetaKey = function(event) {
+		return !!watch[event.keyCode];
+	};
+	root.metaTracker = function(event) {
 		if (watch[event.keyCode]) {
 			root.metaKey = event.type === "keydown";
 		}
