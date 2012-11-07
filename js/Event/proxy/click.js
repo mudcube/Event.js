@@ -32,8 +32,13 @@ root.click = function(conf) {
 			var pointer = pointers[0];
 			var bbox = conf.bbox;
 			var newbbox = root.getBoundingBox(conf.target);
-			var ax = (pointer.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
-			var ay = (pointer.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+			if (conf.position === "relative") {
+				var ax = (pointer.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
+				var ay = (pointer.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+			} else {
+				var ax = (pointer.pageX - bbox.x1);
+				var ay = (pointer.pageY - bbox.y1);
+			}
 			if (ax > 0 && ax < bbox.width && // Within target coordinates.
 				ay > 0 && ay < bbox.height &&
 				bbox.scrollTop === newbbox.scrollTop) {

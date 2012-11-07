@@ -50,8 +50,13 @@ root.gesture = function(conf) {
 			// Check whether "pt" is used by another gesture.
 			if (!pt) continue; 
 			// Find the actual coordinates.
-			pt.move.x = (touch.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
-			pt.move.y = (touch.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+			if (conf.position === "relative") {
+				pt.move.x = (touch.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
+				pt.move.y = (touch.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+			} else {
+				pt.move.x = (touch.pageX - bbox.x1);
+				pt.move.y = (touch.pageY - bbox.y1);
+			}
 		}
 		///
 		if (conf.fingers < conf.minFingers) return;

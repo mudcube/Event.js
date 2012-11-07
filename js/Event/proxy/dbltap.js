@@ -44,8 +44,13 @@ root.dblclick = function(conf) {
 			pointer1 = pointers[0];
 		}
 		var bbox = conf.bbox;
-		var ax = (pointer1.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
-		var ay = (pointer1.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+		if (conf.position === "relative") {
+			var ax = (pointer1.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
+			var ay = (pointer1.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+		} else {
+			var ax = (pointer1.pageX - bbox.x1);
+			var ay = (pointer1.pageY - bbox.y1);
+		}
 		if (!(ax > 0 && ax < bbox.width && // Within target coordinates..
 			  ay > 0 && ay < bbox.height &&
 			  Math.abs(pointer1.pageX - pointer0.pageX) <= 25 && // Within drift deviance.

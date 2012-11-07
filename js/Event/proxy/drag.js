@@ -52,8 +52,13 @@ root.drag = function(conf) {
 			self.identifier = identifier;
 			self.start = pt.start;
 			self.fingers = 1; // TODO(mud): option to track as single set, or individually.
-			self.x = (pt.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
-			self.y = (pt.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
+			if (conf.position === "relative") {
+				self.x = (pt.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
+				self.y = (pt.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
+			} else {
+				self.x = (pt.pageX - pt.offsetX);
+				self.y = (pt.pageY - pt.offsetY);
+			}
 			///
 			conf.listener(event, self);
 		}

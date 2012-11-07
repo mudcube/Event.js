@@ -56,8 +56,13 @@ root.longpress = function(conf) {
 			var identifier = touch.identifier || Infinity;
 			var pt = conf.tracker[identifier];
 			if (!pt) continue;
-			var x = (touch.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
-			var y = (touch.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+			if (conf.position === "relative") {
+				var x = (touch.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
+				var y = (touch.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+			} else {
+				var x = (touch.pageX - bbox.x1);
+				var y = (touch.pageY - bbox.y1);
+			}
 			if (!(x > 0 && x < bbox.width && // Within target coordinates..
 				  y > 0 && y < bbox.height &&
 				  Math.abs(x - pt.start.x) <= 25 && // Within drift deviance.

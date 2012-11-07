@@ -103,8 +103,13 @@ root.pointerStart = function(event, self, conf) {
 				break;
 		}
 		///
-		var x = (touch.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
-		var y = (touch.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
+		if (conf.position === "relative") {
+			var x = (touch.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
+			var y = (touch.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
+		} else {
+			var x = (touch.pageX - pt.offsetX);
+			var y = (touch.pageY - pt.offsetY);
+		}
 		///
 		pt.rotation = 0;
 		pt.scale = 1;
@@ -153,7 +158,7 @@ root.pointerStart = function(event, self, conf) {
 			addTouchStart(touch, sid);
 		} else { // Start tracking fingers.
 			track = conf.tracker = {};
-			conf.bbox = root.getBoundingBox(conf.target);
+			self.bbox = conf.bbox = root.getBoundingBox(conf.target);
 			conf.fingers = 0;
 			conf.cancel = false;
 			addTouchStart(touch, sid);
