@@ -1,5 +1,5 @@
 <pre>
-Event.js : 1.0.9 : 2012/09/01 : MIT License
+Event.js : 1.1.0 : 2012/11/06 : MIT License
 ----------------------------------------------------
 https://github.com/mudcube/Event.js
 ----------------------------------------------------
@@ -7,8 +7,6 @@ https://github.com/mudcube/Event.js
 1+ : tap, longpress, drag, swipe
 2+ : pinch, rotate
    : mousewheel, devicemotion, shake
-----------------------------------------------------
-TODO: switch configuration to 4th argument on addEventListener
 ----------------------------------------------------
 REQUIREMENTS: querySelector, querySelectorAll
 ----------------------------------------------------
