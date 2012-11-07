@@ -1,6 +1,6 @@
 /*
 	----------------------------------------------------
-	Event.js : 1.0.9 : 2012/07/28 : MIT License
+	Event.js : 1.1.0 : 2012/11/06 : MIT License
 	----------------------------------------------------
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
@@ -9,7 +9,10 @@
 	2+ : pinch, rotate
 	   : mousewheel, devicemotion, shake
 	----------------------------------------------------
-	TODO: switch configuration to 4th argument on addEventListener
+	TODO 
+	----------------------------------------------------
+		* switch configuration to 4th argument on addEventListener
+		* bbox calculation for elements scaled with transform.
 	----------------------------------------------------
 	REQUIREMENTS: querySelector, querySelectorAll
 	----------------------------------------------------
@@ -266,6 +269,19 @@ root.supports = function (target, type) {
 	}
 };
 
+var clone = function (obj) {
+	if (!obj || typeof (obj) !== 'object') return obj;
+	var temp = new obj.constructor();
+	for (var key in obj) {
+		if (!obj[key] || typeof (obj[key]) !== 'object') {
+			temp[key] = obj[key];
+		} else { // clone sub-object
+			temp[key] = clone(obj[key]);
+		}
+	}
+	return temp;
+};
+
 /// Handle custom *EventListener commands.
 var eventManager = function(target, type, listener, configure, trigger, fromOverwrite) {
 	configure = configure || {};
@@ -294,10 +310,10 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 		}
 	}
 	/// Handle multiple targets.
-	if (target.length > 1) { 
+	if (target.length > 0) { 
 		var events = {};
 		for (var n = 0, length = target.length; n < length; n ++) {
-			var event = eventManager(target[n], type, listener, configure, trigger);
+			var event = eventManager(target[n], type, listener, clone(configure), trigger);
 			if (event) events[n] = event;
 		}	
 		return createBatchCommands(events);
@@ -310,15 +326,15 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 		var events = {};
 		if (typeof(type.length) === "number") { // Handle multiple listeners glued together.
 			for (var n = 0, length = type.length; n < length; n ++) { // Array [type]
-				var event = eventManager(target, type[n], listener, configure, trigger);
+				var event = eventManager(target, type[n], listener, clone(configure), trigger);
 				if (event) events[type[n]] = event;
 			}
 		} else { // Handle multiple listeners.
 			for (var key in type) { // Object {type}
 				if (typeof(type[key]) === "function") { // without configuration.
-					var event = eventManager(target, key, type[key], configure, trigger);
+					var event = eventManager(target, key, type[key], clone(configure), trigger);
 				} else { // with configuration.
-					var event = eventManager(target, key, type[key].listener, type[key], trigger);
+					var event = eventManager(target, key, type[key].listener, clone(type[key]), trigger);
 				}
 				if (event) events[key] = event;
 			}
