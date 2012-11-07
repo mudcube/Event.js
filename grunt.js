@@ -1,8 +1,5 @@
 module.exports = function (grunt) {
 	grunt.initConfig({
-		lint: {
-			all: ['js/*.js']
-		},
 		concat: {
 			'js/Event.js': [
 				'js/Event/_event.js', 
@@ -22,5 +19,5 @@ module.exports = function (grunt) {
 			'js/Event.min.js': ['js/Event.js']
 		},
 	});
-	grunt.registerTask('default', 'lint concat min');
+	grunt.registerTask('default', 'concat min');
 };

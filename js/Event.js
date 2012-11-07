@@ -1,15 +1,18 @@
 /*
 	----------------------------------------------------
-	Event.js : 1.0.9 : 2012/07/28 : MIT License
+	Event.js : 1.1.0 : 2012/11/06 : MIT License
 	----------------------------------------------------
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
-	1  : click, dblclick, dbltap
-	1+ : tap, longpress, drag, swipe
-	2+ : pinch, rotate
-	   : mousewheel, devicemotion, shake
+	1	: click, dblclick, dbltap
+	1+	: tap, longpress, drag, swipe
+	2+	: pinch, rotate
+		: mousewheel, devicemotion, shake
 	----------------------------------------------------
-	TODO: switch configuration to 4th argument on addEventListener
+	TODO 
+	----------------------------------------------------
+		* switch configuration to 4th argument on addEventListener
+		* bbox calculation for elements scaled with transform.
 	----------------------------------------------------
 	REQUIREMENTS: querySelector, querySelectorAll
 	----------------------------------------------------
@@ -266,20 +269,33 @@ root.supports = function (target, type) {
 	}
 };
 
+var clone = function (obj) {
+	if (!obj || typeof (obj) !== 'object') return obj;
+	var temp = new obj.constructor();
+	for (var key in obj) {
+		if (!obj[key] || typeof (obj[key]) !== 'object') {
+			temp[key] = obj[key];
+		} else { // clone sub-object
+			temp[key] = clone(obj[key]);
+		}
+	}
+	return temp;
+};
+
 /// Handle custom *EventListener commands.
 var eventManager = function(target, type, listener, configure, trigger, fromOverwrite) {
 	configure = configure || {};
 	// Check for element to load on interval (before onload).
 	if (typeof(target) === "string" && type === "ready") {
-		var time = (new Date).getTime();
+		var time = (new Date()).getTime();
 		var timeout = configure.timeout;
 		var ms = configure.interval || 1000 / 60;
-		var interval = setInterval(function() {
-			if ((new Date).getTime() - time > timeout) {
-				clearInterval(interval);
+		var interval = window.setInterval(function() {
+			if ((new Date()).getTime() - time > timeout) {
+				window.clearInterval(interval);
 			}
 			if (document.querySelector(target)) {
-				clearInterval(interval);
+				window.clearInterval(interval);
 				listener();
 			}
 		}, ms);
@@ -294,11 +310,12 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 		}
 	}
 	/// Handle multiple targets.
-	if (target.length > 1) { 
-		var events = {};
-		for (var n = 0, length = target.length; n < length; n ++) {
-			var event = eventManager(target[n], type, listener, configure, trigger);
-			if (event) events[n] = event;
+	var event;
+	var events = {};
+	if (target.length > 0) { 
+		for (var n0 = 0, length0 = target.length; n0 < length0; n0 ++) {
+			event = eventManager(target[n0], type, listener, clone(configure), trigger);
+			if (event) events[n0] = event;
 		}	
 		return createBatchCommands(events);
 	}
@@ -307,18 +324,17 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 	if (type.indexOf && type.indexOf(",") !== -1) type = type.split(",");
 	// Attach or remove multiple events associated with a target.
 	if (typeof(type) !== "string") { // Has multiple events.
-		var events = {};
 		if (typeof(type.length) === "number") { // Handle multiple listeners glued together.
-			for (var n = 0, length = type.length; n < length; n ++) { // Array [type]
-				var event = eventManager(target, type[n], listener, configure, trigger);
-				if (event) events[type[n]] = event;
+			for (var n1 = 0, length1 = type.length; n1 < length1; n1 ++) { // Array [type]
+				event = eventManager(target, type[n1], listener, clone(configure), trigger);
+				if (event) events[type[n1]] = event;
 			}
 		} else { // Handle multiple listeners.
 			for (var key in type) { // Object {type}
 				if (typeof(type[key]) === "function") { // without configuration.
-					var event = eventManager(target, key, type[key], configure, trigger);
+					event = eventManager(target, key, type[key], clone(configure), trigger);
 				} else { // with configuration.
-					var event = eventManager(target, key, type[key].listener, type[key], trigger);
+					event = eventManager(target, key, type[key].listener, clone(type[key]), trigger);
 				}
 				if (event) events[key] = event;
 			}
@@ -341,7 +357,7 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 			// Retains "this" orientation.
 			if (configure.useCall && !root.modifyEventListener) {
 				var tmp = listener;
-				var listener = function(event, self) {
+				listener = function(event, self) {
 					for (var key in self) event[key] = self[key];
 					return tmp.call(target, event);
 				};
@@ -355,7 +371,7 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 			wrappers[id] = root.proxy[type](configure); 
 		}
 	} else { // Fire native event.
-		var type = normalize(type);
+		type = normalize(type);
 		if (trigger === "remove") { // Remove event listener.
 			if (!wrappers[id]) return; // Already removed.
 			target[remove](type, listener, useCapture); 
@@ -429,7 +445,7 @@ var normalize = (function() {
 		} else {
 			return type;
 		}
-	}
+	};
 })();
 
 /// Event wrappers to keep track of all events placed in the window.
@@ -488,7 +504,7 @@ if (root.modifyEventListener) (function() {
 						configure = {
 							useCall: true,
 							useCapture: useCapture
-						}
+						};
 					}
 					eventManager(this, type, listener, configure, trigger, true);
 					handler.call(this, type, listener, useCapture);
@@ -530,8 +546,6 @@ if (root.modifySelectors) (function() {
 return root;
 
 })(Event);
-
-
 /*
 	----------------------------------------------------
 	Event.proxy : 0.4.2 : 2012/07/29 : MIT License
@@ -637,8 +651,13 @@ root.pointerStart = function(event, self, conf) {
 				break;
 		}
 		///
-		var x = (touch.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
-		var y = (touch.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
+		if (conf.position === "relative") {
+			var x = (touch.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
+			var y = (touch.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
+		} else {
+			var x = (touch.pageX - pt.offsetX);
+			var y = (touch.pageY - pt.offsetY);
+		}
 		///
 		pt.rotation = 0;
 		pt.scale = 1;
@@ -687,7 +706,7 @@ root.pointerStart = function(event, self, conf) {
 			addTouchStart(touch, sid);
 		} else { // Start tracking fingers.
 			track = conf.tracker = {};
-			conf.bbox = root.getBoundingBox(conf.target);
+			self.bbox = conf.bbox = root.getBoundingBox(conf.target);
 			conf.fingers = 0;
 			conf.cancel = false;
 			addTouchStart(touch, sid);
@@ -887,7 +906,7 @@ root.getBoundingBox = function(o) {
 	Keep track of metaKey, the proper ctrlKey for users platform.
 */
 
-root.metaTracker = (function() {
+(function() {
 	var agent = navigator.userAgent.toLowerCase();
 	var mac = agent.indexOf("macintosh") !== -1;
 	if (mac && agent.indexOf("khtml") !== -1) { // chrome, safari.
@@ -897,7 +916,10 @@ root.metaTracker = (function() {
 	} else { // windows, linux, or mac opera.
 		var watch = { 17: true };
 	}
-	return function(event) {
+	root.isMetaKey = function(event) {
+		return !!watch[event.keyCode];
+	};
+	root.metaTracker = function(event) {
 		if (watch[event.keyCode]) {
 			root.metaKey = event.type === "keydown";
 		}
@@ -907,8 +929,6 @@ root.metaTracker = (function() {
 return root;
 
 })(Event.proxy);
-
-
 /*
 	"Click" event proxy.
 	----------------------------------------------------
@@ -943,8 +963,13 @@ root.click = function(conf) {
 			var pointer = pointers[0];
 			var bbox = conf.bbox;
 			var newbbox = root.getBoundingBox(conf.target);
-			var ax = (pointer.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
-			var ay = (pointer.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+			if (conf.position === "relative") {
+				var ax = (pointer.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
+				var ay = (pointer.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+			} else {
+				var ax = (pointer.pageX - bbox.x1);
+				var ay = (pointer.pageY - bbox.y1);
+			}
 			if (ax > 0 && ax < bbox.width && // Within target coordinates.
 				ay > 0 && ay < bbox.height &&
 				bbox.scrollTop === newbbox.scrollTop) {
@@ -968,8 +993,6 @@ Event.Gesture._gestureHandlers.click = root.click;
 return root;
 
 })(Event.proxy);
-
-
 /*
 	"Double-Click" aka "Double-Tap" event proxy.
 	----------------------------------------------------
@@ -1016,8 +1039,13 @@ root.dblclick = function(conf) {
 			pointer1 = pointers[0];
 		}
 		var bbox = conf.bbox;
-		var ax = (pointer1.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
-		var ay = (pointer1.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+		if (conf.position === "relative") {
+			var ax = (pointer1.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
+			var ay = (pointer1.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+		} else {
+			var ax = (pointer1.pageX - bbox.x1);
+			var ay = (pointer1.pageY - bbox.y1);
+		}
 		if (!(ax > 0 && ax < bbox.width && // Within target coordinates..
 			  ay > 0 && ay < bbox.height &&
 			  Math.abs(pointer1.pageX - pointer0.pageX) <= 25 && // Within drift deviance.
@@ -1059,8 +1087,6 @@ Event.Gesture._gestureHandlers.dblclick = root.dblclick;
 return root;
 
 })(Event.proxy);
-
-
 /*
 	"Drag" event proxy (1+ fingers).
 	----------------------------------------------------
@@ -1115,8 +1141,13 @@ root.drag = function(conf) {
 			self.identifier = identifier;
 			self.start = pt.start;
 			self.fingers = 1; // TODO(mud): option to track as single set, or individually.
-			self.x = (pt.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
-			self.y = (pt.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
+			if (conf.position === "relative") {
+				self.x = (pt.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
+				self.y = (pt.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
+			} else {
+				self.x = (pt.pageX - pt.offsetX);
+				self.y = (pt.pageY - pt.offsetY);
+			}
 			///
 			conf.listener(event, self);
 		}
@@ -1147,8 +1178,6 @@ Event.Gesture._gestureHandlers.drag = root.drag;
 return root;
 
 })(Event.proxy);
-
-
 /*
 	"Gesture" event proxy (2+ fingers).
 	----------------------------------------------------
@@ -1201,8 +1230,13 @@ root.gesture = function(conf) {
 			// Check whether "pt" is used by another gesture.
 			if (!pt) continue; 
 			// Find the actual coordinates.
-			pt.move.x = (touch.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
-			pt.move.y = (touch.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+			if (conf.position === "relative") {
+				pt.move.x = (touch.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
+				pt.move.y = (touch.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+			} else {
+				pt.move.x = (touch.pageX - bbox.x1);
+				pt.move.y = (touch.pageY - bbox.y1);
+			}
 		}
 		///
 		if (conf.fingers < conf.minFingers) return;
@@ -1292,8 +1326,6 @@ Event.Gesture._gestureHandlers.gesture = root.gesture;
 return root;
 
 })(Event.proxy);
-
-
 /*
 	"Pointer" event proxy (1+ fingers).
 	----------------------------------------------------
@@ -1349,8 +1381,6 @@ Event.Gesture._gestureHandlers.pointerup = root.pointerup;
 return root;
 
 })(Event.proxy);
-
-
 /*
 	"Device Motion" and "Shake" event proxy.
 	----------------------------------------------------
@@ -1454,8 +1484,6 @@ Event.Gesture._gestureHandlers.shake = root.shake;
 return root;
 
 })(Event.proxy);
-
-
 /*
 	"Swipe" event proxy (1+ fingers).
 	----------------------------------------------------
@@ -1548,8 +1576,6 @@ Event.Gesture._gestureHandlers.swipe = root.swipe;
 return root;
 
 })(Event.proxy);
-
-
 /*
 	"Tap" and "Longpress" event proxy.
 	----------------------------------------------------
@@ -1608,8 +1634,13 @@ root.longpress = function(conf) {
 			var identifier = touch.identifier || Infinity;
 			var pt = conf.tracker[identifier];
 			if (!pt) continue;
-			var x = (touch.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
-			var y = (touch.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+			if (conf.position === "relative") {
+				var x = (touch.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
+				var y = (touch.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+			} else {
+				var x = (touch.pageX - bbox.x1);
+				var y = (touch.pageY - bbox.y1);
+			}
 			if (!(x > 0 && x < bbox.width && // Within target coordinates..
 				  y > 0 && y < bbox.height &&
 				  Math.abs(x - pt.start.x) <= 25 && // Within drift deviance.
@@ -1661,8 +1692,6 @@ Event.Gesture._gestureHandlers.longpress = root.longpress;
 return root;
 
 })(Event.proxy);
-
-
 /*
 	"Mouse Wheel" event proxy.
 	----------------------------------------------------
@@ -1722,5 +1751,3 @@ Event.Gesture._gestureHandlers.wheel = root.wheel;
 return root;
 
 })(Event.proxy);
-
-

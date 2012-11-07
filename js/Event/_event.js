@@ -4,10 +4,10 @@
 	----------------------------------------------------
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
-	1  : click, dblclick, dbltap
-	1+ : tap, longpress, drag, swipe
-	2+ : pinch, rotate
-	   : mousewheel, devicemotion, shake
+	1	: click, dblclick, dbltap
+	1+	: tap, longpress, drag, swipe
+	2+	: pinch, rotate
+		: mousewheel, devicemotion, shake
 	----------------------------------------------------
 	TODO 
 	----------------------------------------------------
@@ -287,15 +287,15 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 	configure = configure || {};
 	// Check for element to load on interval (before onload).
 	if (typeof(target) === "string" && type === "ready") {
-		var time = (new Date).getTime();
+		var time = (new Date()).getTime();
 		var timeout = configure.timeout;
 		var ms = configure.interval || 1000 / 60;
-		var interval = setInterval(function() {
-			if ((new Date).getTime() - time > timeout) {
-				clearInterval(interval);
+		var interval = window.setInterval(function() {
+			if ((new Date()).getTime() - time > timeout) {
+				window.clearInterval(interval);
 			}
 			if (document.querySelector(target)) {
-				clearInterval(interval);
+				window.clearInterval(interval);
 				listener();
 			}
 		}, ms);
@@ -310,11 +310,12 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 		}
 	}
 	/// Handle multiple targets.
+	var event;
+	var events = {};
 	if (target.length > 0) { 
-		var events = {};
-		for (var n = 0, length = target.length; n < length; n ++) {
-			var event = eventManager(target[n], type, listener, clone(configure), trigger);
-			if (event) events[n] = event;
+		for (var n0 = 0, length0 = target.length; n0 < length0; n0 ++) {
+			event = eventManager(target[n0], type, listener, clone(configure), trigger);
+			if (event) events[n0] = event;
 		}	
 		return createBatchCommands(events);
 	}
@@ -323,18 +324,17 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 	if (type.indexOf && type.indexOf(",") !== -1) type = type.split(",");
 	// Attach or remove multiple events associated with a target.
 	if (typeof(type) !== "string") { // Has multiple events.
-		var events = {};
 		if (typeof(type.length) === "number") { // Handle multiple listeners glued together.
-			for (var n = 0, length = type.length; n < length; n ++) { // Array [type]
-				var event = eventManager(target, type[n], listener, clone(configure), trigger);
-				if (event) events[type[n]] = event;
+			for (var n1 = 0, length1 = type.length; n1 < length1; n1 ++) { // Array [type]
+				event = eventManager(target, type[n1], listener, clone(configure), trigger);
+				if (event) events[type[n1]] = event;
 			}
 		} else { // Handle multiple listeners.
 			for (var key in type) { // Object {type}
 				if (typeof(type[key]) === "function") { // without configuration.
-					var event = eventManager(target, key, type[key], clone(configure), trigger);
+					event = eventManager(target, key, type[key], clone(configure), trigger);
 				} else { // with configuration.
-					var event = eventManager(target, key, type[key].listener, clone(type[key]), trigger);
+					event = eventManager(target, key, type[key].listener, clone(type[key]), trigger);
 				}
 				if (event) events[key] = event;
 			}
@@ -357,7 +357,7 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 			// Retains "this" orientation.
 			if (configure.useCall && !root.modifyEventListener) {
 				var tmp = listener;
-				var listener = function(event, self) {
+				listener = function(event, self) {
 					for (var key in self) event[key] = self[key];
 					return tmp.call(target, event);
 				};
@@ -371,7 +371,7 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 			wrappers[id] = root.proxy[type](configure); 
 		}
 	} else { // Fire native event.
-		var type = normalize(type);
+		type = normalize(type);
 		if (trigger === "remove") { // Remove event listener.
 			if (!wrappers[id]) return; // Already removed.
 			target[remove](type, listener, useCapture); 
@@ -445,7 +445,7 @@ var normalize = (function() {
 		} else {
 			return type;
 		}
-	}
+	};
 })();
 
 /// Event wrappers to keep track of all events placed in the window.
@@ -504,7 +504,7 @@ if (root.modifyEventListener) (function() {
 						configure = {
 							useCall: true,
 							useCapture: useCapture
-						}
+						};
 					}
 					eventManager(this, type, listener, configure, trigger, true);
 					handler.call(this, type, listener, useCapture);
