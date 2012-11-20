@@ -1,6 +1,6 @@
 /*
 	----------------------------------------------------
-	Event.js : 1.1.0 : 2012/11/06 : MIT License
+	Event.js : 1.1.1 : 2012/11/19 : MIT License
 	----------------------------------------------------
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
@@ -9,10 +9,15 @@
 	2+	: pinch, rotate
 		: mousewheel, devicemotion, shake
 	----------------------------------------------------
-	TODO 
+	TODO
 	----------------------------------------------------
 		* switch configuration to 4th argument on addEventListener
 		* bbox calculation for elements scaled with transform.
+	----------------------------------------------------
+	NOTES
+	----------------------------------------------------
+		* In Typescript or other libraries that may have built in "Event" namespace
+			you can use "eventjs" instead of "Event" for all example calls.
 	----------------------------------------------------
 	REQUIREMENTS: querySelector, querySelectorAll
 	----------------------------------------------------
@@ -217,6 +222,7 @@
 */
 
 if (typeof(Event) === "undefined") var Event = {};
+if (typeof(eventjs) === "undefined") var eventjs = Event;
 
 Event = (function(root) { "use strict";
 
@@ -347,7 +353,7 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 	var useCapture = configure.useCapture || false;
 	var id = normalize(type) + getID(target) + "." + getID(listener) + "." + (useCapture ? 1 : 0);
 	// Handle the event.
-	if (root.Gesture._gestureHandlers[type]) { // Fire custom event.
+	if (root.Gesture && root.Gesture._gestureHandlers[type]) { // Fire custom event.
 		if (trigger === "remove") { // Remove event listener.
 			if (!wrappers[id]) return; // Already removed.
 			wrappers[id].remove();
@@ -496,7 +502,7 @@ if (root.modifyEventListener) (function() {
 			var handle = trigger + "EventListener";
 			var handler = proto[handle];
 			proto[handle] = function (type, listener, useCapture) {
-				if (root.Gesture._gestureHandlers[type]) { // capture custom events.
+				if (root.Gesture && root.Gesture._gestureHandlers[type]) { // capture custom events.
 					var configure = useCapture;
 					if (typeof(useCapture) === "object") {
 						configure.useCall = true;
@@ -1534,10 +1540,24 @@ root.swipe = function(conf) {
 			var velocity2
 			var degree1;
 			var degree2;
+		/// Calculate centroid of gesture.
+		var start = { x: 0, y: 0 };
+		var endx = 0;
+		var endy = 0;
+		var length = 0;
+			///
 			for (var sid in conf.tracker) {
 				var touch = conf.tracker[sid];
 				var xdist = touch.move.x - touch.start.x;
 				var ydist = touch.move.y - touch.start.y;
+
+			endx += touch.move.x;
+			endy += touch.move.y;
+			start.x += touch.start.x;
+			start.y += touch.start.y;
+			length ++;
+
+
 				var distance = Math.sqrt(xdist * xdist + ydist * ydist);
 				var ms = touch.moveTime - touch.startTime;
 				var degree2 = Math.atan2(xdist, ydist) / RAD_DEG + 180;
@@ -1551,8 +1571,14 @@ root.swipe = function(conf) {
 				} else {
 					return;
 				}
-			}			
+			}
+			///
 			if (velocity1 > conf.threshold) {
+				start.x /= length;
+				start.y /= length;
+				self.start = start;
+				self.x = endx / length;
+				self.y = endy / length;
 				self.angle = -((((degree1 / conf.snap + 0.5) >> 0) * conf.snap || 360) - 360);
 				self.velocity = velocity1;
 				self.fingers = conf.gestureFingers;
