@@ -16,8 +16,8 @@
 	----------------------------------------------------
 	NOTES
 	----------------------------------------------------
-		* In Typescript or other libraries that may have built in "Event" namespace
-			you can use "eventjs" instead of "Event" for all example calls.
+	* When using other libraries that may have built in "Event" namespace,
+		i.e. Typescript, you can use "eventjs" instead of "Event" for all example calls.
 	----------------------------------------------------
 	REQUIREMENTS: querySelector, querySelectorAll
 	----------------------------------------------------

@@ -1,5 +1,5 @@
 <pre>
-Event.js : 1.1.0 : 2012/11/06 : MIT License
+Event.js : 1.1.1 : 2012/11/19 : MIT License
 ----------------------------------------------------
 https://github.com/mudcube/Event.js
 ----------------------------------------------------
@@ -7,6 +7,11 @@ https://github.com/mudcube/Event.js
 1+ : tap, longpress, drag, swipe
 2+ : pinch, rotate
    : mousewheel, devicemotion, shake
+----------------------------------------------------
+NOTES
+----------------------------------------------------
+* When using other libraries that may have built in "Event" namespace,
+	i.e. Typescript, you can use "eventjs" instead of "Event" for all example calls.
 ----------------------------------------------------
 REQUIREMENTS: querySelector, querySelectorAll
 ----------------------------------------------------

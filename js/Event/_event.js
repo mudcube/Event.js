@@ -16,8 +16,8 @@
 	----------------------------------------------------
 	NOTES
 	----------------------------------------------------
-		* In Typescript or other libraries that may have built in "Event" namespace
-			you can use "eventjs" instead of "Event" for all example calls.
+	* When using other libraries that may have built in "Event" namespace,
+		i.e. Typescript, you can use "eventjs" instead of "Event" for all example calls.
 	----------------------------------------------------
 	REQUIREMENTS: querySelector, querySelectorAll
 	----------------------------------------------------
@@ -181,7 +181,7 @@
 	});
 	// "Swipe" :: fingers, minFingers, maxFingers, snap, threshold.
 	Event.add(window, "swipe", function(event, self) {
-		console.log(self.gesture, self.fingers, self.velocity, self.angle);
+		console.log(self.gesture, self.fingers, self.velocity, self.angle, self.start, self.x, self.y);
 	});
 	// "Tap" :: fingers, minFingers, maxFingers, timeout.
 	Event.add(window, "tap", function(event, self) {
