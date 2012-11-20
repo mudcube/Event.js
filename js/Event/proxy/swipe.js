@@ -48,10 +48,24 @@ root.swipe = function(conf) {
 			var velocity2
 			var degree1;
 			var degree2;
+		/// Calculate centroid of gesture.
+		var start = { x: 0, y: 0 };
+		var endx = 0;
+		var endy = 0;
+		var length = 0;
+			///
 			for (var sid in conf.tracker) {
 				var touch = conf.tracker[sid];
 				var xdist = touch.move.x - touch.start.x;
 				var ydist = touch.move.y - touch.start.y;
+
+			endx += touch.move.x;
+			endy += touch.move.y;
+			start.x += touch.start.x;
+			start.y += touch.start.y;
+			length ++;
+
+
 				var distance = Math.sqrt(xdist * xdist + ydist * ydist);
 				var ms = touch.moveTime - touch.startTime;
 				var degree2 = Math.atan2(xdist, ydist) / RAD_DEG + 180;
@@ -65,8 +79,14 @@ root.swipe = function(conf) {
 				} else {
 					return;
 				}
-			}			
+			}
+			///
 			if (velocity1 > conf.threshold) {
+				start.x /= length;
+				start.y /= length;
+				self.start = start;
+				self.x = endx / length;
+				self.y = endy / length;
 				self.angle = -((((degree1 / conf.snap + 0.5) >> 0) * conf.snap || 360) - 360);
 				self.velocity = velocity1;
 				self.fingers = conf.gestureFingers;
