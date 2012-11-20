@@ -1,3 +1,15 @@
+/*
+	------------------------------------------------------------------------------
+	Grunt configuration
+	------------------------------------------------------------------------------
+	The entire library is 6kb minified with gzip compression.
+	------------------------------------------------------------------------------
+	* To reduce the size remove unused libraries below.	
+	* The only required libraries is _event.js for most basic work.
+	* _proxy.js is required to include any additional event proxies.
+	------------------------------------------------------------------------------
+*/
+
 module.exports = function (grunt) {
 	grunt.initConfig({
 		concat: {

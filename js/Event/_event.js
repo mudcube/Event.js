@@ -1,6 +1,6 @@
 /*
 	----------------------------------------------------
-	Event.js : 1.1.0 : 2012/11/06 : MIT License
+	Event.js : 1.1.1 : 2012/11/19 : MIT License
 	----------------------------------------------------
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
@@ -9,10 +9,15 @@
 	2+	: pinch, rotate
 		: mousewheel, devicemotion, shake
 	----------------------------------------------------
-	TODO 
+	TODO
 	----------------------------------------------------
 		* switch configuration to 4th argument on addEventListener
 		* bbox calculation for elements scaled with transform.
+	----------------------------------------------------
+	NOTES
+	----------------------------------------------------
+		* In Typescript or other libraries that may have built in "Event" namespace
+			you can use "eventjs" instead of "Event" for all example calls.
 	----------------------------------------------------
 	REQUIREMENTS: querySelector, querySelectorAll
 	----------------------------------------------------
@@ -217,6 +222,7 @@
 */
 
 if (typeof(Event) === "undefined") var Event = {};
+if (typeof(eventjs) === "undefined") var eventjs = Event;
 
 Event = (function(root) { "use strict";
 
@@ -347,7 +353,7 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 	var useCapture = configure.useCapture || false;
 	var id = normalize(type) + getID(target) + "." + getID(listener) + "." + (useCapture ? 1 : 0);
 	// Handle the event.
-	if (root.Gesture._gestureHandlers[type]) { // Fire custom event.
+	if (root.Gesture && root.Gesture._gestureHandlers[type]) { // Fire custom event.
 		if (trigger === "remove") { // Remove event listener.
 			if (!wrappers[id]) return; // Already removed.
 			wrappers[id].remove();
@@ -496,7 +502,7 @@ if (root.modifyEventListener) (function() {
 			var handle = trigger + "EventListener";
 			var handler = proto[handle];
 			proto[handle] = function (type, listener, useCapture) {
-				if (root.Gesture._gestureHandlers[type]) { // capture custom events.
+				if (root.Gesture && root.Gesture._gestureHandlers[type]) { // capture custom events.
 					var configure = useCapture;
 					if (typeof(useCapture) === "object") {
 						configure.useCall = true;
