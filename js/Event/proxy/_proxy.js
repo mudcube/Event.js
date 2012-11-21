@@ -50,6 +50,7 @@ root.pointerSetup = function(conf, self) {
 	/// Convenience commands.
 	var fingers = 0;
 	var type = self.gesture.indexOf("pointer") === 0 && Event.modifyEventListener ? "pointer" : "mouse";
+	self.listener = conf.listener;
 	self.proxy = function(listener) {
 		self.defaultListener = conf.listener;
 		conf.listener = listener;

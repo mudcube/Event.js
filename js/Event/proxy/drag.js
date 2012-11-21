@@ -21,6 +21,7 @@ root.dragElement = function(that, event) {
 		listener: function(event, self) {
 			that.style.left = self.x + "px";
 			that.style.top = self.y + "px";
+			Event.prevent(event);
 		}
 	});
 };
