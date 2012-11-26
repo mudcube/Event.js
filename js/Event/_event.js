@@ -227,10 +227,10 @@ if (typeof(eventjs) === "undefined") var eventjs = Event;
 Event = (function(root) { "use strict";
 
 // Add custom *EventListener commands to HTMLElements.
-root.modifyEventListener = true;
+root.modifyEventListener = false;
 
 // Add bulk *EventListener commands on NodeLists from querySelectorAll and others.
-root.modifySelectors = true;
+root.modifySelectors = false;
 
 // Event maintenance.
 root.add = function(target, type, listener, configure) {
@@ -496,7 +496,7 @@ root.createPointerEvent = function (event, self, preventRecord) {
 };
 
 /// Allows *EventListener to use custom event proxies.
-if (root.modifyEventListener) (function() {
+if (root.modifyEventListener && window.HTMLElement) (function() {
 	var augmentEventListener = function(proto) {
 		var recall = function(trigger) { // overwrite native *EventListener's
 			var handle = trigger + "EventListener";

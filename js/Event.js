@@ -181,7 +181,7 @@
 	});
 	// "Swipe" :: fingers, minFingers, maxFingers, snap, threshold.
 	Event.add(window, "swipe", function(event, self) {
-		console.log(self.gesture, self.fingers, self.velocity, self.angle);
+		console.log(self.gesture, self.fingers, self.velocity, self.angle, self.start, self.x, self.y);
 	});
 	// "Tap" :: fingers, minFingers, maxFingers, timeout.
 	Event.add(window, "tap", function(event, self) {
@@ -227,10 +227,10 @@ if (typeof(eventjs) === "undefined") var eventjs = Event;
 Event = (function(root) { "use strict";
 
 // Add custom *EventListener commands to HTMLElements.
-root.modifyEventListener = true;
+root.modifyEventListener = false;
 
 // Add bulk *EventListener commands on NodeLists from querySelectorAll and others.
-root.modifySelectors = true;
+root.modifySelectors = false;
 
 // Event maintenance.
 root.add = function(target, type, listener, configure) {
@@ -496,7 +496,7 @@ root.createPointerEvent = function (event, self, preventRecord) {
 };
 
 /// Allows *EventListener to use custom event proxies.
-if (root.modifyEventListener) (function() {
+if (root.modifyEventListener && window.HTMLElement) (function() {
 	var augmentEventListener = function(proto) {
 		var recall = function(trigger) { // overwrite native *EventListener's
 			var handle = trigger + "EventListener";
@@ -604,6 +604,7 @@ root.pointerSetup = function(conf, self) {
 	/// Convenience commands.
 	var fingers = 0;
 	var type = self.gesture.indexOf("pointer") === 0 && Event.modifyEventListener ? "pointer" : "mouse";
+	self.listener = conf.listener;
 	self.proxy = function(listener) {
 		self.defaultListener = conf.listener;
 		conf.listener = listener;
@@ -1116,6 +1117,7 @@ root.dragElement = function(that, event) {
 		listener: function(event, self) {
 			that.style.left = self.x + "px";
 			that.style.top = self.y + "px";
+			Event.prevent(event);
 		}
 	});
 };
