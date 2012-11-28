@@ -40,6 +40,7 @@ root.pointerSetup = function(conf, self) {
 	conf.minFingers = conf.minFingers || conf.fingers || 1; // Minimum required fingers.
 	conf.maxFingers = conf.maxFingers || conf.fingers || Infinity; // Maximum allowed fingers.
 	conf.position = conf.position || "relative"; // Determines what coordinate system points are returned.
+	delete conf.fingers; //- 
 	/// Convenience data.
 	self = self || {};
 	self.gesture = conf.gesture;
@@ -184,37 +185,46 @@ root.pointerEnd = function(event, self, conf, onPointerUp) {
 	var exists = {};
 	for (var i = 0; i < length; i ++) {
 		var touch = touches[i];
-		exists[touch.identifier || Infinity] = true;
+		var sid = touch.identifier;
+		exists[sid || Infinity] = true;
 	}
-	for (var key in conf.tracker) {
-		var track = conf.tracker[key];
-		if (!exists[key] && !track.up) {
-			if (onPointerUp) { // add changedTouches to mouse.
-				event.changedTouches = [{
+	for (var sid in conf.tracker) {
+		var track = conf.tracker[sid];
+		if (exists[sid] || track.up) continue;
+		if (onPointerUp) { // add changedTouches to mouse.
+			onPointerUp({
+				changedTouches: [{
 					pageX: track.pageX,
 					pageY: track.pageY,
-					identifier: key === "Infinity" ? Infinity : key 
-				}];
-				onPointerUp(event, "up");
-			}
-			conf.tracker[key].up = true;
-			conf.fingers --;
+					identifier: sid === "Infinity" ? Infinity : sid 
+				}]
+			}, "up");
 		}
+		track.up = true;
+		conf.fingers --;
 	}
-/*
-	// This should work but fails in Safari on iOS4 so not using it.
+/*	// This should work but fails in Safari on iOS4 so not using it.
 	var touches = event.changedTouches || root.getCoords(event);
 	var length = touches.length;
 	// Record changed touches have ended (this should work).
 	for (var i = 0; i < length; i ++) {
 		var touch = touches[i];
 		var sid = touch.identifier || Infinity;
-		if (conf.tracker[sid]) {
-			conf.tracker[sid].up = true;
+		var track = conf.tracker[sid];
+		if (track && !track.up) {
+			if (onPointerUp) { // add changedTouches to mouse.
+				onPointerUp({
+					changedTouches: [{
+						pageX: track.pageX,
+						pageY: track.pageY,
+						identifier: sid === "Infinity" ? Infinity : sid 
+					}]
+				}, "up");
+			}
+			track.up = true;
 			conf.fingers --;
 		}
-	}
-*/
+	} */
 	// Wait for all fingers to be released.
 	if (conf.fingers !== 0) return false;
 	// Record total number of fingers gesture used.

@@ -52,7 +52,7 @@ root.drag = function(conf) {
 			self.state = state || "move";
 			self.identifier = identifier;
 			self.start = pt.start;
-			self.fingers = 1; // TODO(mud): option to track as single set, or individually.
+			self.fingers = conf.fingers;
 			if (conf.position === "relative") {
 				self.x = (pt.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
 				self.y = (pt.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
