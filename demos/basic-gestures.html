@@ -1,6 +1,8 @@
 <!doctype html>
 <head>
-  <meta name="viewport" content="width=device-width">
+  <meta name="viewport" content="minimum-scale=1.0,maximum-scale=1.0,initial-scale=1.0,user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
 </head>
 <style>
   html, body {
@@ -112,6 +114,7 @@ window.onload = function () {
 	}
 	///
 	window.addEventListener("contextmenu", Event.prevent)
+	document.addEventListener("touchstart", Event.prevent)
 };
 
 </script>

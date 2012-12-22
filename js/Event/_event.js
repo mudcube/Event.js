@@ -227,10 +227,10 @@ if (typeof(eventjs) === "undefined") var eventjs = Event;
 Event = (function(root) { "use strict";
 
 // Add custom *EventListener commands to HTMLElements.
-root.modifyEventListener = false;
+root.modifyEventListener = true;
 
 // Add bulk *EventListener commands on NodeLists from querySelectorAll and others.
-root.modifySelectors = false;
+root.modifySelectors = true;
 
 // Event maintenance.
 root.add = function(target, type, listener, configure) {

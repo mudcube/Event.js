@@ -30,13 +30,16 @@ root.drag = function(conf) {
 	conf.gesture = "drag";
 	conf.onPointerDown = function (event) {
 		if (root.pointerStart(event, self, conf)) {
-			Event.add(conf.doc, "mousemove", conf.onPointerMove);
-			Event.add(conf.doc, "mouseup", conf.onPointerUp);
+			if (!conf.monitor) {
+				Event.add(conf.doc, "mousemove", conf.onPointerMove);
+				Event.add(conf.doc, "mouseup", conf.onPointerUp);
+			}
 		}
 		// Process event listener.
 		conf.onPointerMove(event, "down");
 	};
 	conf.onPointerMove = function (event, state) {
+		if (!conf.tracker) return conf.onPointerDown(event);
 		var bbox = conf.bbox;
 		var touches = event.changedTouches || root.getCoords(event);
 		var length = touches.length;
@@ -67,8 +70,10 @@ root.drag = function(conf) {
 	conf.onPointerUp = function(event) {
 		// Remove tracking for touch.
 		if (root.pointerEnd(event, self, conf, conf.onPointerMove)) {
-			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
-			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
+			if (!conf.monitor) {
+				Event.remove(conf.doc, "mousemove", conf.onPointerMove);
+				Event.remove(conf.doc, "mouseup", conf.onPointerUp);
+			}
 		}
 	};
 	// Generate maintenance commands, and other configurations.
@@ -76,8 +81,12 @@ root.drag = function(conf) {
 	// Attach events.
 	if (conf.event) {
 		conf.onPointerDown(conf.event);
-	} else {
+	} else { //
 		Event.add(conf.target, "mousedown", conf.onPointerDown);
+		if (conf.monitor) {
+			Event.add(conf.doc, "mousemove", conf.onPointerMove);
+			Event.add(conf.doc, "mouseup", conf.onPointerUp);
+		}
 	}
 	// Return this object.
 	return self;

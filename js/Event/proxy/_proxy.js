@@ -193,6 +193,8 @@ root.pointerEnd = function(event, self, conf, onPointerUp) {
 		if (exists[sid] || track.up) continue;
 		if (onPointerUp) { // add changedTouches to mouse.
 			onPointerUp({
+				pageX: track.pageX,
+				pageY: track.pageY,
 				changedTouches: [{
 					pageX: track.pageX,
 					pageY: track.pageY,

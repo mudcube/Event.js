@@ -2,7 +2,9 @@
 <html lang=en>
   <head>
     <meta charset=utf-8>
-    <meta name="viewport" content="width=device-width; height=device-height; initial-scale=1.0; maximum-scale=1.0;" /> 
+  <meta name="viewport" content="minimum-scale=1.0,maximum-scale=1.0,initial-scale=1.0,user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <title></title>
     <style type="text/css"> 
 
@@ -76,6 +78,7 @@ function resetCanvas (e) {
 function init(){
   touches = [];
   requestAnimFrame(draw);
+  document.addEventListener("touchstart", Event.prevent)
 }
 
 function draw() {
