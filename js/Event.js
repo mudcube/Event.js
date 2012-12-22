@@ -491,7 +491,10 @@ root.createPointerEvent = function (event, self, preventRecord) {
 	var newEvent = document.createEvent("Event");
 	newEvent.initEvent(eventName, true, true);
 	newEvent.originalEvent = event;
-	for (var k in self) newEvent[k] = self[k];
+	for (var k in self) {
+		if (k === "target") continue;
+		newEvent[k] = self[k];
+	}
 	target.dispatchEvent(newEvent);
 };
 
