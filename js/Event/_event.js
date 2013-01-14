@@ -315,10 +315,11 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 			target = target[0];
 		}
 	}
+
 	/// Handle multiple targets.
 	var event;
 	var events = {};
-	if (target.length > 0) { 
+	if (target.length > 0 && target !== window) { 
 		for (var n0 = 0, length0 = target.length; n0 < length0; n0 ++) {
 			event = eventManager(target[n0], type, listener, clone(configure), trigger);
 			if (event) events[n0] = event;

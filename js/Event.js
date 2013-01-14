@@ -315,10 +315,11 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 			target = target[0];
 		}
 	}
+
 	/// Handle multiple targets.
 	var event;
 	var events = {};
-	if (target.length > 0) { 
+	if (target.length > 0 && target !== window) { 
 		for (var n0 = 0, length0 = target.length; n0 < length0; n0 ++) {
 			event = eventManager(target[n0], type, listener, clone(configure), trigger);
 			if (event) events[n0] = event;
@@ -614,20 +615,30 @@ root.pointerSetup = function(conf, self) {
 		conf.listener = listener;
 		listener(conf.event, self);
 	};
+	self.attach = function() {
+		if (conf.onPointerDown) Event.add(conf.target, type + "down", conf.onPointerDown);
+		if (conf.onPointerMove) Event.add(conf.doc, type + "move", conf.onPointerMove);
+		if (conf.onPointerUp) Event.add(conf.doc, type + "up", conf.onPointerUp);
+	};
 	self.remove = function() {
 		if (conf.onPointerDown) Event.remove(conf.target, type + "down", conf.onPointerDown);
 		if (conf.onPointerMove) Event.remove(conf.doc, type + "move", conf.onPointerMove);
 		if (conf.onPointerUp) Event.remove(conf.doc, type + "up", conf.onPointerUp);
+		self.reset();
+	};
+	self.pause = function(opt) {
+		if (conf.onPointerMove && (!opt || opt.move)) Event.remove(conf.doc, type + "move", conf.onPointerMove);
+		if (conf.onPointerUp && (!opt || opt.up)) Event.remove(conf.doc, type + "up", conf.onPointerUp);
+		fingers = conf.fingers;
+		conf.fingers = 0;
 	};
 	self.resume = function(opt) {
 		if (conf.onPointerMove && (!opt || opt.move)) Event.add(conf.doc, type + "move", conf.onPointerMove);
-		if (conf.onPointerUp && (!opt || opt.move)) Event.add(conf.doc, type + "up", conf.onPointerUp);
+		if (conf.onPointerUp && (!opt || opt.up)) Event.add(conf.doc, type + "up", conf.onPointerUp);
 		conf.fingers = fingers;
 	};
-	self.pause = function(opt) {
-		fingers = conf.fingers;
-		if (conf.onPointerMove && (!opt || opt.move)) Event.remove(conf.doc, type + "move", conf.onPointerMove);
-		if (conf.onPointerUp && (!opt || opt.up)) Event.remove(conf.doc, type + "up", conf.onPointerUp);
+	self.reset = function() {
+		delete conf.tracker;
 		conf.fingers = 0;
 	};
 	///
