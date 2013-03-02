@@ -212,8 +212,10 @@
 
 	*	Track for proper command/control-key for Mac/PC.
 	----------------------------------------------------
-	Event.add(window, "keyup keydown", Event.proxy.metaTracker);
-	console.log(Event.proxy.metaKey);
+	Event.add(window, "keyup keydown", Event.proxy.metaTracker); // setup tracking on the metaKey.
+	Event.add(window, "focus load blur beforeunload", Event.proxy.metaTrackerReset); // 
+	console.log(Event.proxy.metaTracker(event)); // returns whether metaKey is pressed.
+	console.log(Event.proxy.metaKey); // indicates whether metaKey is pressed (once metaTracker is run).
 
 	*	Test for event features, in this example Drag & Drop file support.
 	----------------------------------------------------
@@ -291,6 +293,7 @@ var clone = function (obj) {
 /// Handle custom *EventListener commands.
 var eventManager = function(target, type, listener, configure, trigger, fromOverwrite) {
 	configure = configure || {};
+	if (!target || !type || !listener) return;
 	// Check for element to load on interval (before onload).
 	if (typeof(target) === "string" && type === "ready") {
 		var time = (new Date()).getTime();
@@ -302,7 +305,7 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 			}
 			if (document.querySelector(target)) {
 				window.clearInterval(interval);
-				listener();
+				setTimeout(listener, 1);
 			}
 		}, ms);
 		return;

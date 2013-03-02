@@ -391,13 +391,13 @@ root.getBoundingBox = function(o) {
 	} else { // windows, linux, or mac opera.
 		var watch = { 17: true };
 	}
-	root.isMetaKey = function(event) {
-		return !!watch[event.keyCode];
+	root.metaTrackerReset = function() {
+		root.metaKey = false;
 	};
 	root.metaTracker = function(event) {
-		if (watch[event.keyCode]) {
-			root.metaKey = event.type === "keydown";
-		}
+		var check = !!watch[event.keyCode];
+		if (check) root.metaKey = event.type === "keydown";
+		return check;
 	};
 })();
 
