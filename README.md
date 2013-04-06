@@ -1,4 +1,3 @@
-----------------------------------------------------
 Event.js : 1.1.1 : 2013/04/06 : MIT License
 ----------------------------------------------------
 https://github.com/mudcube/Event.js
@@ -9,14 +8,14 @@ https://github.com/mudcube/Event.js
 2+ : pinch, rotate
    : mousewheel, devicemotion, shake
 </pre>
-----------------------------------------------------
+
 Quirks with Typescript
 ----------------------------------------------------
 <pre>
 * When using other libraries that have built in "Event" namespace, 
   to prevent conflict use "eventjs" instead.
 </pre>
-----------------------------------------------------
+
 *	Three ways to add/remove events (and why)
 ----------------------------------------------------
 <pre>
