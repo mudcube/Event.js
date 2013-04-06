@@ -25,7 +25,7 @@ root.longpress = function(conf) {
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
 		if (root.pointerStart(event, self, conf)) {
-			timestamp = (new Date).getTime();
+			timestamp = (new Date()).getTime();
 			// Initialize event listeners.
 			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
 			Event.add(conf.doc, "mouseup", conf.onPointerUp);
@@ -91,7 +91,7 @@ root.longpress = function(conf) {
 			// Cancel event due to movement.
 			if (conf.cancel) return;
 			// Ensure delay is within margins.
-			if ((new Date).getTime() - timestamp > conf.timeout) return;
+			if ((new Date()).getTime() - timestamp > conf.timeout) return;
 			// Send callback.
 			self.state = "tap";
 			self.fingers = conf.gestureFingers;

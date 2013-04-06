@@ -36,7 +36,7 @@ root.swipe = function(conf) {
 			if (!o) continue; 
 			o.move.x = touch.pageX;
 			o.move.y = touch.pageY;
-			o.moveTime = (new Date).getTime();
+			o.moveTime = (new Date()).getTime();
 		}
 	};
 	conf.onPointerUp = function(event) {

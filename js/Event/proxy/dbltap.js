@@ -23,10 +23,10 @@ root.dblclick = function(conf) {
 		var pointers = event.changedTouches || root.getCoords(event);
 		if (time0 && !time1) { // Click #2
 			pointer1 = pointers[0];
-			time1 = (new Date).getTime() - time0;
+			time1 = (new Date()).getTime() - time0;
 		} else { // Click #1
 			pointer0 = pointers[0];
-			time0 = (new Date).getTime();
+			time0 = (new Date()).getTime();
 			time1 = 0;
 			clearTimeout(timeout);
 			timeout = setTimeout(function() {

@@ -31,7 +31,7 @@ root.shake = function(conf) {
 	var timeout = 1000; // Timeout between shake events.
 	var timeframe = 200; // Time between shakes.
 	var shakes = 3; // Minimum shakes to trigger event.
-	var lastShake = (new Date).getTime();
+	var lastShake = (new Date()).getTime();
 	var gravity = { x: 0, y: 0, z: 0 };
 	var delta = {
 		x: { count: 0, value: 0 },
@@ -55,7 +55,7 @@ root.shake = function(conf) {
 			return;
 		} 
 		var data = "xyz";
-		var now = (new Date).getTime();
+		var now = (new Date()).getTime();
 		for (var n = 0, length = data.length; n < length; n ++) {
 			var letter = data[n];
 			var ACCELERATION = self.acceleration[letter];

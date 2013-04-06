@@ -125,7 +125,7 @@ root.pointerStart = function(event, self, conf) {
 		///
 		pt.rotation = 0;
 		pt.scale = 1;
-		pt.startTime = pt.moveTime = (new Date).getTime();
+		pt.startTime = pt.moveTime = (new Date()).getTime();
 		pt.move = { x: x, y: y };
 		pt.start = { x: x, y: y };
 		///
