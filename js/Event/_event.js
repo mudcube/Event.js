@@ -1,6 +1,6 @@
 /*
 	----------------------------------------------------
-	Event.js : 1.1.1 : 2012/11/19 : MIT License
+	Event.js : 1.1.1 : 2012/12/22 : MIT License
 	----------------------------------------------------
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
@@ -293,6 +293,17 @@ var clone = function (obj) {
 /// Handle custom *EventListener commands.
 var eventManager = function(target, type, listener, configure, trigger, fromOverwrite) {
 	configure = configure || {};
+	// Check whether target is a configuration variable;
+	if (String(target) === "[object Object]") {
+		var data = target;
+		delete (target = data.target);
+		delete (type = data.type);
+		delete (listener = data.listener);
+		for (var key in data) {
+			configure[key] = data[key];
+		}
+	}
+	///
 	if (!target || !type || !listener) return;
 	// Check for element to load on interval (before onload).
 	if (typeof(target) === "string" && type === "ready") {
