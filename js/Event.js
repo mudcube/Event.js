@@ -1,6 +1,6 @@
 /*
 	----------------------------------------------------
-	Event.js : 1.1.1 : 2012/11/19 : MIT License
+	Event.js : 1.1.1 : 2012/12/22 : MIT License
 	----------------------------------------------------
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
@@ -293,6 +293,17 @@ var clone = function (obj) {
 /// Handle custom *EventListener commands.
 var eventManager = function(target, type, listener, configure, trigger, fromOverwrite) {
 	configure = configure || {};
+	// Check whether target is a configuration variable;
+	if (String(target) === "[object Object]") {
+		var data = target;
+		delete (target = data.target);
+		delete (type = data.type);
+		delete (listener = data.listener);
+		for (var key in data) {
+			configure[key] = data[key];
+		}
+	}
+	///
 	if (!target || !type || !listener) return;
 	// Check for element to load on interval (before onload).
 	if (typeof(target) === "string" && type === "ready") {
@@ -686,7 +697,7 @@ root.pointerStart = function(event, self, conf) {
 		///
 		pt.rotation = 0;
 		pt.scale = 1;
-		pt.startTime = pt.moveTime = (new Date).getTime();
+		pt.startTime = pt.moveTime = (new Date()).getTime();
 		pt.move = { x: x, y: y };
 		pt.start = { x: x, y: y };
 		///
@@ -958,6 +969,9 @@ root.getBoundingBox = function(o) {
 	root.metaTracker = function(event) {
 		var check = !!watch[event.keyCode];
 		if (check) root.metaKey = event.type === "keydown";
+		root.ctrlKey = event.ctrlKey;
+		root.shiftKey = event.shiftKey;
+		root.altKey = event.altKey;
 		return check;
 	};
 })();
@@ -1054,10 +1068,10 @@ root.dblclick = function(conf) {
 		var pointers = event.changedTouches || root.getCoords(event);
 		if (time0 && !time1) { // Click #2
 			pointer1 = pointers[0];
-			time1 = (new Date).getTime() - time0;
+			time1 = (new Date()).getTime() - time0;
 		} else { // Click #1
 			pointer0 = pointers[0];
-			time0 = (new Date).getTime();
+			time0 = (new Date()).getTime();
 			time1 = 0;
 			clearTimeout(timeout);
 			timeout = setTimeout(function() {
@@ -1460,7 +1474,7 @@ root.shake = function(conf) {
 	var timeout = 1000; // Timeout between shake events.
 	var timeframe = 200; // Time between shakes.
 	var shakes = 3; // Minimum shakes to trigger event.
-	var lastShake = (new Date).getTime();
+	var lastShake = (new Date()).getTime();
 	var gravity = { x: 0, y: 0, z: 0 };
 	var delta = {
 		x: { count: 0, value: 0 },
@@ -1484,7 +1498,7 @@ root.shake = function(conf) {
 			return;
 		} 
 		var data = "xyz";
-		var now = (new Date).getTime();
+		var now = (new Date()).getTime();
 		for (var n = 0, length = data.length; n < length; n ++) {
 			var letter = data[n];
 			var ACCELERATION = self.acceleration[letter];
@@ -1568,7 +1582,7 @@ root.swipe = function(conf) {
 			if (!o) continue; 
 			o.move.x = touch.pageX;
 			o.move.y = touch.pageY;
-			o.moveTime = (new Date).getTime();
+			o.moveTime = (new Date()).getTime();
 		}
 	};
 	conf.onPointerUp = function(event) {
@@ -1669,7 +1683,7 @@ root.longpress = function(conf) {
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
 		if (root.pointerStart(event, self, conf)) {
-			timestamp = (new Date).getTime();
+			timestamp = (new Date()).getTime();
 			// Initialize event listeners.
 			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
 			Event.add(conf.doc, "mouseup", conf.onPointerUp);
@@ -1735,7 +1749,7 @@ root.longpress = function(conf) {
 			// Cancel event due to movement.
 			if (conf.cancel) return;
 			// Ensure delay is within margins.
-			if ((new Date).getTime() - timestamp > conf.timeout) return;
+			if ((new Date()).getTime() - timestamp > conf.timeout) return;
 			// Send callback.
 			self.state = "tap";
 			self.fingers = conf.gestureFingers;
