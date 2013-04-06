@@ -1,0 +1,39 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns = "http://www.w3.org/1999/xhtml">
+<head>
+ <title>Keypress Magick</title>
+</head>
+<body>
+<script type="text/javascript" src="../js/Event.js"></script>
+<script type="text/javascript" src="../js/Event/proxy/keypress.js"></script>
+<script type = "text/javascript">
+   
+Event.add(window, "load", function() {
+
+	var listeners = { // Format of event tracking module
+		// Each code can either be inputted as a charcode (122), keycode (80_shift), or ascii (G)
+		"G": function(event, state, code) { 
+			console.log("you pressed shift + g"); 
+		},
+		// Each code can include any combination of (_meta, _alt, _shift)
+		"E_meta": function(event, state, code) { 
+			console.log("you pressed meta + shift + e");
+		}
+	};
+
+	var listeners = function(event, state, code) { // Use the wildcard to track the entire keyboard
+		document.getElementById("blah").innerHTML = "keycode (" + code + ") - (" + String.fromCharCode(code) + ") - state (" + state + ")";
+	};
+
+	// Register to activate key-tracking on the above module
+	var events = Key.register(document, "ascii", listeners); // accepts: ascii, charcode, keycode
+	
+	// Unregister to deactivate key-tracking
+//	events.unregister(); // self-destruct
+
+});
+
+</script>
+<div id="blah"></div>
+</body>
+</html>
