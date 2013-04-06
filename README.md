@@ -1,23 +1,25 @@
-<pre>
 ----------------------------------------------------
 Event.js : 1.1.1 : 2013/04/06 : MIT License
 ----------------------------------------------------
 https://github.com/mudcube/Event.js
 ----------------------------------------------------
+<pre>
 1  : click, dblclick, dbltap
 1+ : tap, longpress, drag, swipe
 2+ : pinch, rotate
    : mousewheel, devicemotion, shake
+</pre>
 ----------------------------------------------------
 NOTES
 ----------------------------------------------------
+<pre>
 * When using other libraries that may have built in "Event" namespace,
 	i.e. Typescript, you can use "eventjs" instead of "Event" for all example calls.
-----------------------------------------------------
-REQUIREMENTS: querySelector, querySelectorAll
+</pre>
 ----------------------------------------------------
 *	There are two ways to add/remove events with this library.
 ----------------------------------------------------
+<pre>
 // Retains "this" attribute as target, and overrides native addEventListener.
 target.addEventListener(type, listener, useCapture); 
 target.removeEventListener(type, listener, useCapture);
@@ -29,14 +31,18 @@ Event.remove(target, type, listener, configure);
 // Same as the previous, but cleaner looking code when configuration is present
 Event.add(configure);
 Event.remove(configure);
+</pre>
 
-*	Turn prototyping on/off - I generally keep this off, but it's on by default for ease of adding to projects.
+*	Turn prototyping on/off
 ----------------------------------------------------
+<pre>
 Event.modifyEventListener = true; // add custom *EventListener commands to HTMLElements.
 Event.modifySelectors = true; // add bulk *EventListener commands on NodeLists from querySelectorAll and others.
+</pre>
 
 *	Example of setting up a single listener with a custom configuration.
 ----------------------------------------------------
+<pre>
 // adding with addEventListener()
 target.addEventListener("swipe", function(event) {
 	console.log(event.velocity, event.angle, event.fingers);
@@ -63,25 +69,31 @@ Event.add({
 		console.log(self.velocity, self.angle, self.fingers);
 	}
 });
+</pre>
 
 *	Multiple listeners glued together.
 ----------------------------------------------------
+<pre>
 // adding with addEventListener()
 target.addEventListener("click swipe", function(event) { });
 
 // adding with Event.add()
 Event.add(target, "click swipe", function(event, self) { });
+</pre>
 
 *	Use query selectors to create an event (querySelectorAll)
 ----------------------------------------------------
+<pre>
 // adding events to NodeList from querySelectorAll()
 document.querySelectorAll("#element a.link").addEventListener("click", callback);
 
 // adding with Event.add()
 Event.add("#element a.link", "click", callback);
+</pre>
 
 *	Listen for selector to become available (querySelector)
 ----------------------------------------------------
+<pre>
 Event.add("body", "ready", callback);
 // or...
 Event.add({
@@ -91,9 +103,11 @@ Event.add({
 	interval: 30, // set how often to check for element.
 	listener: callback
 });
+</pre>
 
 *	Multiple listeners bound to one callback w/ single configuration.
 ----------------------------------------------------
+<pre>
 var bindings = Event.add({
 	target: target,
 	type: "click swipe",
@@ -112,9 +126,11 @@ var bindings = Event.add({
 		self.remove(); // remove event.
 	}
 });
+</pre>
 
 *	Multiple listeners bound to multiple callbacks w/ single configuration.
 ----------------------------------------------------
+<pre>
 var bindings = Event.add({
 	target: target,
 	minFingers: 1,
@@ -128,9 +144,11 @@ var bindings = Event.add({
 		}
 	}
 });
+</pre>
 
 *	Multiple listeners bound to multiple callbacks w/ multiple configurations.
 ----------------------------------------------------
+<pre>
 var binding = Event.add({
 	target: target,
 	listeners: {
@@ -151,9 +169,11 @@ var binding = Event.add({
 		}
 	}
 });
+</pre>
 
 *	Capturing an event and manually forwarding it to a proxy (tiered events).
 ----------------------------------------------------
+<pre>
 Event.add(target, "down", function(event, self) {
 	var x = event.pageX; // local variables that wont change.
 	var y = event.pageY;
@@ -166,12 +186,13 @@ Event.add(target, "down", function(event, self) {
 		}
 	});
 });
+</pre>
 ----------------------------------------------------
-
 *	Event proxies.
 *	type, fingers, state, start, x, y, position, bbox
 *	rotation, scale, velocity, angle, delay, timeout
 ----------------------------------------------------
+<pre>
 // "Click" :: fingers, minFingers, maxFingers.
 Event.add(window, "click", function(event, self) {
 	console.log(self.gesture, self.x, self.y);
@@ -212,21 +233,27 @@ Event.add(window, "devicemotion", function(event, self) {
 Event.add(window, "wheel", function(event, self) {
 	console.log(self.gesture, self.state, self.wheelDelta);
 });
+</pre>
 
 *	Stop, prevent and cancel.
 ----------------------------------------------------
+<pre>
 Event.stop(event); // stop bubble.
 Event.prevent(event); // prevent default.
 Event.cancel(event); // stop and prevent.
+</pre>
 
 *	Track for proper command/control-key for Mac/PC.
 ----------------------------------------------------
+<pre>
 Event.add(window, "keyup keydown", Event.proxy.metaTracker); // setup tracking on the metaKey.
 Event.add(window, "focus load blur beforeunload", Event.proxy.metaTrackerReset); // 
 console.log(Event.proxy.metaTracker(event)); // returns whether metaKey is pressed.
 console.log(Event.proxy.metaKey); // indicates whether metaKey is pressed (once metaTracker is run).
+</pre>
 
 *	Test for event features, in this example Drag & Drop file support.
 ----------------------------------------------------
+<pre>
 console.log(Event.supports('dragstart') && Event.supports('drop') && !!window.FileReader);
 </pre>
