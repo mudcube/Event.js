@@ -10,14 +10,14 @@ https://github.com/mudcube/Event.js
    : mousewheel, devicemotion, shake
 </pre>
 ----------------------------------------------------
-NOTES
+Quirks with Typescript
 ----------------------------------------------------
 <pre>
-* When using other libraries that may have built in "Event" namespace,
-	i.e. Typescript, you can use "eventjs" instead of "Event" for all example calls.
+* When using other libraries that have built in "Event" namespace, 
+  to prevent conflict use "eventjs" instead.
 </pre>
 ----------------------------------------------------
-*	There are two ways to add/remove events with this library.
+*	Three ways to add/remove events (and why)
 ----------------------------------------------------
 <pre>
 // Retains "this" attribute as target, and overrides native addEventListener.
@@ -40,7 +40,7 @@ Event.modifyEventListener = true; // add custom *EventListener commands to HTMLE
 Event.modifySelectors = true; // add bulk *EventListener commands on NodeLists from querySelectorAll and others.
 </pre>
 
-*	Example of setting up a single listener with a custom configuration.
+*	Single listener with a custom configuration.
 ----------------------------------------------------
 <pre>
 // adding with addEventListener()
@@ -81,7 +81,7 @@ target.addEventListener("click swipe", function(event) { });
 Event.add(target, "click swipe", function(event, self) { });
 </pre>
 
-*	Use query selectors to create an event (querySelectorAll)
+*	Query selectors to create an event (querySelectorAll)
 ----------------------------------------------------
 <pre>
 // adding events to NodeList from querySelectorAll()
@@ -91,7 +91,7 @@ document.querySelectorAll("#element a.link").addEventListener("click", callback)
 Event.add("#element a.link", "click", callback);
 </pre>
 
-*	Listen for selector to become available (querySelector)
+*	Listen until selector to become available (querySelector)
 ----------------------------------------------------
 <pre>
 Event.add("body", "ready", callback);
@@ -105,7 +105,7 @@ Event.add({
 });
 </pre>
 
-*	Multiple listeners bound to one callback w/ single configuration.
+*	Multiple listeners bound to one listener w/ configuration.
 ----------------------------------------------------
 <pre>
 var bindings = Event.add({
@@ -128,7 +128,7 @@ var bindings = Event.add({
 });
 </pre>
 
-*	Multiple listeners bound to multiple callbacks w/ single configuration.
+*	Multiple listeners bound to multiple callbacks w/ configuration.
 ----------------------------------------------------
 <pre>
 var bindings = Event.add({
@@ -188,9 +188,7 @@ Event.add(target, "down", function(event, self) {
 });
 </pre>
 ----------------------------------------------------
-*	Event proxies.
-*	type, fingers, state, start, x, y, position, bbox
-*	rotation, scale, velocity, angle, delay, timeout
+*	Examples
 ----------------------------------------------------
 <pre>
 // "Click" :: fingers, minFingers, maxFingers.
