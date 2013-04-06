@@ -11,6 +11,8 @@
 */
 
 module.exports = function (grunt) {
+	grunt.loadNpmTasks("grunt-contrib-concat");
+	grunt.loadNpmTasks('grunt-contrib-uglify');
 	grunt.initConfig({
 		concat: {
 			'js/Event.js': [
@@ -27,9 +29,13 @@ module.exports = function (grunt) {
 				'js/Event/proxy/wheel.js'
 			]
 		},
-		min: {
-			'js/Event.min.js': ['js/Event.js']
+		uglify: {
+			my_target: {
+				files: {
+					'js/Event.min.js': ['js/Event.js']
+				}
+			}
 		},
 	});
-	grunt.registerTask('default', 'concat min');
+	grunt.registerTask("default", ["concat", "uglify"]);
 };
