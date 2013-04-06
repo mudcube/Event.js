@@ -17,16 +17,16 @@ module.exports = function (grunt) {
 		concat: {
 			'js/Event.js': [
 				'js/Event/_event.js', 
-				'js/Event/proxy/_proxy.js', 
-				'js/Event/proxy/click.js', 
-				'js/Event/proxy/dbltap.js', 
-				'js/Event/proxy/drag.js', 
-				'js/Event/proxy/gesture.js', 
-				'js/Event/proxy/pointer.js', 
-				'js/Event/proxy/shake.js', 
-				'js/Event/proxy/swipe.js', 
-				'js/Event/proxy/tap.js', 
-				'js/Event/proxy/wheel.js'
+				'js/Event/_proxy.js', 
+				'js/Event/click.js', 
+				'js/Event/dbltap.js', 
+				'js/Event/drag.js', 
+				'js/Event/gesture.js', 
+				'js/Event/pointer.js', 
+				'js/Event/shake.js', 
+				'js/Event/swipe.js', 
+				'js/Event/tap.js', 
+				'js/Event/wheel.js'
 			]
 		},
 		uglify: {
