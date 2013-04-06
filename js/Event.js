@@ -1,18 +1,13 @@
 /*
 	----------------------------------------------------
-	Event.js : 1.1.1 : 2012/12/22 : MIT License
+	Event.js : 1.1.1 : 2013/04/06 : MIT License
 	----------------------------------------------------
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
-	1	: click, dblclick, dbltap
-	1+	: tap, longpress, drag, swipe
-	2+	: pinch, rotate
-		: mousewheel, devicemotion, shake
-	----------------------------------------------------
-	TODO
-	----------------------------------------------------
-		* switch configuration to 4th argument on addEventListener
-		* bbox calculation for elements scaled with transform.
+	1  : click, dblclick, dbltap
+	1+ : tap, longpress, drag, swipe
+	2+ : pinch, rotate
+	   : mousewheel, devicemotion, shake
 	----------------------------------------------------
 	NOTES
 	----------------------------------------------------
@@ -27,33 +22,47 @@
 	target.addEventListener(type, listener, useCapture); 
 	target.removeEventListener(type, listener, useCapture);
 
-	// Attempts to perform as fast as possible.
-	Event.add(type, listener, configure); 
-	Event.remove(type, listener, configure);
+	// Attempts to perform as fast as possible, while as similar in format to the standard
+	Event.add(target, type, listener, configure); 
+	Event.remove(target, type, listener, configure);
 
-	*	You can turn prototyping on/off for individual features.
+	// Same as the previous, but cleaner looking code when configuration is present
+	Event.add(configure);
+	Event.remove(configure);
+
+	*	Turn prototyping on/off - I generally keep this off, but it's on by default for ease of adding to projects.
 	----------------------------------------------------
 	Event.modifyEventListener = true; // add custom *EventListener commands to HTMLElements.
 	Event.modifySelectors = true; // add bulk *EventListener commands on NodeLists from querySelectorAll and others.
 
 	*	Example of setting up a single listener with a custom configuration.
 	----------------------------------------------------
-	// optional configuration.
-	var configure = {
-		fingers: 2, // listen for specifically two fingers.
-		snap: 90 // snap to 90 degree intervals.
-	};
 	// adding with addEventListener()
 	target.addEventListener("swipe", function(event) {
-		// additional variables can be found on the event object.
 		console.log(event.velocity, event.angle, event.fingers);
-	}, configure);
-	
-	// adding with Event.add()
-	Event.add("swipe", function(event, self) {
-		// additional variables can be found on the self object.
+	}, {
+		fingers: 2, // listen for specifically two fingers (minFingers & maxFingers both now equal 3)
+		snap: 90 // snap to 90 degree intervals.
+	});
+
+	// adding with Event.add() - a bit more efficient
+	Event.add(target, "swipe", function(event, self) {
 		console.log(self.velocity, self.angle, self.fingers);
-	}, configure);
+	}, {
+		fingers: 2,
+		snap: 90 
+	});
+
+	// adding with Event.add() w/ configuration
+	Event.add({
+		target: target,
+		type: "swipe",
+		fingers: 2,
+		snap: 90, 
+		listener: function(event, self) {
+			console.log(self.velocity, self.angle, self.fingers);
+		}
+	});
 
 	*	Multiple listeners glued together.
 	----------------------------------------------------
@@ -220,7 +229,6 @@
 	*	Test for event features, in this example Drag & Drop file support.
 	----------------------------------------------------
 	console.log(Event.supports('dragstart') && Event.supports('drop') && !!window.FileReader);
-
 */
 
 if (typeof(Event) === "undefined") var Event = {};
