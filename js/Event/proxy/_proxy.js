@@ -397,6 +397,9 @@ root.getBoundingBox = function(o) {
 	root.metaTracker = function(event) {
 		var check = !!watch[event.keyCode];
 		if (check) root.metaKey = event.type === "keydown";
+		root.ctrlKey = event.ctrlKey;
+		root.shiftKey = event.shiftKey;
+		root.altKey = event.altKey;
 		return check;
 	};
 })();
