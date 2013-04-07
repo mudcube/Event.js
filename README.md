@@ -23,11 +23,11 @@ Quirks with Typescript
 target.addEventListener(type, listener, useCapture); 
 target.removeEventListener(type, listener, useCapture);
 
-// Attempts to perform as fast as possible, while as similar in format to the standard
+// Has less function calls then the override version, while retains similar formatting.
 Event.add(target, type, listener, configure); 
 Event.remove(target, type, listener, configure);
 
-// Same as the previous, but cleaner looking code when configuration is present
+// Same as the previous, but (arguably) cleaner looking code.
 Event.add(configure);
 Event.remove(configure);
 </pre>
@@ -35,6 +35,7 @@ Event.remove(configure);
 *	Turn prototyping on/off
 ----------------------------------------------------
 <pre>
+// NOTE: although this is on by default (so it's easy to add to a project) I always run without modify* support in production.
 Event.modifyEventListener = true; // add custom *EventListener commands to HTMLElements.
 Event.modifySelectors = true; // add bulk *EventListener commands on NodeLists from querySelectorAll and others.
 </pre>
