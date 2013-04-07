@@ -9,13 +9,6 @@ https://github.com/mudcube/Event.js
    : mousewheel, devicemotion, shake
 </pre>
 
-Quirks with Typescript
-----------------------------------------------------
-<pre>
-* When using other libraries that have built in "Event" namespace, 
-  to prevent conflict use "eventjs" instead.
-</pre>
-
 *	Three ways to add/remove events (and why)
 ----------------------------------------------------
 <pre>
@@ -286,4 +279,11 @@ console.log(Event.supports('dragstart') && Event.supports('drop') && !!window.Fi
 Event.modifyEventListener = true; 
 // add bulk *EventListener commands on NodeLists from querySelectorAll and others.
 Event.modifySelectors = true; 
+</pre>
+
+Quirks + Workarounds
+----------------------------------------------------
+<pre>
+* When using other libraries that have built in "Event" namespace (TypeScript), 
+  to prevent conflict use "eventjs" instead.
 </pre>
