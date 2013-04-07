@@ -4,25 +4,6 @@
 	----------------------------------------------------
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
-	Pointer Gestures
-	----------------------------------------------------
-	1  : click, dblclick, dbltap
-	1+ : tap, taphold, drag, swipe
-	2+ : pinch, rotate
-	----------------------------------------------------
-	Gyroscope Gestures
-	----------------------------------------------------
-	* shake
-	----------------------------------------------------
-	Fixes issues with
-	----------------------------------------------------
-	* mousewheel-Firefox uses DOMMouseScroll and does not return wheelDelta. 
-	* devicemotion-Fixes issue where event.acceleration is not returned.
-	----------------------------------------------------
-	Ideas for the future
-	----------------------------------------------------
-	* Keyboard, GamePad, and other input abstractions.
-	* Event batching - i.e. for every x fingers down a new gesture is created.
 */
 
 if (typeof(Event) === "undefined") var Event = {};
