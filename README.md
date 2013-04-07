@@ -35,7 +35,8 @@ Event.remove(configure);
 *	Turn prototyping on/off
 ----------------------------------------------------
 <pre>
-// NOTE: although this is on by default (so it's easy to add to a project) I always run without modify* support in production.
+// NOTE: These two features are on by default (so it's easy to add to a project)
+//       however, I like to run without modify* support in production, as it's less hacky.
 Event.modifyEventListener = true; // add custom *EventListener commands to HTMLElements.
 Event.modifySelectors = true; // add bulk *EventListener commands on NodeLists from querySelectorAll and others.
 </pre>
@@ -187,47 +188,75 @@ Event.add(target, "down", function(event, self) {
 	});
 });
 </pre>
-----------------------------------------------------
+
 *	Examples
 ----------------------------------------------------
+* Click :: fingers, minFingers, maxFingers.
+----------------------------------------------------
 <pre>
-// "Click" :: fingers, minFingers, maxFingers.
 Event.add(window, "click", function(event, self) {
 	console.log(self.gesture, self.x, self.y);
 });
-// "Double-Click" :: fingers, minFingers, maxFingers.
+</pre>
+* Double-Click :: fingers, minFingers, maxFingers.
+----------------------------------------------------
+<pre>
 Event.add(window, "dblclick", function(event, self) {
 	console.log(self.gesture, self.x, self.y);
 });
-// "Drag" :: fingers, maxFingers, position
+</pre>
+* Drag :: fingers, maxFingers, position
+----------------------------------------------------
+<pre>
 Event.add(window, "drag", function(event, self) {
 	console.log(self.gesture, self.fingers, self.state, self.start, self.x, self.y, self.bbox);
 });
-// "Gesture" :: fingers, minFingers, maxFingers.
+</pre>
+* Gesture :: fingers, minFingers, maxFingers.
+----------------------------------------------------
+<pre>
 Event.add(window, "gesture", function(event, self) {
 	console.log(self.gesture, self.fingers, self.state, self.rotation, self.scale);
 });
-// "Swipe" :: fingers, minFingers, maxFingers, snap, threshold.
+</pre>
+* Swipe :: fingers, minFingers, maxFingers, snap, threshold.
+----------------------------------------------------
+<pre>
 Event.add(window, "swipe", function(event, self) {
 	console.log(self.gesture, self.fingers, self.velocity, self.angle, self.start, self.x, self.y);
 });
-// "Tap" :: fingers, minFingers, maxFingers, timeout.
+</pre>
+* Tap :: fingers, minFingers, maxFingers, timeout.
+----------------------------------------------------
+<pre>
 Event.add(window, "tap", function(event, self) {
 	console.log(self.gesture, self.fingers);
 });
-// "Longpress" :: fingers, minFingers, maxFingers, delay.
+</pre>
+* Longpress :: fingers, minFingers, maxFingers, delay.
+----------------------------------------------------
+<pre>
 Event.add(window, "longpress", function(event, self) {
 	console.log(self.gesture, self.fingers);
 });
-//
+</pre>
+* Shake
+----------------------------------------------------
+<pre>
 Event.add(window, "shake", function(event, self) {
 	console.log(self.gesture, self.acceleration, self.accelerationIncludingGravity);
 });
-//
+</pre>
+* DeviceMotion (smooth quirks)
+----------------------------------------------------
+<pre>
 Event.add(window, "devicemotion", function(event, self) {
 	console.log(self.gesture, self.acceleration, self.accelerationIncludingGravity);
 });
-//
+</pre>
+* Wheel (smooth quirks)
+----------------------------------------------------
+<pre>
 Event.add(window, "wheel", function(event, self) {
 	console.log(self.gesture, self.state, self.wheelDelta);
 });
