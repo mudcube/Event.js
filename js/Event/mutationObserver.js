@@ -2,6 +2,7 @@
 	----------------------------------------------------
 	"MutationObserver" event proxy.
 	----------------------------------------------------
+	Author: Selvakumar Arumugam
 	http://stackoverflow.com/questions/10868104/can-you-have-a-javascript-hook-trigger-after-a-dom-elements-style-object-change
 	----------------------------------------------------
 */
