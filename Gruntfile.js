@@ -18,6 +18,8 @@ module.exports = function (grunt) {
 			'js/Event.js': [
 				'js/Event/_event.js', 
 				'js/Event/_proxy.js', 
+//				'js/Event/keypress.js', //- in dev
+				'js/Event/mutationObserver.js', 
 				'js/Event/click.js', 
 				'js/Event/dbltap.js', 
 				'js/Event/drag.js', 

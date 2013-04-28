@@ -711,6 +711,9 @@ root.getBoundingBox = function(o) {
 	while (tmp !== null) {
 		if (tmp === document.body) break;
 		if (tmp.scrollTop === undefined) break;
+		var style = window.getComputedStyle(tmp);
+		var position = style.getPropertyValue("position");
+		if (position === "absolute") break;
 		bbox.scrollLeft += tmp.scrollLeft;
 		bbox.scrollTop += tmp.scrollTop;
 		tmp = tmp.parentNode;
@@ -752,6 +755,50 @@ root.getBoundingBox = function(o) {
 return root;
 
 })(Event.proxy);
+if (typeof(Event) === "undefined") var Event = {};
+
+Event.MutationObserver = (function() { // http://jsfiddle.net/zFVyv/10/
+	var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+	var DOMAttrModifiedSupported = (function() {
+		var p = document.createElement("p");
+		var flag = false;
+		var fn = function() { flag = true };
+		if (p.addEventListener) {
+			p.addEventListener("DOMAttrModified", fn, false);
+		} else if (p.attachEvent) {
+			p.attachEvent("onDOMAttrModified", fn);
+		} else {
+			return false;
+		}
+		///
+		p.setAttribute("id", "target");
+		///
+		return flag;
+	})();
+	///
+	return function(container, callback) {
+		if (MutationObserver) {
+			var options = {
+				subtree: false,
+				attributes: true
+			};
+			var observer = new MutationObserver(function(mutations) {
+				mutations.forEach(function(e) {
+					callback.call(e.target, e.attributeName);
+				});
+			});
+			observer.observe(container, options)
+		} else if (DOMAttrModifiedSupported) {
+			Event.add(container, "DOMAttrModified", function(e) {
+				callback.call(container, e.attrName);
+			});
+		} else if ("onpropertychange" in document.body) {
+			Event.add(container, "propertychange", function(e) {
+				callback.call(container, window.event.propertyName);
+			});
+		}
+	}
+})();
 /*
 	"Click" event proxy.
 	----------------------------------------------------
@@ -764,6 +811,7 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 Event.proxy = (function(root) { "use strict";
 
 root.click = function(conf) {
+	conf.gesture = conf.gesture || "click";
 	conf.maxFingers = conf.maxFingers || conf.fingers || 1;
 	// Setting up local variables.
 	var EVENT;
@@ -831,6 +879,7 @@ Event.proxy = (function(root) { "use strict";
 
 root.dbltap =
 root.dblclick = function(conf) {
+	conf.gesture = conf.gesture || "dbltap";
 	conf.maxFingers = conf.maxFingers || conf.fingers || 1;
 	// Setting up local variables.
 	var delay = 700; // in milliseconds
@@ -1029,6 +1078,7 @@ Event.proxy = (function(root) { "use strict";
 var RAD_DEG = Math.PI / 180;
 
 root.gesture = function(conf) {
+	conf.gesture = conf.gesture || "gesture";
 	conf.minFingers = conf.minFingers || conf.fingers || 2;
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
@@ -1177,6 +1227,7 @@ Event.proxy = (function(root) { "use strict";
 root.pointerdown = 
 root.pointermove = 
 root.pointerup = function(conf) {
+	conf.gesture = conf.gesture || "pointer";
 	if (conf.target.isPointerEmitter) return;
 	// Tracking the events.
 	var isDown = true;
@@ -1337,6 +1388,7 @@ var RAD_DEG = Math.PI / 180;
 root.swipe = function(conf) {
 	conf.snap = conf.snap || 90; // angle snap.
 	conf.threshold = conf.threshold || 1; // velocity threshold.
+	conf.gesture = conf.gesture || "swipe";
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
 		if (root.pointerStart(event, self, conf)) {
@@ -1451,6 +1503,7 @@ root.tap =
 root.longpress = function(conf) {
 	conf.delay = conf.delay || 500;
 	conf.timeout = conf.timeout || 250;
+	conf.gesture = conf.gesture || "tap";
 	// Setting up local variables.
 	var timestamp, timeout;
 	// Tracking the events.
