@@ -347,6 +347,9 @@ root.getBoundingBox = function(o) {
 	while (tmp !== null) {
 		if (tmp === document.body) break;
 		if (tmp.scrollTop === undefined) break;
+		var style = window.getComputedStyle(tmp);
+		var position = style.getPropertyValue("position");
+		if (position === "absolute") break;
 		bbox.scrollLeft += tmp.scrollLeft;
 		bbox.scrollTop += tmp.scrollTop;
 		tmp = tmp.parentNode;
