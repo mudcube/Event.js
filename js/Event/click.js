@@ -10,6 +10,7 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 Event.proxy = (function(root) { "use strict";
 
 root.click = function(conf) {
+	conf.gesture = conf.gesture || "click";
 	conf.maxFingers = conf.maxFingers || conf.fingers || 1;
 	// Setting up local variables.
 	var EVENT;

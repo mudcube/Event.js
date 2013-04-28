@@ -18,6 +18,7 @@ var RAD_DEG = Math.PI / 180;
 root.swipe = function(conf) {
 	conf.snap = conf.snap || 90; // angle snap.
 	conf.threshold = conf.threshold || 1; // velocity threshold.
+	conf.gesture = conf.gesture || "swipe";
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
 		if (root.pointerStart(event, self, conf)) {

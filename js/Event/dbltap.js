@@ -13,6 +13,7 @@ Event.proxy = (function(root) { "use strict";
 
 root.dbltap =
 root.dblclick = function(conf) {
+	conf.gesture = conf.gesture || "dbltap";
 	conf.maxFingers = conf.maxFingers || conf.fingers || 1;
 	// Setting up local variables.
 	var delay = 700; // in milliseconds

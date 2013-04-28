@@ -16,6 +16,7 @@ Event.proxy = (function(root) { "use strict";
 var RAD_DEG = Math.PI / 180;
 
 root.gesture = function(conf) {
+	conf.gesture = conf.gesture || "gesture";
 	conf.minFingers = conf.minFingers || conf.fingers || 2;
 	// Tracking the events.
 	conf.onPointerDown = function (event) {

@@ -16,6 +16,7 @@ Event.proxy = (function(root) { "use strict";
 root.pointerdown = 
 root.pointermove = 
 root.pointerup = function(conf) {
+	conf.gesture = conf.gesture || "pointer";
 	if (conf.target.isPointerEmitter) return;
 	// Tracking the events.
 	var isDown = true;

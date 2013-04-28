@@ -20,6 +20,7 @@ root.tap =
 root.longpress = function(conf) {
 	conf.delay = conf.delay || 500;
 	conf.timeout = conf.timeout || 250;
+	conf.gesture = conf.gesture || "tap";
 	// Setting up local variables.
 	var timestamp, timeout;
 	// Tracking the events.
