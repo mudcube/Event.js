@@ -1,6 +1,13 @@
+/*
+	----------------------------------------------------
+	"MutationObserver" event proxy.
+	----------------------------------------------------
+	http://stackoverflow.com/questions/10868104/can-you-have-a-javascript-hook-trigger-after-a-dom-elements-style-object-change
+	----------------------------------------------------
+*/
 if (typeof(Event) === "undefined") var Event = {};
 
-Event.MutationObserver = (function() { // http://jsfiddle.net/zFVyv/10/
+Event.MutationObserver = (function() {
 	var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
 	var DOMAttrModifiedSupported = (function() {
 		var p = document.createElement("p");
