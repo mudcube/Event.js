@@ -1,6 +1,6 @@
 /*
 	----------------------------------------------------
-	Event.js : 1.1.1 : 2013/04/06 : MIT License
+	Event.js : 1.1.2 : 2013/05/06 : MIT License
 	----------------------------------------------------
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
@@ -13,6 +13,10 @@
 	----------------------------------------------------
 	* GamePad, and other input abstractions.
 	* Event batching - i.e. for every x fingers down a new gesture is created.
+	----------------------------------------------------
+	http://www.w3.org/TR/2011/WD-touch-events-20110505/
+	----------------------------------------------------
+	
 */
 
 if (typeof(Event) === "undefined") var Event = {};
@@ -116,7 +120,7 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 	// Get DOM element from Query Selector.
 	if (typeof(target) === "string") {
 		target = document.querySelectorAll(target);
-		if (target.length === 0) return createError("Missing target on listener!"); // No results.
+		if (target.length === 0) return createError("Missing target on listener!", arguments); // No results.
 		if (target.length === 1) { // Single target.
 			target = target[0];
 		}
@@ -155,10 +159,11 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 		return createBatchCommands(events);
 	}
 	// Ensure listener is a function.
-	if (typeof(listener) !== "function") return createError("Listener is not a function!");
+	if (typeof(target) !== "object") return createError("Target is not defined!", arguments);
+	if (typeof(listener) !== "function") return createError("Listener is not a function!", arguments);
 	// Generate a unique wrapper identifier.
 	var useCapture = configure.useCapture || false;
-	var id = normalize(type) + getID(target) + "." + getID(listener) + "." + (useCapture ? 1 : 0);
+	var id = normalize(type) + "." + getID(target) + "." + getID(listener) + "." + (useCapture ? 1 : 0);
 	// Handle the event.
 	if (root.Gesture && root.Gesture._gestureHandlers[type]) { // Fire custom event.
 		if (trigger === "remove") { // Remove event listener.
@@ -166,7 +171,10 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 			wrappers[id].remove();
 			delete wrappers[id];
 		} else if (trigger === "add") { // Attach event listener.
-			if (wrappers[id]) return wrappers[id]; // Already attached.
+			if (wrappers[id]) {
+				wrappers[id].add();
+				return wrappers[id]; // Already attached.
+			}
 			// Retains "this" orientation.
 			if (configure.useCall && !root.modifyEventListener) {
 				var tmp = listener;
@@ -194,6 +202,7 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 			target[add](type, listener, useCapture); 
 			// Record wrapper.
 			wrappers[id] = { 
+				id: id,
 				type: type,
 				target: target,
 				listener: listener,
@@ -223,10 +232,10 @@ var createBatchCommands = function(events) {
 };
 
 /// Display error message in console.
-var createError = function(message) {
+var createError = function(message, data) {
 	if (typeof(console) === "undefined") return;
 	if (typeof(console.error) === "undefined") return;
-	console.error(message);
+	console.error(message, data);
 };
 
 /// Handle naming discrepancies between platforms.
@@ -267,8 +276,7 @@ var counter = 0;
 var getID = function(object) {
 	if (object === window) return "#window";
 	if (object === document) return "#document";
-	if (!object) return createError("Missing target on listener!");
-	if (!object.uniqueID) object.uniqueID = "id" + counter ++;
+	if (!object.uniqueID) object.uniqueID = "e" + counter ++;
 	return object.uniqueID;
 };
 
@@ -302,7 +310,11 @@ root.createPointerEvent = function (event, self, preventRecord) {
 		if (k === "target") continue;
 		newEvent[k] = self[k];
 	}
-	target.dispatchEvent(newEvent);
+	///
+	var type = newEvent.type;
+	if (root.Gesture && root.Gesture._gestureHandlers[type]) { // capture custom events.
+		self.oldListener.call(target, newEvent, self);
+	}
 };
 
 /// Allows *EventListener to use custom event proxies.
@@ -323,7 +335,7 @@ if (root.modifyEventListener && window.HTMLElement) (function() {
 						};
 					}
 					eventManager(this, type, listener, configure, trigger, true);
-					handler.call(this, type, listener, useCapture);
+//					handler.call(this, type, listener, useCapture);
 				} else { // use native function.
 					handler.call(this, normalize(type), listener, useCapture);
 				}
