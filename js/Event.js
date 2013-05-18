@@ -92,9 +92,12 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 	// Check whether target is a configuration variable;
 	if (String(target) === "[object Object]") {
 		var data = target;
-		delete (target = data.target);
-		delete (type = data.type);
-		delete (listener = data.listener);
+		target = data.target;
+		type = data.type;
+		listener = data.listener;
+		delete data.target;
+		delete data.type;
+		delete data.listener;
 		for (var key in data) {
 			configure[key] = data[key];
 		}
