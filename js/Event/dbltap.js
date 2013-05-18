@@ -70,6 +70,10 @@ root.dblclick = function(conf) {
 		if (time0 && time1) {
 			if (time1 <= delay && !(event.cancelBubble && ++event.bubble > 1)) {
 				self.state = conf.gesture;
+				for (var key in conf.tracker) break;
+				var point = conf.tracker[key];
+				self.x = point.start.x;
+				self.y = point.start.y;
 				conf.listener(event, self);
 			}
 			clearTimeout(timeout);
