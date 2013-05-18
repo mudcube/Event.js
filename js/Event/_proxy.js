@@ -28,26 +28,35 @@ root.pointerSetup = function(conf, self) {
 	self.target = conf.target;
 	self.pointerType = Event.pointerType;
 	///
-	if (Event.modifyEventListener && conf.fromOverwrite) conf.listener = Event.createPointerEvent;
+	if (Event.modifyEventListener && conf.fromOverwrite) {
+		conf.oldListener = conf.listener;
+		conf.listener = Event.createPointerEvent;
+	}
 	/// Convenience commands.
 	var fingers = 0;
 	var type = self.gesture.indexOf("pointer") === 0 && Event.modifyEventListener ? "pointer" : "mouse";
+	self.enabled = true;
+	self.oldListener = conf.oldListener;
 	self.listener = conf.listener;
 	self.proxy = function(listener) {
 		self.defaultListener = conf.listener;
 		conf.listener = listener;
 		listener(conf.event, self);
 	};
-	self.attach = function() {
+	self.add = function() {
+		if (self.enabled === true) return;
 		if (conf.onPointerDown) Event.add(conf.target, type + "down", conf.onPointerDown);
 		if (conf.onPointerMove) Event.add(conf.doc, type + "move", conf.onPointerMove);
 		if (conf.onPointerUp) Event.add(conf.doc, type + "up", conf.onPointerUp);
+		self.enabled = true;
 	};
 	self.remove = function() {
+		if (self.enabled === false) return;
 		if (conf.onPointerDown) Event.remove(conf.target, type + "down", conf.onPointerDown);
 		if (conf.onPointerMove) Event.remove(conf.doc, type + "move", conf.onPointerMove);
 		if (conf.onPointerUp) Event.remove(conf.doc, type + "up", conf.onPointerUp);
 		self.reset();
+		self.enabled = false;
 	};
 	self.pause = function(opt) {
 		if (conf.onPointerMove && (!opt || opt.move)) Event.remove(conf.doc, type + "move", conf.onPointerMove);
@@ -61,7 +70,7 @@ root.pointerSetup = function(conf, self) {
 		conf.fingers = fingers;
 	};
 	self.reset = function() {
-		delete conf.tracker;
+		conf.tracker = {};
 		conf.fingers = 0;
 	};
 	///
@@ -377,6 +386,9 @@ root.getBoundingBox = function(o) {
 	}
 	root.metaTrackerReset = function() {
 		root.metaKey = false;
+		root.ctrlKey = false;
+		root.shiftKey = false;
+		root.altKey = false;
 	};
 	root.metaTracker = function(event) {
 		var check = !!watch[event.keyCode];
