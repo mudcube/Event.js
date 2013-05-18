@@ -16,10 +16,15 @@ if (typeof(Event.proxy) === "undefined") Event.proxy = {};
 
 Event.proxy = (function(root) { "use strict";
 
-root.tap = 
 root.longpress = function(conf) {
+	conf.gesture = "longpress";
+	return root.tap(conf);
+};
+
+root.tap = function(conf) {
 	conf.delay = conf.delay || 500;
 	conf.timeout = conf.timeout || 250;
+	conf.driftDeviance = conf.driftDeviance || 10;
 	conf.gesture = conf.gesture || "tap";
 	// Setting up local variables.
 	var timestamp, timeout;
@@ -37,14 +42,19 @@ root.longpress = function(conf) {
 				// Make sure no fingers have been changed.
 				var fingers = 0;
 				for (var key in conf.tracker) {
-					if (conf.tracker[key].end === true) return;
+					var point = conf.tracker[key];
+					if (point.end === true) return;
 					if (conf.cancel) return;
 					fingers ++;
 				}
 				// Send callback.
-				self.state = "start";
-				self.fingers = fingers;
-				conf.listener(event, self);
+				if (conf.minFingers <= fingers && conf.maxFingers >= fingers) {
+					self.state = "start";
+					self.fingers = fingers;
+					self.x = point.start.x;
+					self.y = point.start.y;
+					conf.listener(event, self);
+				}
 			}, conf.delay);
 		}
 	};
@@ -64,10 +74,13 @@ root.longpress = function(conf) {
 				var x = (touch.pageX - bbox.x1);
 				var y = (touch.pageY - bbox.y1);
 			}
+			///
+			var dx = x - pt.start.x;
+			var dy = y - pt.start.y;
+			var distance = Math.sqrt(dx * dx + dy * dy);
 			if (!(x > 0 && x < bbox.width && // Within target coordinates..
 				  y > 0 && y < bbox.height &&
-				  Math.abs(x - pt.start.x) <= 25 && // Within drift deviance.
-				  Math.abs(y - pt.start.y) <= 25)) {
+				  distance <= conf.driftDeviance)) { // Within drift deviance.
 				// Cancel out this listener.
 				Event.remove(conf.doc, "mousemove", conf.onPointerMove);
 				conf.cancel = true;
@@ -94,9 +107,12 @@ root.longpress = function(conf) {
 			// Ensure delay is within margins.
 			if ((new Date()).getTime() - timestamp > conf.timeout) return;
 			// Send callback.
-			self.state = "tap";
-			self.fingers = conf.gestureFingers;
-			conf.listener(event, self);
+			var fingers = conf.gestureFingers;
+			if (conf.minFingers <= fingers && conf.maxFingers >= fingers) {
+				self.state = "tap";
+				self.fingers = conf.gestureFingers;
+				conf.listener(event, self);
+			}
 		}
 	};
 	// Generate maintenance commands, and other configurations.
