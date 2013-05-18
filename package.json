@@ -3,7 +3,7 @@
   "version": "1.1.1",
   "description": "Multi-touch events library, and abstractions—click, dblclick, dbltap, tap, longpress, drag, swipe, pinch, rotate, shake. For pointer events, each listener can handle anywhere from 1 to 12 fingers at a time, or more, depending on the device. Includes MetaKey tracking (CMD, CTRL) to support native key-commands in various platforms.",
   "author": "Michael Deal",
-  "contributors": [],
+  "contributors": [ "Selvakumar Arumugam" ],
   "repository": {
     "type": "git",
     "url": "git://github.com/mudcube/Event.js.git"
