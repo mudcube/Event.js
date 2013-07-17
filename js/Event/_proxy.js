@@ -336,32 +336,19 @@ root.getCoord = function(event) {
 root.getBoundingBox = function(o) { 
 	if (o === window || o === document) o = document.body;
 	///
-	var bbox = {
-		x1: 0,
-		y1: 0,
-		x2: 0,
-		y2: 0,
-		scrollLeft: 0,
-		scrollTop: 0
-	};
-	///
-	if (o === document.body) {
-		bbox.height = window.innerHeight;
-		bbox.width = window.innerWidth;
-	} else {
-		bbox.height = o.offsetHeight;
-		bbox.width = o.offsetWidth;
-	}
-	/// Get the scale of the element.
-	bbox.scaleX = o.width / bbox.width || 1;
-	bbox.scaleY = o.height / bbox.height || 1;
-	/// Get the offset of element.
-	var tmp = o;
-	while (tmp !== null) {
-		bbox.x1 += tmp.offsetLeft; 
-		bbox.y1 += tmp.offsetTop; 
-		tmp = tmp.offsetParent;
-	};
+	var bbox = {};
+	var bcr = o.getBoundingClientRect();
+	bbox.width = bcr.width;
+	bbox.height = bcr.height;
+	bbox.x1 = bcr.left;
+	bbox.y1 = bcr.top;
+	bbox.x2 = bbox.x1 + bbox.width;
+	bbox.y2 = bbox.y1 + bbox.height;
+	bbox.scaleX = bcr.width / o.offsetWidth || 1;
+	bbox.scaleY = bcr.height / o.offsetHeight || 1;
+	bbox.scrollLeft = 0;
+	bbox.scrollTop = 0;
+
 	/// Get the scroll of container element.
 	var tmp = o.parentNode;
 	while (tmp !== null) {
@@ -369,14 +356,17 @@ root.getBoundingBox = function(o) {
 		if (tmp.scrollTop === undefined) break;
 		var style = window.getComputedStyle(tmp);
 		var position = style.getPropertyValue("position");
-		if (position === "absolute") break;
-		bbox.scrollLeft += tmp.scrollLeft;
-		bbox.scrollTop += tmp.scrollTop;
+		if (position === "absolute") {
+			break;
+		} else if (position === "fixed") {
+			bbox.scrollTop -= tmp.parentNode.scrollTop;
+			break;
+		} else {
+			bbox.scrollLeft += tmp.scrollLeft;
+			bbox.scrollTop += tmp.scrollTop;
+		}
 		tmp = tmp.parentNode;
 	};
-	/// Record the extent of box.
-	bbox.x2 = bbox.x1 + bbox.width;
-	bbox.y2 = bbox.y1 + bbox.height;
 	///
 	return bbox;
 };
