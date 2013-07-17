@@ -22,12 +22,12 @@
 if (typeof(Event) === "undefined") var Event = {};
 if (typeof(eventjs) === "undefined") var eventjs = Event;
 
-Event = (function(root) { "use strict";
+(function(root) { "use strict";
 
-// Add custom *EventListener commands to HTMLElements.
+// Add custom *EventListener commands to HTMLElements (set false to prevent funkiness).
 root.modifyEventListener = true;
 
-// Add bulk *EventListener commands on NodeLists from querySelectorAll and others.
+// Add bulk *EventListener commands on NodeLists from querySelectorAll and others  (set false to prevent funkiness).
 root.modifySelectors = true;
 
 // Event maintenance.
@@ -40,13 +40,16 @@ root.remove = function(target, type, listener, configure) {
 };
 
 root.stop = function(event) {
+	if (!event) return;
 	if (event.stopPropagation) event.stopPropagation();
 	event.cancelBubble = true; // <= IE8
 	event.bubble = 0;
 };
 
 root.prevent = function(event) {
+	if (!event) return;
 	if (event.preventDefault) event.preventDefault();
+	if (event.preventManipulation) event.preventManipulation(); // MS
 	event.returnValue = false; // <= IE8
 };
 
@@ -56,7 +59,7 @@ root.cancel = function(event) {
 };
 
 // Check whether event is natively supported (via @kangax)
-root.supports = function (target, type) {
+root.getEventSupport = function (target, type) {
 	if (typeof(target) === "string") {
 		type = target;
 		target = window;
@@ -166,9 +169,10 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 	if (typeof(listener) !== "function") return createError("Listener is not a function!", arguments);
 	// Generate a unique wrapper identifier.
 	var useCapture = configure.useCapture || false;
-	var id = normalize(type) + "." + getID(target) + "." + getID(listener) + "." + (useCapture ? 1 : 0);
+	var id = getID(target) + "." + getID(listener) + "." + (useCapture ? 1 : 0);
 	// Handle the event.
 	if (root.Gesture && root.Gesture._gestureHandlers[type]) { // Fire custom event.
+		id = type + id;
 		if (trigger === "remove") { // Remove event listener.
 			if (!wrappers[id]) return; // Already removed.
 			wrappers[id].remove();
@@ -194,28 +198,35 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 			// Record wrapper.
 			wrappers[id] = root.proxy[type](configure); 
 		}
+		return wrappers[id];
 	} else { // Fire native event.
-		type = normalize(type);
-		if (trigger === "remove") { // Remove event listener.
-			if (!wrappers[id]) return; // Already removed.
-			target[remove](type, listener, useCapture); 
-			delete wrappers[id];
-		} else if (trigger === "add") { // Attach event listener.
-			if (wrappers[id]) return wrappers[id]; // Already attached.
-			target[add](type, listener, useCapture); 
-			// Record wrapper.
-			wrappers[id] = { 
-				id: id,
-				type: type,
-				target: target,
-				listener: listener,
-				remove: function() {
-					root.remove(target, type, listener, configure);
-				}
-			};				
+		var eventList = getEventList(type);
+		for (var n = 0, eventId; n < eventList.length; n ++) {
+			type = eventList[n];
+			eventId = type + "." + id;
+			if (trigger === "remove") { // Remove event listener.
+				if (!wrappers[eventId]) continue; // Already removed.
+				target[remove](type, listener, useCapture); 
+				delete wrappers[eventId];
+			} else if (trigger === "add") { // Attach event listener.
+				if (wrappers[eventId]) return wrappers[eventId]; // Already attached.
+				target[add](type, listener, useCapture); 
+				// Record wrapper.
+				wrappers[eventId] = { 
+					id: eventId,
+					type: type,
+					target: target,
+					listener: listener,
+					remove: function() {
+						for (var n = 0; n < eventList.length; n ++) {
+							root.remove(target, eventList[n], listener, configure);
+						}
+					}
+				};
+			}
 		}
+		return wrappers[eventId];
 	}
-	return wrappers[id];
 };
 
 /// Perform batch actions on multiple events.
@@ -242,33 +253,52 @@ var createError = function(message, data) {
 };
 
 /// Handle naming discrepancies between platforms.
-var normalize = (function() {
-	var translate = {};
+var pointerDefs = {
+	"msPointer": [ "MSPointerDown", "MSPointerMove", "MSPointerUp" ],
+	"touch": [ "touchstart", "touchmove", "touchend" ],
+	"mouse": [ "mousedown", "mousemove", "mouseup" ]
+};
+
+var pointerDetect = {
+	// MSPointer
+	"MSPointerDown": 0, 
+	"MSPointerMove": 1, 
+	"MSPointerUp": 2,
+	// Touch
+	"touchstart": 0,
+	"touchmove": 1,
+	"touchend": 2,
+	// Mouse
+	"mousedown": 0,
+	"mousemove": 1,
+	"mouseup": 2
+};
+
+var getEventSupport = (function() {
+	root.supports = {};
+	if (window.navigator.msPointerEnabled) {
+		root.supports.msPointer = true;
+	}
+	if (root.getEventSupport("touchstart")) {
+		root.supports.touch = true;
+	}
+	if (root.getEventSupport("mousedown")) {
+		root.supports.mouse = true;
+	}
+})();
+
+var getEventList = (function() {
 	return function(type) {
-		if (!root.pointerType) {
-			if (window.navigator.msPointerEnabled) {
-				root.pointerType = "mspointer";
-				translate = {
-					"mousedown": "MSPointerDown",
-					"mousemove": "MSPointerMove",
-					"mouseup": "MSPointerUp"
-				};
-			} else if (root.supports("touchstart")) {
-				root.pointerType = "touch";
-				translate = {
-					"mousedown": "touchstart",
-					"mouseup": "touchend",
-					"mousemove": "touchmove"
-				};	
-			} else {
-				root.pointerType = "mouse";
+		var prefix = document.addEventListener ? "" : "on"; // IE
+		var idx = pointerDetect[type];
+		if (isFinite(idx)) {
+			var types = [];
+			for (var key in root.supports) {
+				types.push(prefix + pointerDefs[key][idx]);
 			}
-		}	
-		if (translate[type]) type = translate[type];
-		if (!document.addEventListener) { // IE
-			return "on" + type;
+			return types;
 		} else {
-			return type;
+			return [ prefix + type ];
 		}
 	};
 })();
@@ -316,7 +346,8 @@ root.createPointerEvent = function (event, self, preventRecord) {
 	///
 	var type = newEvent.type;
 	if (root.Gesture && root.Gesture._gestureHandlers[type]) { // capture custom events.
-		self.oldListener.call(target, newEvent, self);
+//		target.dispatchEvent(newEvent);
+		self.oldListener.call(target, newEvent, self, false);
 	}
 };
 
@@ -340,7 +371,10 @@ if (root.modifyEventListener && window.HTMLElement) (function() {
 					eventManager(this, type, listener, configure, trigger, true);
 //					handler.call(this, type, listener, useCapture);
 				} else { // use native function.
-					handler.call(this, normalize(type), listener, useCapture);
+					var types = getEventList(type);
+					for (var n = 0; n < types.length; n ++) {
+						handler.call(this, types[n], listener, useCapture);
+					}
 				}
 			};
 		};
