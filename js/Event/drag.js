@@ -56,9 +56,14 @@ root.drag = function(conf) {
 			self.identifier = identifier;
 			self.start = pt.start;
 			self.fingers = conf.fingers;
-			if (conf.position === "relative") {
-				self.x = (pt.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
-				self.y = (pt.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
+			if (conf.position === "differenceFromLast") {
+				self.x = (pt.pageX - pt.offsetX);
+				self.y = (pt.pageY - pt.offsetY);
+				pt.offsetX = pt.pageX;
+				pt.offsetY = pt.pageY;
+			} else if (conf.position === "relative") {
+				self.x = (pt.pageX + bbox.scrollLeft - pt.offsetX);
+				self.y = (pt.pageY + bbox.scrollTop - pt.offsetY);
 			} else {
 				self.x = (pt.pageX - pt.offsetX);
 				self.y = (pt.pageY - pt.offsetY);
