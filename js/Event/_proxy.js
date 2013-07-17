@@ -1,6 +1,6 @@
 /*
 	----------------------------------------------------
-	Event.proxy : 0.4.2 : 2012/07/29 : MIT License
+	Event.proxy : 0.4.2 : 2013/07/17 : MIT License
 	----------------------------------------------------
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
@@ -24,9 +24,10 @@ root.pointerSetup = function(conf, self) {
 	delete conf.fingers; //- 
 	/// Convenience data.
 	self = self || {};
+	self.enabled = true;
 	self.gesture = conf.gesture;
 	self.target = conf.target;
-	self.pointerType = Event.pointerType;
+	self.env = conf.env;
 	///
 	if (Event.modifyEventListener && conf.fromOverwrite) {
 		conf.oldListener = conf.listener;
@@ -35,8 +36,7 @@ root.pointerSetup = function(conf, self) {
 	/// Convenience commands.
 	var fingers = 0;
 	var type = self.gesture.indexOf("pointer") === 0 && Event.modifyEventListener ? "pointer" : "mouse";
-	self.enabled = true;
-	self.oldListener = conf.oldListener;
+	if (conf.oldListener) self.oldListener = conf.oldListener;
 	self.listener = conf.listener;
 	self.proxy = function(listener) {
 		self.defaultListener = conf.listener;
@@ -81,7 +81,14 @@ root.pointerSetup = function(conf, self) {
 	Begin proxied pointer command.
 */
 
+var sp = Event.supports;
+Event.pointerType = sp.mouse ? "mouse" : sp.touch ? "touch" : "mspointer";
 root.pointerStart = function(event, self, conf) {
+	var type = (event.type || "mousedown").toUpperCase();
+	if (type.indexOf("MOUSE") === 0) Event.pointerType = "mouse";
+	else if (type.indexOf("TOUCH") === 0) Event.pointerType = "touch";
+	else if (type.indexOf("MSPOINTER") === 0) Event.pointerType = "mspointer";
+	///
 	var addTouchStart = function(touch, sid) {	
 		var bbox = conf.bbox;
 		var pt = track[sid] = {};
@@ -106,8 +113,8 @@ root.pointerStart = function(event, self, conf) {
 		}
 		///
 		if (conf.position === "relative") {
-			var x = (touch.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
-			var y = (touch.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
+			var x = (touch.pageX + bbox.scrollLeft - pt.offsetX);
+			var y = (touch.pageY + bbox.scrollTop - pt.offsetY);
 		} else {
 			var x = (touch.pageX - pt.offsetX);
 			var y = (touch.pageY - pt.offsetY);
@@ -256,7 +263,7 @@ root.getCoords = function(event) {
 				y: event.pageY,
 				pageX: event.pageX,
 				pageY: event.pageY,
-				identifier: Infinity
+				identifier: event.pointerId || Infinity // pointerId is MS
 			});
 		};
 	} else { // Internet Explorer <= 8.0
@@ -287,7 +294,7 @@ root.getCoord = function(event) {
 		var pY = 0;
 		root.getCoord = function(event) {
 			var touches = event.changedTouches;
-			if (touches.length) { // ontouchstart + ontouchmove
+			if (touches && touches.length) { // ontouchstart + ontouchmove
 				return {
 					x: pX = touches[0].pageX,
 					y: pY = touches[0].pageY
