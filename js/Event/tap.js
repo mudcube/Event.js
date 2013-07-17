@@ -68,8 +68,8 @@ root.tap = function(conf) {
 			var pt = conf.tracker[identifier];
 			if (!pt) continue;
 			if (conf.position === "relative") {
-				var x = (touch.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
-				var y = (touch.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+				var x = (touch.pageX + bbox.scrollLeft - bbox.x1);
+				var y = (touch.pageY + bbox.scrollTop - bbox.y1);
 			} else {
 				var x = (touch.pageX - bbox.x1);
 				var y = (touch.pageY - bbox.y1);

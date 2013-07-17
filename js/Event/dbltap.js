@@ -46,8 +46,8 @@ root.dblclick = function(conf) {
 		}
 		var bbox = conf.bbox;
 		if (conf.position === "relative") {
-			var ax = (pointer1.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
-			var ay = (pointer1.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+			var ax = (pointer1.pageX + bbox.scrollLeft - bbox.x1);
+			var ay = (pointer1.pageY + bbox.scrollTop - bbox.y1);
 		} else {
 			var ax = (pointer1.pageX - bbox.x1);
 			var ay = (pointer1.pageY - bbox.y1);

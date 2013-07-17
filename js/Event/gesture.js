@@ -52,8 +52,8 @@ root.gesture = function(conf) {
 			if (!pt) continue; 
 			// Find the actual coordinates.
 			if (conf.position === "relative") {
-				pt.move.x = (touch.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
-				pt.move.y = (touch.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+				pt.move.x = (touch.pageX + bbox.scrollLeft - bbox.x1);
+				pt.move.y = (touch.pageY + bbox.scrollTop - bbox.y1);
 			} else {
 				pt.move.x = (touch.pageX - bbox.x1);
 				pt.move.y = (touch.pageY - bbox.y1);
