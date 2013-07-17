@@ -98,6 +98,10 @@ root.pointerStart = function(event, self, conf) {
 				pt.offsetX = 0;
 				pt.offsetY = 0;
 				break;
+			case "differenceFromLast": // Since last coordinate recorded.
+				pt.offsetX = touch.pageX;
+				pt.offsetY = touch.pageY;
+				break;
 			case "difference": // Relative from origin.
 				pt.offsetX = touch.pageX;
 				pt.offsetY = touch.pageY;
