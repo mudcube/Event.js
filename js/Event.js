@@ -1,6 +1,6 @@
 /*
 	----------------------------------------------------
-	Event.js : 1.1.2 : 2013/05/06 : MIT License
+	Event.js : 1.1.3 : 2013/07/17 : MIT License
 	----------------------------------------------------
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
@@ -413,7 +413,7 @@ return root;
 })(Event);
 /*
 	----------------------------------------------------
-	Event.proxy : 0.4.2 : 2012/07/29 : MIT License
+	Event.proxy : 0.4.3 : 2013/07/17 : MIT License
 	----------------------------------------------------
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
@@ -437,9 +437,10 @@ root.pointerSetup = function(conf, self) {
 	delete conf.fingers; //- 
 	/// Convenience data.
 	self = self || {};
+	self.enabled = true;
 	self.gesture = conf.gesture;
 	self.target = conf.target;
-	self.pointerType = Event.pointerType;
+	self.env = conf.env;
 	///
 	if (Event.modifyEventListener && conf.fromOverwrite) {
 		conf.oldListener = conf.listener;
@@ -448,8 +449,7 @@ root.pointerSetup = function(conf, self) {
 	/// Convenience commands.
 	var fingers = 0;
 	var type = self.gesture.indexOf("pointer") === 0 && Event.modifyEventListener ? "pointer" : "mouse";
-	self.enabled = true;
-	self.oldListener = conf.oldListener;
+	if (conf.oldListener) self.oldListener = conf.oldListener;
 	self.listener = conf.listener;
 	self.proxy = function(listener) {
 		self.defaultListener = conf.listener;
@@ -494,7 +494,14 @@ root.pointerSetup = function(conf, self) {
 	Begin proxied pointer command.
 */
 
+var sp = Event.supports;
+Event.pointerType = sp.mouse ? "mouse" : sp.touch ? "touch" : "mspointer";
 root.pointerStart = function(event, self, conf) {
+	var type = (event.type || "mousedown").toUpperCase();
+	if (type.indexOf("MOUSE") === 0) Event.pointerType = "mouse";
+	else if (type.indexOf("TOUCH") === 0) Event.pointerType = "touch";
+	else if (type.indexOf("MSPOINTER") === 0) Event.pointerType = "mspointer";
+	///
 	var addTouchStart = function(touch, sid) {	
 		var bbox = conf.bbox;
 		var pt = track[sid] = {};
@@ -503,6 +510,10 @@ root.pointerStart = function(event, self, conf) {
 			case "absolute": // Absolute from within window.
 				pt.offsetX = 0;
 				pt.offsetY = 0;
+				break;
+			case "differenceFromLast": // Since last coordinate recorded.
+				pt.offsetX = touch.pageX;
+				pt.offsetY = touch.pageY;
 				break;
 			case "difference": // Relative from origin.
 				pt.offsetX = touch.pageX;
@@ -519,8 +530,8 @@ root.pointerStart = function(event, self, conf) {
 		}
 		///
 		if (conf.position === "relative") {
-			var x = (touch.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
-			var y = (touch.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
+			var x = (touch.pageX + bbox.scrollLeft - pt.offsetX);
+			var y = (touch.pageY + bbox.scrollTop - pt.offsetY);
 		} else {
 			var x = (touch.pageX - pt.offsetX);
 			var y = (touch.pageY - pt.offsetY);
@@ -669,7 +680,7 @@ root.getCoords = function(event) {
 				y: event.pageY,
 				pageX: event.pageX,
 				pageY: event.pageY,
-				identifier: Infinity
+				identifier: event.pointerId || Infinity // pointerId is MS
 			});
 		};
 	} else { // Internet Explorer <= 8.0
@@ -700,7 +711,7 @@ root.getCoord = function(event) {
 		var pY = 0;
 		root.getCoord = function(event) {
 			var touches = event.changedTouches;
-			if (touches.length) { // ontouchstart + ontouchmove
+			if (touches && touches.length) { // ontouchstart + ontouchmove
 				return {
 					x: pX = touches[0].pageX,
 					y: pY = touches[0].pageY
@@ -738,32 +749,19 @@ root.getCoord = function(event) {
 root.getBoundingBox = function(o) { 
 	if (o === window || o === document) o = document.body;
 	///
-	var bbox = {
-		x1: 0,
-		y1: 0,
-		x2: 0,
-		y2: 0,
-		scrollLeft: 0,
-		scrollTop: 0
-	};
-	///
-	if (o === document.body) {
-		bbox.height = window.innerHeight;
-		bbox.width = window.innerWidth;
-	} else {
-		bbox.height = o.offsetHeight;
-		bbox.width = o.offsetWidth;
-	}
-	/// Get the scale of the element.
-	bbox.scaleX = o.width / bbox.width || 1;
-	bbox.scaleY = o.height / bbox.height || 1;
-	/// Get the offset of element.
-	var tmp = o;
-	while (tmp !== null) {
-		bbox.x1 += tmp.offsetLeft; 
-		bbox.y1 += tmp.offsetTop; 
-		tmp = tmp.offsetParent;
-	};
+	var bbox = {};
+	var bcr = o.getBoundingClientRect();
+	bbox.width = bcr.width;
+	bbox.height = bcr.height;
+	bbox.x1 = bcr.left;
+	bbox.y1 = bcr.top;
+	bbox.x2 = bbox.x1 + bbox.width;
+	bbox.y2 = bbox.y1 + bbox.height;
+	bbox.scaleX = bcr.width / o.offsetWidth || 1;
+	bbox.scaleY = bcr.height / o.offsetHeight || 1;
+	bbox.scrollLeft = 0;
+	bbox.scrollTop = 0;
+
 	/// Get the scroll of container element.
 	var tmp = o.parentNode;
 	while (tmp !== null) {
@@ -771,14 +769,17 @@ root.getBoundingBox = function(o) {
 		if (tmp.scrollTop === undefined) break;
 		var style = window.getComputedStyle(tmp);
 		var position = style.getPropertyValue("position");
-		if (position === "absolute") break;
-		bbox.scrollLeft += tmp.scrollLeft;
-		bbox.scrollTop += tmp.scrollTop;
+		if (position === "absolute") {
+			break;
+		} else if (position === "fixed") {
+			bbox.scrollTop -= tmp.parentNode.scrollTop;
+			break;
+		} else {
+			bbox.scrollLeft += tmp.scrollLeft;
+			bbox.scrollTop += tmp.scrollTop;
+		}
 		tmp = tmp.parentNode;
 	};
-	/// Record the extent of box.
-	bbox.x2 = bbox.x1 + bbox.width;
-	bbox.y2 = bbox.y1 + bbox.height;
 	///
 	return bbox;
 };
@@ -904,8 +905,8 @@ root.click = function(conf) {
 			var bbox = conf.bbox;
 			var newbbox = root.getBoundingBox(conf.target);
 			if (conf.position === "relative") {
-				var ax = (pointer.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
-				var ay = (pointer.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+				var ax = (pointer.pageX + bbox.scrollLeft - bbox.x1);
+				var ay = (pointer.pageY + bbox.scrollTop - bbox.y1);
 			} else {
 				var ax = (pointer.pageX - bbox.x1);
 				var ay = (pointer.pageY - bbox.y1);
@@ -913,6 +914,12 @@ root.click = function(conf) {
 			if (ax > 0 && ax < bbox.width && // Within target coordinates.
 				ay > 0 && ay < bbox.height &&
 				bbox.scrollTop === newbbox.scrollTop) {
+				///
+				for (var key in conf.tracker) break; //- should be modularized? in dblclick too
+				var point = conf.tracker[key];
+				self.x = point.start.x;
+				self.y = point.start.y;
+				///
 				conf.listener(EVENT, self);
 			}
 		}
@@ -981,8 +988,8 @@ root.dblclick = function(conf) {
 		}
 		var bbox = conf.bbox;
 		if (conf.position === "relative") {
-			var ax = (pointer1.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
-			var ay = (pointer1.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+			var ax = (pointer1.pageX + bbox.scrollLeft - bbox.x1);
+			var ay = (pointer1.pageY + bbox.scrollTop - bbox.y1);
 		} else {
 			var ax = (pointer1.pageX - bbox.x1);
 			var ay = (pointer1.pageY - bbox.y1);
@@ -1090,9 +1097,14 @@ root.drag = function(conf) {
 			self.identifier = identifier;
 			self.start = pt.start;
 			self.fingers = conf.fingers;
-			if (conf.position === "relative") {
-				self.x = (pt.pageX + bbox.scrollLeft - pt.offsetX) * bbox.scaleX;
-				self.y = (pt.pageY + bbox.scrollTop - pt.offsetY) * bbox.scaleY;
+			if (conf.position === "differenceFromLast") {
+				self.x = (pt.pageX - pt.offsetX);
+				self.y = (pt.pageY - pt.offsetY);
+				pt.offsetX = pt.pageX;
+				pt.offsetY = pt.pageY;
+			} else if (conf.position === "relative") {
+				self.x = (pt.pageX + bbox.scrollLeft - pt.offsetX);
+				self.y = (pt.pageY + bbox.scrollTop - pt.offsetY);
 			} else {
 				self.x = (pt.pageX - pt.offsetX);
 				self.y = (pt.pageY - pt.offsetY);
@@ -1187,8 +1199,8 @@ root.gesture = function(conf) {
 			if (!pt) continue; 
 			// Find the actual coordinates.
 			if (conf.position === "relative") {
-				pt.move.x = (touch.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
-				pt.move.y = (touch.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+				pt.move.x = (touch.pageX + bbox.scrollLeft - bbox.x1);
+				pt.move.y = (touch.pageY + bbox.scrollTop - bbox.y1);
 			} else {
 				pt.move.x = (touch.pageX - bbox.x1);
 				pt.move.y = (touch.pageY - bbox.y1);
@@ -1626,8 +1638,8 @@ root.tap = function(conf) {
 			var pt = conf.tracker[identifier];
 			if (!pt) continue;
 			if (conf.position === "relative") {
-				var x = (touch.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
-				var y = (touch.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+				var x = (touch.pageX + bbox.scrollLeft - bbox.x1);
+				var y = (touch.pageY + bbox.scrollTop - bbox.y1);
 			} else {
 				var x = (touch.pageX - bbox.x1);
 				var y = (touch.pageY - bbox.y1);
@@ -1714,6 +1726,18 @@ root.wheel = function(conf) {
 		wheelDelta: 0,
 		target: conf.target,
 		listener: conf.listener,
+		preventElasticBounce: function() {
+			var target = this.target;
+			var scrollTop = target.scrollTop;
+			var top = scrollTop + target.offsetHeight;
+			var height = target.scrollHeight;
+			if (top === height && this.wheelDelta <= 0) Event.cancel(event);
+			else if (scrollTop === 0 && this.wheelDelta >= 0) Event.cancel(event);
+			Event.stop(event);
+		},
+		add: function() {
+			conf.target[add](type, onMouseWheel, false);
+		},
 		remove: function() {
 			conf.target[remove](type, onMouseWheel, false);
 		}
@@ -1735,7 +1759,7 @@ root.wheel = function(conf) {
 	// Attach events.
 	var add = document.addEventListener ? "addEventListener" : "attachEvent";
 	var remove = document.removeEventListener ? "removeEventListener" : "detachEvent";
-	var type = Event.supports("mousewheel") ? "mousewheel" : "DOMMouseScroll";
+	var type = Event.getEventSupport("mousewheel") ? "mousewheel" : "DOMMouseScroll";
 	conf.target[add](type, onMouseWheel, false);
 	// Return this object.
 	return self;
