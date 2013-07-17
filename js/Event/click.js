@@ -34,8 +34,8 @@ root.click = function(conf) {
 			var bbox = conf.bbox;
 			var newbbox = root.getBoundingBox(conf.target);
 			if (conf.position === "relative") {
-				var ax = (pointer.pageX + bbox.scrollLeft - bbox.x1) * bbox.scaleX;
-				var ay = (pointer.pageY + bbox.scrollTop - bbox.y1) * bbox.scaleY;
+				var ax = (pointer.pageX + bbox.scrollLeft - bbox.x1);
+				var ay = (pointer.pageY + bbox.scrollTop - bbox.y1);
 			} else {
 				var ax = (pointer.pageX - bbox.x1);
 				var ay = (pointer.pageY - bbox.y1);
@@ -43,6 +43,12 @@ root.click = function(conf) {
 			if (ax > 0 && ax < bbox.width && // Within target coordinates.
 				ay > 0 && ay < bbox.height &&
 				bbox.scrollTop === newbbox.scrollTop) {
+				///
+				for (var key in conf.tracker) break; //- should be modularized? in dblclick too
+				var point = conf.tracker[key];
+				self.x = point.start.x;
+				self.y = point.start.y;
+				///
 				conf.listener(EVENT, self);
 			}
 		}
