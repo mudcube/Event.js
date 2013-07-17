@@ -23,6 +23,18 @@ root.wheel = function(conf) {
 		wheelDelta: 0,
 		target: conf.target,
 		listener: conf.listener,
+		preventElasticBounce: function() {
+			var target = this.target;
+			var scrollTop = target.scrollTop;
+			var top = scrollTop + target.offsetHeight;
+			var height = target.scrollHeight;
+			if (top === height && this.wheelDelta <= 0) Event.cancel(event);
+			else if (scrollTop === 0 && this.wheelDelta >= 0) Event.cancel(event);
+			Event.stop(event);
+		},
+		add: function() {
+			conf.target[add](type, onMouseWheel, false);
+		},
 		remove: function() {
 			conf.target[remove](type, onMouseWheel, false);
 		}
@@ -44,7 +56,7 @@ root.wheel = function(conf) {
 	// Attach events.
 	var add = document.addEventListener ? "addEventListener" : "attachEvent";
 	var remove = document.removeEventListener ? "removeEventListener" : "detachEvent";
-	var type = Event.supports("mousewheel") ? "mousewheel" : "DOMMouseScroll";
+	var type = Event.getEventSupport("mousewheel") ? "mousewheel" : "DOMMouseScroll";
 	conf.target[add](type, onMouseWheel, false);
 	// Return this object.
 	return self;
