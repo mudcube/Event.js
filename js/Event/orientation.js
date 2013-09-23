@@ -30,8 +30,6 @@ root.orientation = function(conf) {
 		self.previous = self.current;
 		self.current = window.orientation;		
 	    if(self.previous !== null && self.previous != self.current) {
-	      	console.log("Last Orientation: " + self.previous + ". New Orientation: " + self.current);
-
 			conf.listener(e, self);
 			return;
 	    }
