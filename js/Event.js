@@ -1392,15 +1392,21 @@ root.shake = function(conf) {
 	};
 	// Tracking the events.
 	var onDeviceMotion = function(e) {
-		var alpha = 0.8; // Low pass filter.
-		var o = e.accelerationIncludingGravity;
-		gravity.x = alpha * gravity.x + (1 - alpha) * o.x;
-		gravity.y = alpha * gravity.y + (1 - alpha) * o.y;
-		gravity.z = alpha * gravity.z + (1 - alpha) * o.z; 
-		self.accelerationIncludingGravity = gravity;
-		self.acceleration.x = o.x - gravity.x;
-		self.acceleration.y = o.y - gravity.y;
-		self.acceleration.z = o.z - gravity.z;
+	    if(e.rotationRate) {
+	      self.accelerationIncludingGravity = e.accelerationIncludingGravity;
+	      self.acceleration = e.acceleration;
+	    }
+	    else {
+	      var alpha = 0.8; // Low pass filter.
+	      var o = e.accelerationIncludingGravity;
+	      gravity.x = alpha * gravity.x + (1 - alpha) * o.x;
+	      gravity.y = alpha * gravity.y + (1 - alpha) * o.y;
+	      gravity.z = alpha * gravity.z + (1 - alpha) * o.z; 
+	      self.accelerationIncludingGravity = gravity;
+	      self.acceleration.x = o.x - gravity.x;
+	      self.acceleration.y = o.y - gravity.y;
+	      self.acceleration.z = o.z - gravity.z;
+	    }
 		///
 		if (conf.gesture === "devicemotion") {
 			conf.listener(e, self);
@@ -1441,7 +1447,9 @@ root.shake = function(conf) {
 	};
 	// Attach events.
 	if (!window.addEventListener) return;
-	window.addEventListener('devicemotion', onDeviceMotion, false);
+  	if (window.DeviceMotionEvent) {
+		window.addEventListener('devicemotion', onDeviceMotion, false);
+	}
 	// Return this object.
 	return self;
 };
@@ -1768,6 +1776,61 @@ root.wheel = function(conf) {
 Event.Gesture = Event.Gesture || {};
 Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
 Event.Gesture._gestureHandlers.wheel = root.wheel;
+
+return root;
+
+})(Event.proxy);
+/*
+	"Orientation Change"
+	----------------------------------------------------
+	https://developer.apple.com/library/safari/documentation/SafariDOMAdditions/Reference/DeviceOrientationEventClassRef/DeviceOrientationEvent/DeviceOrientationEvent.html#//apple_ref/doc/uid/TP40010526
+	----------------------------------------------------
+	Event.add(window, "deviceorientation", function(event, self) {});
+*/
+
+if (typeof(Event) === "undefined") var Event = {};
+if (typeof(Event.proxy) === "undefined") Event.proxy = {};
+
+Event.proxy = (function(root) { "use strict";
+
+root.orientation = function(conf) {
+	// Externally accessible data.
+	var self = {
+		gesture: "orientationchange",
+		previous: null, /* Report the previous orientation */
+		current: window.orientation,
+		target: conf.target,
+		listener: conf.listener,
+		remove: function() {
+			window.removeEventListener('orientationchange', onOrientationChange, false);
+		}
+	};
+
+	// Tracking the events.
+	var onOrientationChange = function(e) {
+
+		self.previous = self.current;
+		self.current = window.orientation;		
+	    if(self.previous !== null && self.previous != self.current) {
+	      	console.log("Last Orientation: " + self.previous + ". New Orientation: " + self.current);
+
+			conf.listener(e, self);
+			return;
+	    }
+
+
+	};
+	// Attach events.
+	if (window.DeviceOrientationEvent) {
+    	window.addEventListener("orientationchange", onOrientationChange, false);
+  	} 
+	// Return this object.
+	return self;
+};
+
+Event.Gesture = Event.Gesture || {};
+Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
+Event.Gesture._gestureHandlers.orientation = root.orientation;
 
 return root;
 
