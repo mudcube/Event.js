@@ -68,14 +68,17 @@ var gestures = { // listeners for various event types.
 	longpress: function (event) { // fingers, minFingers, maxFingers, delay.
 		log(event, "gesture", "identifier", "state", "fingers", "x", "y");
 	},
-	shake: function (event) {
-		log(event, "gesture", "identifier", "state");
+	shake: function (event, self) {
+		log(self, "gesture", "identifier", "state");
 	},
 	drag: function (event) { // fingers, maxFingers, position
 		log(event, "gesture", "identifier", "state", "fingers", "state", "x", "y");
 	},
 	wheel: function (event) {
 		log(event, "gesture", "state", "wheelDelta");
+	},
+	orientation: function (event, self) {
+		log(self, "gesture", "current", "previous");
 	}
 };
 
