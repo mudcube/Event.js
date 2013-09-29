@@ -49,7 +49,7 @@ root.shake = function(conf) {
 		self.acceleration.x = o.x - gravity.x;
 		self.acceleration.y = o.y - gravity.y;
 		self.acceleration.z = o.z - gravity.z;
-
+		///
 		if (conf.gesture === "devicemotion") {
 			conf.listener(e, self);
 			return;
