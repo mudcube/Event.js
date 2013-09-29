@@ -89,9 +89,7 @@ root.shake = function(conf) {
 	};
 	// Attach events.
 	if (!window.addEventListener) return;
-  	if (window.DeviceMotionEvent) {
-		window.addEventListener('devicemotion', onDeviceMotion, false);
-	}
+	window.addEventListener('devicemotion', onDeviceMotion, false);
 	// Return this object.
 	return self;
 };
