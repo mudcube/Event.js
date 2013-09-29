@@ -1392,22 +1392,16 @@ root.shake = function(conf) {
 	};
 	// Tracking the events.
 	var onDeviceMotion = function(e) {
-	    if(e.rotationRate) {
-	      self.accelerationIncludingGravity = e.accelerationIncludingGravity;
-	      self.acceleration = e.acceleration;
-	    }
-	    else {
-	      var alpha = 0.8; // Low pass filter.
-	      var o = e.accelerationIncludingGravity;
-	      gravity.x = alpha * gravity.x + (1 - alpha) * o.x;
-	      gravity.y = alpha * gravity.y + (1 - alpha) * o.y;
-	      gravity.z = alpha * gravity.z + (1 - alpha) * o.z; 
-	      self.accelerationIncludingGravity = gravity;
-	      self.acceleration.x = o.x - gravity.x;
-	      self.acceleration.y = o.y - gravity.y;
-	      self.acceleration.z = o.z - gravity.z;
-	    }
-		///
+		var alpha = 0.8; // Low pass filter.
+		var o = e.accelerationIncludingGravity;
+		gravity.x = alpha * gravity.x + (1 - alpha) * o.x;
+		gravity.y = alpha * gravity.y + (1 - alpha) * o.y;
+		gravity.z = alpha * gravity.z + (1 - alpha) * o.z; 
+		self.accelerationIncludingGravity = gravity;
+		self.acceleration.x = o.x - gravity.x;
+		self.acceleration.y = o.y - gravity.y;
+		self.acceleration.z = o.z - gravity.z;
+
 		if (conf.gesture === "devicemotion") {
 			conf.listener(e, self);
 			return;
@@ -1812,8 +1806,6 @@ root.orientation = function(conf) {
 		self.previous = self.current;
 		self.current = window.orientation;		
 	    if(self.previous !== null && self.previous != self.current) {
-	      	console.log("Last Orientation: " + self.previous + ". New Orientation: " + self.current);
-
 			conf.listener(e, self);
 			return;
 	    }
