@@ -28,6 +28,18 @@ root.modifyEventListener = false;
 // Add bulk *EventListener commands on NodeLists from querySelectorAll and others  (set false to prevent funkiness).
 root.modifySelectors = false;
 
+root.configure = function(conf) {
+	if (isFinite(conf.modifyEventListener)) root.modifyEventListener = conf.modifyEventListener;
+	if (isFinite(conf.modifySelectors)) root.modifySelectors = conf.modifySelectors;
+	/// Augment event listeners
+	if (eventListenersAgumented === false && root.modifyEventListener) {
+		augmentEventListeners();
+	}
+	if (selectorsAugmented === false && root.modifySelectors) {
+		augmentSelectors();
+	}
+};
+
 // Event maintenance.
 root.add = function(target, type, listener, configure) {
 	return eventManager(target, type, listener, configure, "add");
@@ -416,8 +428,10 @@ root.createPointerEvent = function (event, self, preventRecord) {
 	}
 };
 
-/// Allows *EventListener to use custom event proxies.
-if (root.modifyEventListener && window.HTMLElement) (function() {
+var eventListenersAgumented = false;
+var augmentEventListeners = function() {
+	/// Allows *EventListener to use custom event proxies.
+	if (!window.HTMLElement) return;
 	var augmentEventListener = function(proto) {
 		var recall = function(trigger) { // overwrite native *EventListener's
 			var handle = trigger + "EventListener";
@@ -456,10 +470,11 @@ if (root.modifyEventListener && window.HTMLElement) (function() {
 	}
 	augmentEventListener(document);
 	augmentEventListener(window);
-})();
+};
 
+var selectorsAugmented = false;
+var augmentSelectors = function() {
 /// Allows querySelectorAll and other NodeLists to perform *EventListener commands in bulk.
-if (root.modifySelectors) (function() {
 	var proto = NodeList.prototype;
 	proto.removeEventListener = function(type, listener, useCapture) {
 		for (var n = 0, length = this.length; n < length; n ++) {
@@ -471,7 +486,7 @@ if (root.modifySelectors) (function() {
 			this[n].addEventListener(type, listener, useCapture);
 		}
 	};
-})();
+};
 
 return root;
 

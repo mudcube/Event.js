@@ -249,16 +249,16 @@
 	/// Adding and Removing DOM events
 	
 	Key.eventManager = function(target, type, listeners, operation) {
-		Event[operation](target, "keydown", function(event) {
+		eventjs[operation](target, "keydown", function(event) {
 			Key.down(target, event);
 		});
-		Event[operation](target, "keyup", function(event) {
+		eventjs[operation](target, "keyup", function(event) {
 			Key.up(target, event);
 		});
-		Event[operation](target, "keypress", function(event) {
+		eventjs[operation](target, "keypress", function(event) {
 			Key.press(target, event);
 		});
-		Event[operation](target, "blur", function(event) {
+		eventjs[operation](target, "blur", function(event) {
 			Key.blur(target, event);
 		});
 		if(operation == "remove") return;
@@ -272,11 +272,11 @@
 
 	/// Generation of keycode <-> charcode translations (calculates as you type [as needed])
 
-	Event.add(window, "load", function() { // add textarea to body (to track translations)
-		Event.add(textarea, "focus", function(event) {
+	eventjs.add(window, "load", function() { // add textarea to body (to track translations)
+		eventjs.add(textarea, "focus", function(event) {
 			textarea.hasfocus = true;
 		});
-		Event.add(textarea, "blur", function(event) {
+		eventjs.add(textarea, "blur", function(event) {
 			textarea.hasfocus = false;
 			Key.blur(undefined, event);
 		});
