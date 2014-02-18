@@ -1,11 +1,11 @@
-* Examples
+### Demos
 ----------------------------------------------------
 * https://sketch.io/mobile/
 * https://sketch.io/sketchpad/
 * https://sketch.io/webcam-fx/
-* yours?
+Your demo here?
 
-* Supported events
+### Supported events
 ----------------------------------------------------
 <pre>
 1  : click, dblclick, dbltap
@@ -14,7 +14,7 @@
    : mousewheel, devicemotion, shake
 </pre>
 
-* Three ways to add/remove events (and why)
+### Three ways to add/remove events (and why)
 ----------------------------------------------------
 <pre>
 // Retains "this" attribute as target, and overrides native addEventListener.
@@ -30,70 +30,70 @@ Event.add(configure);
 Event.remove(configure);
 </pre>
 
-* Click :: fingers, minFingers, maxFingers
+### Click: fingers, minFingers, maxFingers
 ----------------------------------------------------
 <pre>
 Event.add(window, "click", function(event, self) {
 	console.log(self.gesture, self.x, self.y);
 });
 </pre>
-* Double-Click :: fingers, minFingers, maxFingers
+### Double-Click: fingers, minFingers, maxFingers
 ----------------------------------------------------
 <pre>
 Event.add(window, "dblclick", function(event, self) {
 	console.log(self.gesture, self.x, self.y);
 });
 </pre>
-* Drag :: fingers, maxFingers, position
+### Drag: fingers, maxFingers, position
 ----------------------------------------------------
 <pre>
 Event.add(window, "drag", function(event, self) {
 	console.log(self.gesture, self.fingers, self.state, self.start, self.x, self.y, self.bbox);
 });
 </pre>
-* Gesture :: fingers, minFingers, maxFingers
+### Gesture: fingers, minFingers, maxFingers
 ----------------------------------------------------
 <pre>
 Event.add(window, "gesture", function(event, self) {
 	console.log(self.gesture, self.fingers, self.state, self.rotation, self.scale);
 });
 </pre>
-* Swipe :: fingers, minFingers, maxFingers, snap, threshold
+### Swipe: fingers, minFingers, maxFingers, snap, threshold
 ----------------------------------------------------
 <pre>
 Event.add(window, "swipe", function(event, self) {
 	console.log(self.gesture, self.fingers, self.velocity, self.angle, self.start, self.x, self.y);
 });
 </pre>
-* Tap :: fingers, minFingers, maxFingers, timeout
+### Tap: fingers, minFingers, maxFingers, timeout
 ----------------------------------------------------
 <pre>
 Event.add(window, "tap", function(event, self) {
 	console.log(self.gesture, self.fingers);
 });
 </pre>
-* Longpress :: fingers, minFingers, maxFingers, delay
+### Longpress: fingers, minFingers, maxFingers, delay
 ----------------------------------------------------
 <pre>
 Event.add(window, "longpress", function(event, self) {
 	console.log(self.gesture, self.fingers);
 });
 </pre>
-* Shake
+### Shake
 ----------------------------------------------------
 <pre>
 Event.add(window, "shake", function(event, self) {
 	console.log(self.gesture, self.acceleration, self.accelerationIncludingGravity);
 });
 </pre>
-* DeviceMotion (smooth quirks)
+### DeviceMotion (smooth quirks)
 ----------------------------------------------------
 <pre>
 Event.add(window, "devicemotion", function(event, self) {
 	console.log(self.gesture, self.acceleration, self.accelerationIncludingGravity);
 });
 </pre>
-* Wheel (smooth quirks)
+### Wheel (smooth quirks)
 ----------------------------------------------------
 <pre>
 Event.add(window, "wheel", function(event, self) {
@@ -101,7 +101,7 @@ Event.add(window, "wheel", function(event, self) {
 });
 </pre>
 
-* Single listener with a custom configuration.
+### Single listener with a custom configuration.
 ----------------------------------------------------
 <pre>
 // adding with addEventListener()
@@ -132,7 +132,7 @@ Event.add({
 });
 </pre>
 
-* Multiple listeners glued together.
+### Multiple listeners glued together.
 ----------------------------------------------------
 <pre>
 // adding with addEventListener()
@@ -142,7 +142,7 @@ target.addEventListener("click swipe", function(event) { });
 Event.add(target, "click swipe", function(event, self) { });
 </pre>
 
-* Query selectors to create an event (querySelectorAll)
+### Query selectors to create an event (querySelectorAll)
 ----------------------------------------------------
 <pre>
 // adding events to NodeList from querySelectorAll()
@@ -152,7 +152,7 @@ document.querySelectorAll("#element a.link").addEventListener("click", callback)
 Event.add("#element a.link", "click", callback);
 </pre>
 
-* Listen until selector to become available (querySelector)
+### Listen until selector to become available (querySelector)
 ----------------------------------------------------
 <pre>
 Event.add("body", "ready", callback);
@@ -166,7 +166,7 @@ Event.add({
 });
 </pre>
 
-* Multiple listeners bound to one listener w/ configuration.
+### Multiple listeners bound to one listener w/ configuration.
 ----------------------------------------------------
 <pre>
 var bindings = Event.add({
@@ -189,7 +189,7 @@ var bindings = Event.add({
 });
 </pre>
 
-* Multiple listeners bound to multiple callbacks w/ configuration.
+### Multiple listeners bound to multiple callbacks w/ configuration.
 ----------------------------------------------------
 <pre>
 var bindings = Event.add({
@@ -207,7 +207,7 @@ var bindings = Event.add({
 });
 </pre>
 
-* Multiple listeners bound to multiple callbacks w/ multiple configurations.
+### Multiple listeners bound to multiple callbacks w/ multiple configurations.
 ----------------------------------------------------
 <pre>
 var binding = Event.add({
@@ -232,7 +232,7 @@ var binding = Event.add({
 });
 </pre>
 
-* Capturing an event and manually forwarding it to a proxy (tiered events).
+### Capturing an event and manually forwarding it to a proxy (tiered events).
 ----------------------------------------------------
 <pre>
 Event.add(target, "down", function(event, self) {
@@ -249,7 +249,7 @@ Event.add(target, "down", function(event, self) {
 });
 </pre>
 
-* Stop, prevent and cancel.
+### Stop, prevent and cancel.
 ----------------------------------------------------
 <pre>
 Event.stop(event); // stop bubble.
@@ -257,7 +257,7 @@ Event.prevent(event); // prevent default.
 Event.cancel(event); // stop and prevent.
 </pre>
 
-* Track for proper command/control-key for Mac/PC.
+### Track for proper command/control-key for Mac/PC.
 ----------------------------------------------------
 <pre>
 Event.add(window, "keyup keydown", Event.proxy.metaTracker); // setup tracking on the metaKey.
@@ -266,13 +266,13 @@ console.log(Event.proxy.metaTracker(event)); // returns whether metaKey is press
 console.log(Event.proxy.metaKey); // indicates whether metaKey is pressed (once metaTracker is run).
 </pre>
 
-* Test for event features, in this example Drag & Drop file support.
+### Test for event features, in this example Drag & Drop file support.
 ----------------------------------------------------
 <pre>
 console.log(Event.supports('dragstart') && Event.supports('drop') && !!window.FileReader);
 </pre>
 
-* Turn prototyping on/off
+### Turn prototyping on/off
 ----------------------------------------------------
 <pre>
 // NOTE: These two features are on by default (so it's easy to add to a project)
@@ -284,7 +284,7 @@ Event.modifyEventListener = true;
 Event.modifySelectors = true; 
 </pre>
 
-* Upgrading
+### Upgrading
 ----------------------------------------------------
 <pre>
 The latest version of MIDI.js makes calls to midijs instead of Event. This fixes issues
@@ -305,3 +305,22 @@ var removeEvent = eventjs.remove;
 	}
 })();
 </pre>
+
+### MIT License
+
+Copyright (c) 2010-2014 SketchIO (Michael Deal)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
