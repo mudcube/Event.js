@@ -68,7 +68,7 @@ var Sketch = function(config) { "use strict";
 			this.element.appendChild(layer[key]);
 		}
 		///
-		Event.add(this.element, "mousedown", this.record);
+		eventjs.add(this.element, "mousedown", this.record);
 	};
 	//
 	this.destroy = function() {
@@ -79,7 +79,7 @@ var Sketch = function(config) { "use strict";
 			}
 		}
 		///
-		Event.remove(this.element, "mousedown", this.record);
+		eventjs.remove(this.element, "mousedown", this.record);
 	};
 	// Resize the <canvas> elements.
 	this.resize = function(width, height) {
@@ -102,11 +102,11 @@ var Sketch = function(config) { "use strict";
 		var ctx = dstDirect ? ctx1 : ctx2;
 		var currentPath = [];
 		/// Capture mouse movements for drawing.
-		Event.proxy.drag({
+		eventjs.proxy.drag({
 			event: event,
 			target: layer2,
 			listener: function (event, self) {
-				Event.cancel(event);
+				eventjs.cancel(event);
 				var coords = {};
 				coords.x = self.x * 1 / that.zoom;
 				coords.y = self.y * 1 / that.zoom;

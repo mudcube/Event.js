@@ -88,6 +88,12 @@ function log(e) {
 };
 
 window.onload = function () {
+	/// this is an example of running with augmented listeners
+	eventjs.configure({
+		modifySelectors: true,
+		modifyEventListener: true
+	});
+	///
 //	magictouch(false);
 	///
 	var container = document.querySelector("#container");
@@ -110,11 +116,12 @@ window.onload = function () {
 		div.appendChild(input);
 		div.appendChild(span);
 		container.appendChild(div);
+		/// this event is using eventjs
 		test.addEventListener(key, gestures[key]);
 	}
-	///
-	window.addEventListener("contextmenu", Event.prevent)
-	document.addEventListener("touchstart", Event.prevent)
+	/// these events are using eventjs
+	window.addEventListener("contextmenu", eventjs.prevent)
+	document.addEventListener("touchstart", eventjs.prevent)
 };
 
 </script>

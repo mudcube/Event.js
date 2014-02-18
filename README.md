@@ -1,8 +1,7 @@
 ### Demos
 ----------------------------------------------------
 * https://sketch.io/mobile/
-* https://sketch.io/sketchpad/
-* https://sketch.io/webcam-fx/
+
 Your demo here?
 
 ### Supported events

@@ -36,7 +36,7 @@
 
   </head>
   <body onload = "init()">
-    <script src="./js/Vector2.js"></script>
+    <script src="./inc/Vector2.js"></script>
 	<script src="../js/Event.js"></script>
     <script>
 
@@ -59,6 +59,10 @@ container;
 setupCanvas();
 var touches;
 
+eventjs.configure({
+	modifySelectors: true,
+	modifyEventListener: true
+});
 
 canvas.addEventListener( 'pointerdown', onPointerDown, false );
 canvas.addEventListener( 'pointermove', onPointerMove, false );
@@ -78,7 +82,7 @@ function resetCanvas (e) {
 function init(){
   touches = [];
   requestAnimFrame(draw);
-  document.addEventListener("touchstart", Event.prevent)
+  document.addEventListener("touchstart", eventjs.prevent)
 }
 
 function draw() {

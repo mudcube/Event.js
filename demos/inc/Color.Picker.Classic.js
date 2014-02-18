@@ -94,7 +94,7 @@ Color.Picker = function (conf) {
 	if (that.eyedropMouseLayer) {
 		var mouseLayerTitle;
 		var mouseLayerUpdate = function(event) {
-			var coord = Event.proxy.getCoord(event);	
+			var coord = eventjs.proxy.getCoord(event);	
 			var ctx = that.eyedropLayer.getContext("2d");
 			var data = ctx.getImageData(coord.x, coord.y, 1, 1);
 			var color = Color.Space(data.data, "RGBA>HSVA");
@@ -105,25 +105,25 @@ Color.Picker = function (conf) {
 			hexBoxContainer.className = "hexBox";
 			that.eyedropMouseLayer.style.cursor = "default";
 			that.eyedropMouseLayer.title = mouseLayerTitle;
-			Event.remove(that.eyedropMouseLayer, "mouseup", mouseLayerExit);
-			Event.remove(that.eyedropMouseLayer, "mousemove", mouseLayerUpdate);
+			eventjs.remove(that.eyedropMouseLayer, "mouseup", mouseLayerExit);
+			eventjs.remove(that.eyedropMouseLayer, "mousemove", mouseLayerUpdate);
 			setTimeout(function() { 
 				that.state = "colorPicker";
 			}, 50);
 		};
-		Event.add(that.eyedropMouseLayer, "mousedown", function() {
+		eventjs.add(that.eyedropMouseLayer, "mousedown", function() {
 			hexInput.blur();
 		});
-		Event.add(hexBoxContainer, "mousedown", Event.cancel);
-		Event.add(hexBoxContainer, "click", function(event) {
+		eventjs.add(hexBoxContainer, "mousedown", eventjs.cancel);
+		eventjs.add(hexBoxContainer, "click", function(event) {
 			if (that.state === "eyeDropper") return mouseLayerExit();
 			that.state = "eyeDropper";
 			mouseLayerTitle = that.eyedropMouseLayer.title;
 			hexBoxContainer.className = "hexBox active";
 			that.eyedropMouseLayer.style.cursor = "crosshair";
 			that.eyedropMouseLayer.title = "Pick color";
-			Event.add(that.eyedropMouseLayer, "mouseup", mouseLayerExit);
-			Event.add(that.eyedropMouseLayer, "mousemove", mouseLayerUpdate);
+			eventjs.add(that.eyedropMouseLayer, "mouseup", mouseLayerExit);
+			eventjs.add(that.eyedropMouseLayer, "mousemove", mouseLayerUpdate);
 		});
 	}
 	
@@ -140,9 +140,9 @@ Color.Picker = function (conf) {
 	hexInput.size = 6;
 	hexInput.type = "text";
 	//
-	Event.add(hexInput, "mousedown", Event.stop);
-	Event.add(hexInput, "keydown change", function(event) {
-		Event.stop(event);
+	eventjs.add(hexInput, "mousedown", eventjs.stop);
+	eventjs.add(hexInput, "keydown change", function(event) {
+		eventjs.stop(event);
 		var code = event.keyCode;
 		var value = hexInput.value.replace(isHex, '').substr(0, 6);
 		var hex = parseInt("0x" + value);
@@ -172,8 +172,8 @@ Color.Picker = function (conf) {
 	hexClose.title = "Close";
 	hexClose.className = "hexClose";
 	hexClose.innerHTML = "x";
-	Event.add(hexClose, "mousedown", Event.cancel);
-	Event.add(hexClose, "click", function(event) {
+	eventjs.add(hexClose, "mousedown", eventjs.cancel);
+	eventjs.add(hexClose, "click", function(event) {
 		that.toggle(false);
 	});
 	plugin.appendChild(hexClose);
@@ -187,7 +187,7 @@ Color.Picker = function (conf) {
 	canvas.height = this.conf.satval.width + this.margin;
 	plugin.appendChild(canvas);
 	///
-	Event.add(plugin, "mousedown mousemove mouseup", function (event) {
+	eventjs.add(plugin, "mousedown mousemove mouseup", function (event) {
 		var down = (event.type === "mousedown" || event.type === "touchstart");
 		var up = (event.type === "mouseup" || event.type === "touchend");
 		///
@@ -195,7 +195,7 @@ Color.Picker = function (conf) {
 			if (that.onMouseDown) {
 				that.onMouseDown(event);
 			}
-			Event.stop(event);
+			eventjs.stop(event);
 			hexInput.blur();
 		}
 		///
@@ -225,7 +225,7 @@ Color.Picker = function (conf) {
 		} else if (x !== x0 || y !== y0) { // move colorpicker
 			plugin.style.cursor = "move";
 			plugin.title = "Move";
-			if (down) Event.proxy.drag({
+			if (down) eventjs.proxy.drag({
 				position: "move",
 				event: event,
 				target: plugin,
@@ -255,14 +255,14 @@ Color.Picker = function (conf) {
 							});
 						}
 					}
-					Event.prevent(event);
+					eventjs.prevent(event);
 				}
 			});
 		} else if (x <= that.conf.satval.width) { // saturation-value selection
 			if (that.conf.satval.enable === false) return;
 			plugin.style.cursor = "crosshair";
 			plugin.title = "Saturation + Value";
-			if (down) Event.proxy.drag({
+			if (down) eventjs.proxy.drag({
 				position: "relative",
 				event: event,
 				target: canvas,
@@ -272,14 +272,14 @@ Color.Picker = function (conf) {
 					that.color.S = x / that.conf.satval.width * 100; // scale saturation
 					that.color.V = 100 - (y / that.conf.satval.height * 100); // scale value
 					that.drawSample(self.state, true);
-					Event.prevent(event);
+					eventjs.prevent(event);
 				}
 			});
 		} else if (x > that.conf.satval.width + that.margin && x <= that.conf.satval.width + that.margin + that.offset + that.conf.hue.width) { // hue selection
 			if (that.conf.hue.enable === false) return;
 			plugin.style.cursor = "crosshair";
 			plugin.title = "Hue";
-			if (down) Event.proxy.drag({
+			if (down) eventjs.proxy.drag({
 				position: "relative",
 				event: event,
 				target: canvas,
@@ -287,14 +287,14 @@ Color.Picker = function (conf) {
 					var y = clamp(self.y - that.offset, 0, that.conf.satval.height);
 					that.color.H = 360 - (Math.min(1, y / that.conf.satval.height) * 360);
 					that.drawSample(self.state, true);
-					Event.prevent(event);
+					eventjs.prevent(event);
 				}
 			});
 		} else if (x > that.conf.satval.width + that.conf.alpha.width + that.margin * 2 && x <= that.conf.satval.width + that.margin * 2 + that.offset + that.conf.alpha.width * 2) { // alpha selection
 			if (that.conf.alpha.enable === false) return;
 			plugin.style.cursor = "crosshair";
 			plugin.title = "Alpha";
-			if (down) Event.proxy.drag({
+			if (down) eventjs.proxy.drag({
 				position: "relative",
 				event: event,
 				target: canvas,
@@ -302,7 +302,7 @@ Color.Picker = function (conf) {
 					var y = clamp(self.y - that.offset, 0, that.conf.satval.height);
 					that.color.A = (1 - Math.min(1, y / that.conf.satval.height)) * 255;
 					that.drawSample(self.state, true);
-					Event.prevent(event);
+					eventjs.prevent(event);
 				}
 			});
 		} else { // margin between hue/saturation-value
@@ -482,10 +482,10 @@ Color.Picker = function (conf) {
 		///
 		if (display && conf.autoclose) {
 			var mousedown = function() {
-				Event.remove(window, "mousedown", mousedown);
+				eventjs.remove(window, "mousedown", mousedown);
 				that.toggle(false);
 			};
-			Event.add(window, "mousedown", mousedown);
+			eventjs.add(window, "mousedown", mousedown);
 		}
 	};
 

@@ -7,8 +7,13 @@
 <script type="text/javascript" src="../js/Event.js"></script>
 <script type="text/javascript" src="../js/Event/keypress.js"></script>
 <script type = "text/javascript">
+
+eventjs.configure({
+	modifySelectors: true,
+	modifyEventListener: true
+});
    
-Event.add(window, "load", function() {
+eventjs.add(window, "load", function() {
 
 	var listeners = { // Format of event tracking module
 		// Each code can either be inputted as a charcode (122), keycode (80_shift), or ascii (G)
