@@ -1,15 +1,15 @@
-/*
+/*:
 	----------------------------------------------------
-	Event.proxy : 0.4.3 : 2013/07/17 : MIT License
+	eventjs.proxy : 0.4.2 : 2013/07/17 : MIT License
 	----------------------------------------------------
-	https://github.com/mudcube/Event.js
+	https://github.com/mudcube/eventjs.js
 	----------------------------------------------------
 */
 
-if (typeof(Event) === "undefined") var Event = {};
-if (typeof(Event.proxy) === "undefined") Event.proxy = {};
+if (typeof(eventjs) === "undefined") var eventjs = {};
+if (typeof(eventjs.proxy) === "undefined") eventjs.proxy = {};
 
-Event.proxy = (function(root) { "use strict";
+eventjs.proxy = (function(root) { "use strict";
 
 /*
 	Create a new pointer gesture instance.
@@ -17,6 +17,7 @@ Event.proxy = (function(root) { "use strict";
 
 root.pointerSetup = function(conf, self) {
 	/// Configure.
+	conf.target = conf.target || window;
 	conf.doc = conf.target.ownerDocument || conf.target; // Associated document.
 	conf.minFingers = conf.minFingers || conf.fingers || 1; // Minimum required fingers.
 	conf.maxFingers = conf.maxFingers || conf.fingers || Infinity; // Maximum allowed fingers.
@@ -29,14 +30,15 @@ root.pointerSetup = function(conf, self) {
 	self.target = conf.target;
 	self.env = conf.env;
 	///
-	if (Event.modifyEventListener && conf.fromOverwrite) {
+	if (eventjs.modifyEventListener && conf.fromOverwrite) {
 		conf.oldListener = conf.listener;
-		conf.listener = Event.createPointerEvent;
+		conf.listener = eventjs.createPointerEvent;
 	}
 	/// Convenience commands.
 	var fingers = 0;
-	var type = self.gesture.indexOf("pointer") === 0 && Event.modifyEventListener ? "pointer" : "mouse";
+	var type = self.gesture.indexOf("pointer") === 0 && eventjs.modifyEventListener ? "pointer" : "mouse";
 	if (conf.oldListener) self.oldListener = conf.oldListener;
+	///
 	self.listener = conf.listener;
 	self.proxy = function(listener) {
 		self.defaultListener = conf.listener;
@@ -45,28 +47,28 @@ root.pointerSetup = function(conf, self) {
 	};
 	self.add = function() {
 		if (self.enabled === true) return;
-		if (conf.onPointerDown) Event.add(conf.target, type + "down", conf.onPointerDown);
-		if (conf.onPointerMove) Event.add(conf.doc, type + "move", conf.onPointerMove);
-		if (conf.onPointerUp) Event.add(conf.doc, type + "up", conf.onPointerUp);
+		if (conf.onPointerDown) eventjs.add(conf.target, type + "down", conf.onPointerDown);
+		if (conf.onPointerMove) eventjs.add(conf.doc, type + "move", conf.onPointerMove);
+		if (conf.onPointerUp) eventjs.add(conf.doc, type + "up", conf.onPointerUp);
 		self.enabled = true;
 	};
 	self.remove = function() {
 		if (self.enabled === false) return;
-		if (conf.onPointerDown) Event.remove(conf.target, type + "down", conf.onPointerDown);
-		if (conf.onPointerMove) Event.remove(conf.doc, type + "move", conf.onPointerMove);
-		if (conf.onPointerUp) Event.remove(conf.doc, type + "up", conf.onPointerUp);
+		if (conf.onPointerDown) eventjs.remove(conf.target, type + "down", conf.onPointerDown);
+		if (conf.onPointerMove) eventjs.remove(conf.doc, type + "move", conf.onPointerMove);
+		if (conf.onPointerUp) eventjs.remove(conf.doc, type + "up", conf.onPointerUp);
 		self.reset();
 		self.enabled = false;
 	};
 	self.pause = function(opt) {
-		if (conf.onPointerMove && (!opt || opt.move)) Event.remove(conf.doc, type + "move", conf.onPointerMove);
-		if (conf.onPointerUp && (!opt || opt.up)) Event.remove(conf.doc, type + "up", conf.onPointerUp);
+		if (conf.onPointerMove && (!opt || opt.move)) eventjs.remove(conf.doc, type + "move", conf.onPointerMove);
+		if (conf.onPointerUp && (!opt || opt.up)) eventjs.remove(conf.doc, type + "up", conf.onPointerUp);
 		fingers = conf.fingers;
 		conf.fingers = 0;
 	};
 	self.resume = function(opt) {
-		if (conf.onPointerMove && (!opt || opt.move)) Event.add(conf.doc, type + "move", conf.onPointerMove);
-		if (conf.onPointerUp && (!opt || opt.up)) Event.add(conf.doc, type + "up", conf.onPointerUp);
+		if (conf.onPointerMove && (!opt || opt.move)) eventjs.add(conf.doc, type + "move", conf.onPointerMove);
+		if (conf.onPointerUp && (!opt || opt.up)) eventjs.add(conf.doc, type + "up", conf.onPointerUp);
 		conf.fingers = fingers;
 	};
 	self.reset = function() {
@@ -81,13 +83,28 @@ root.pointerSetup = function(conf, self) {
 	Begin proxied pointer command.
 */
 
-var sp = Event.supports;
-Event.pointerType = sp.mouse ? "mouse" : sp.touch ? "touch" : "mspointer";
+var sp = eventjs.supports; // Default pointerType
+///
+eventjs.isMouse = !!sp.mouse;
+eventjs.isMSPointer = !!sp.touch;
+eventjs.isTouch = !!sp.msPointer;
+///
 root.pointerStart = function(event, self, conf) {
+	/// tracks multiple inputs
 	var type = (event.type || "mousedown").toUpperCase();
-	if (type.indexOf("MOUSE") === 0) Event.pointerType = "mouse";
-	else if (type.indexOf("TOUCH") === 0) Event.pointerType = "touch";
-	else if (type.indexOf("MSPOINTER") === 0) Event.pointerType = "mspointer";
+	if (type.indexOf("MOUSE") === 0) {
+		eventjs.isMouse = true;
+		eventjs.isTouch = false;
+		eventjs.isMSPointer = false;
+	} else if (type.indexOf("TOUCH") === 0) {
+		eventjs.isMouse = false;
+		eventjs.isTouch = true;
+		eventjs.isMSPointer = false;
+	} else if (type.indexOf("MSPOINTER") === 0) {
+		eventjs.isMouse = false;
+		eventjs.isTouch = false;
+		eventjs.isMSPointer = true;
+	}
 	///
 	var addTouchStart = function(touch, sid) {	
 		var bbox = conf.bbox;
@@ -111,18 +128,13 @@ root.pointerStart = function(event, self, conf) {
 				pt.offsetY = touch.pageY - bbox.y1;
 				break;
 			default: // Relative from within target.
-				pt.offsetX = bbox.x1;
-				pt.offsetY = bbox.y1;
+				pt.offsetX = bbox.x1 - bbox.scrollLeft;
+				pt.offsetY = bbox.y1 - bbox.scrollTop;
 				break;
 		}
 		///
-		if (conf.position === "relative") {
-			var x = (touch.pageX + bbox.scrollLeft - pt.offsetX);
-			var y = (touch.pageY + bbox.scrollTop - pt.offsetY);
-		} else {
-			var x = (touch.pageX - pt.offsetX);
-			var y = (touch.pageY - pt.offsetY);
-		}
+		var x = touch.pageX - pt.offsetX;
+		var y = touch.pageY - pt.offsetY;
 		///
 		pt.rotation = 0;
 		pt.scale = 1;
@@ -272,13 +284,14 @@ root.getCoords = function(event) {
 		};
 	} else { // Internet Explorer <= 8.0
 		root.getCoords = function(event) {
+			var doc = document.documentElement;
 			event = event || window.event;
 			return Array({
 				type: "mouse",
-				x: event.clientX + document.documentElement.scrollLeft,
-				y: event.clientY + document.documentElement.scrollTop,
-				pageX: event.clientX + document.documentElement.scrollLeft,
-				pageY: event.clientY + document.documentElement.scrollTop,
+				x: event.clientX + doc.scrollLeft,
+				y: event.clientY + doc.scrollTop,
+				pageX: event.clientX + doc.scrollLeft,
+				pageY: event.clientY + doc.scrollTop,
 				identifier: Infinity
 			});
 		};
@@ -319,10 +332,11 @@ root.getCoord = function(event) {
 		};
 	} else { // Internet Explorer <=8.0
 		root.getCoord = function(event) {
+			var doc = document.documentElement;
 			event = event || window.event;
 			return {
-				x: event.clientX + document.documentElement.scrollLeft,
-				y: event.clientY + document.documentElement.scrollTop
+				x: event.clientX + doc.scrollLeft,
+				y: event.clientY + doc.scrollTop
 			};
 		};
 	}
@@ -333,6 +347,11 @@ root.getCoord = function(event) {
 	Get target scale and position in space.	
 */
 
+var getPropertyAsFloat = function(o, type) {
+	var n = parseFloat(o.getPropertyValue(type), 10);
+	return isFinite(n) ? n : 0;
+};
+
 root.getBoundingBox = function(o) { 
 	if (o === window || o === document) o = document.body;
 	///
@@ -342,65 +361,105 @@ root.getBoundingBox = function(o) {
 	bbox.height = bcr.height;
 	bbox.x1 = bcr.left;
 	bbox.y1 = bcr.top;
-	bbox.x2 = bbox.x1 + bbox.width;
-	bbox.y2 = bbox.y1 + bbox.height;
 	bbox.scaleX = bcr.width / o.offsetWidth || 1;
 	bbox.scaleY = bcr.height / o.offsetHeight || 1;
 	bbox.scrollLeft = 0;
 	bbox.scrollTop = 0;
+	///
+	var style = window.getComputedStyle(o);
+	var borderBox = style.getPropertyValue("box-sizing") === "border-box";
+	///
+	if (borderBox === false) {
+		var left = getPropertyAsFloat(style, "border-left-width");
+		var right = getPropertyAsFloat(style, "border-right-width");
+		var bottom = getPropertyAsFloat(style, "border-bottom-width");
+		var top = getPropertyAsFloat(style, "border-top-width");
+		bbox.border = [ left, right, top, bottom ];
+		bbox.x1 += left;
+		bbox.y1 += top;
+		bbox.width -= right + left;
+		bbox.height -= bottom + top;
+	}
 
+/*	var left = getPropertyAsFloat(style, "padding-left");
+	var right = getPropertyAsFloat(style, "padding-right");
+	var bottom = getPropertyAsFloat(style, "padding-bottom");
+	var top = getPropertyAsFloat(style, "padding-top");
+	bbox.padding = [ left, right, top, bottom ];*/
+	///
+	bbox.x2 = bbox.x1 + bbox.width;
+	bbox.y2 = bbox.y1 + bbox.height;
+	
 	/// Get the scroll of container element.
-	var tmp = o.parentNode;
+	var position = style.getPropertyValue("position");
+	var tmp = position === "fixed" ? o : o.parentNode;
 	while (tmp !== null) {
 		if (tmp === document.body) break;
 		if (tmp.scrollTop === undefined) break;
 		var style = window.getComputedStyle(tmp);
 		var position = style.getPropertyValue("position");
 		if (position === "absolute") {
-			break;
+
 		} else if (position === "fixed") {
+//			bbox.scrollTop += document.body.scrollTop;
+//			bbox.scrollLeft += document.body.scrollLeft;
 			bbox.scrollTop -= tmp.parentNode.scrollTop;
+			bbox.scrollLeft -= tmp.parentNode.scrollLeft;
 			break;
 		} else {
 			bbox.scrollLeft += tmp.scrollLeft;
 			bbox.scrollTop += tmp.scrollTop;
 		}
+		///
 		tmp = tmp.parentNode;
 	};
+	///
+	bbox.scrollBodyLeft = (window.pageXOffset !== undefined) ? window.pageXOffset : (document.documentElement || document.body.parentNode || document.body).scrollLeft;
+	bbox.scrollBodyTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement || document.body.parentNode || document.body).scrollTop;
+	///
+	bbox.scrollLeft -= bbox.scrollBodyLeft;
+	bbox.scrollTop -= bbox.scrollBodyTop;
 	///
 	return bbox;
 };
 
 /*
 	Keep track of metaKey, the proper ctrlKey for users platform.
+	----------------------------------------------------
+	http://www.quirksmode.org/js/keys.html
+	-----------------------------------
+	http://unixpapa.com/js/key.html
 */
 
 (function() {
 	var agent = navigator.userAgent.toLowerCase();
 	var mac = agent.indexOf("macintosh") !== -1;
+	var metaKeys;
 	if (mac && agent.indexOf("khtml") !== -1) { // chrome, safari.
-		var watch = { 91: true, 93: true };
+		metaKeys = { 91: true, 93: true };
 	} else if (mac && agent.indexOf("firefox") !== -1) {  // mac firefox.
-		var watch = { 224: true };
+		metaKeys = { 224: true };
 	} else { // windows, linux, or mac opera.
-		var watch = { 17: true };
+		metaKeys = { 17: true };
 	}
-	root.metaTrackerReset = function() {
-		root.metaKey = false;
-		root.ctrlKey = false;
-		root.shiftKey = false;
-		root.altKey = false;
-	};
+	(root.metaTrackerReset = function() {
+		eventjs.fnKey = root.fnKey = false;
+		eventjs.metaKey = root.metaKey = false;
+		eventjs.escKey = root.escKey = false;
+		eventjs.ctrlKey = root.ctrlKey = false;
+		eventjs.shiftKey = root.shiftKey = false;
+		eventjs.altKey = root.altKey = false;
+	})();
 	root.metaTracker = function(event) {
-		var check = !!watch[event.keyCode];
-		if (check) root.metaKey = event.type === "keydown";
-		root.ctrlKey = event.ctrlKey;
-		root.shiftKey = event.shiftKey;
-		root.altKey = event.altKey;
-		return check;
+		var isKeyDown = event.type === "keydown";
+		if (event.keyCode === 27) eventjs.escKey = root.escKey = isKeyDown;
+		if (metaKeys[event.keyCode]) eventjs.metaKey = root.metaKey = isKeyDown;
+		eventjs.ctrlKey = root.ctrlKey = event.ctrlKey;
+		eventjs.shiftKey = root.shiftKey = event.shiftKey;
+		eventjs.altKey = root.altKey = event.altKey;
 	};
 })();
 
 return root;
 
-})(Event.proxy);
+})(eventjs.proxy);

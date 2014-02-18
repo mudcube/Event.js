@@ -1,17 +1,17 @@
-/*
+/*:
 	"Swipe" event proxy (1+ fingers).
 	----------------------------------------------------
 	CONFIGURE: snap, threshold, maxFingers.
 	----------------------------------------------------
-	Event.add(window, "swipe", function(event, self) {
+	eventjs.add(window, "swipe", function(event, self) {
 		console.log(self.velocity, self.angle);
 	});
 */
 
-if (typeof(Event) === "undefined") var Event = {};
-if (typeof(Event.proxy) === "undefined") Event.proxy = {};
+if (typeof(eventjs) === "undefined") var eventjs = {};
+if (typeof(eventjs.proxy) === "undefined") eventjs.proxy = {};
 
-Event.proxy = (function(root) { "use strict";
+eventjs.proxy = (function(root) { "use strict";
 
 var RAD_DEG = Math.PI / 180;
 
@@ -22,8 +22,8 @@ root.swipe = function(conf) {
 	// Tracking the events.
 	conf.onPointerDown = function (event) {
 		if (root.pointerStart(event, self, conf)) {
-			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
-			Event.add(conf.doc, "mouseup", conf.onPointerUp);
+			eventjs.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
+			eventjs.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
 	};
 	conf.onPointerMove = function (event) {
@@ -42,8 +42,8 @@ root.swipe = function(conf) {
 	};
 	conf.onPointerUp = function(event) {
 		if (root.pointerEnd(event, self, conf)) {
-			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
-			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
+			eventjs.remove(conf.doc, "mousemove", conf.onPointerMove);
+			eventjs.remove(conf.doc, "mouseup", conf.onPointerUp);
 			///
 			var velocity1;
 			var velocity2
@@ -101,15 +101,15 @@ root.swipe = function(conf) {
 	// Generate maintenance commands, and other configurations.
 	var self = root.pointerSetup(conf);
 	// Attach events.
-	Event.add(conf.target, "mousedown", conf.onPointerDown);
+	eventjs.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.
 	return self;
 };
 
-Event.Gesture = Event.Gesture || {};
-Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
-Event.Gesture._gestureHandlers.swipe = root.swipe;
+eventjs.Gesture = eventjs.Gesture || {};
+eventjs.Gesture._gestureHandlers = eventjs.Gesture._gestureHandlers || {};
+eventjs.Gesture._gestureHandlers.swipe = root.swipe;
 
 return root;
 
-})(Event.proxy);
+})(eventjs.proxy);

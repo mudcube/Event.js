@@ -1,18 +1,18 @@
-/*
+/*:
 	"Device Motion" and "Shake" event proxy.
 	----------------------------------------------------
-	http://developer.android.com/reference/android/hardware/SensorEvent.html#values
+	http://developer.android.com/reference/android/hardware/Sensoreventjs.html#values
 	----------------------------------------------------
-	Event.add(window, "shake", function(event, self) {});
-	Event.add(window, "devicemotion", function(event, self) {
+	eventjs.add(window, "shake", function(event, self) {});
+	eventjs.add(window, "devicemotion", function(event, self) {
 		console.log(self.acceleration, self.accelerationIncludingGravity);
 	});
 */
 
-if (typeof(Event) === "undefined") var Event = {};
-if (typeof(Event.proxy) === "undefined") Event.proxy = {};
+if (typeof(eventjs) === "undefined") var eventjs = {};
+if (typeof(eventjs.proxy) === "undefined") eventjs.proxy = {};
 
-Event.proxy = (function(root) { "use strict";
+eventjs.proxy = (function(root) { "use strict";
 
 root.shake = function(conf) {
 	// Externally accessible data.
@@ -94,10 +94,10 @@ root.shake = function(conf) {
 	return self;
 };
 
-Event.Gesture = Event.Gesture || {};
-Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
-Event.Gesture._gestureHandlers.shake = root.shake;
+eventjs.Gesture = eventjs.Gesture || {};
+eventjs.Gesture._gestureHandlers = eventjs.Gesture._gestureHandlers || {};
+eventjs.Gesture._gestureHandlers.shake = root.shake;
 
 return root;
 
-})(Event.proxy);
+})(eventjs.proxy);

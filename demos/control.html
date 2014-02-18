@@ -223,7 +223,6 @@ function onPointerDown(e) {
 function onPointerMove(e) {
   // Prevent the browser from doing its default thing (scroll, zoom)
   pointers = e.pointers;
-
   for(var i = 0; i<pointers.length; i++){
     var pointer =pointers[i]; 
     if(leftPointerID == pointer.identifier)

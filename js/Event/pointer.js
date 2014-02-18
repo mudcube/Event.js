@@ -1,17 +1,17 @@
-/*
+/*:
 	"Pointer" event proxy (1+ fingers).
 	----------------------------------------------------
 	CONFIGURE: minFingers, maxFingers.
 	----------------------------------------------------
-	Event.add(window, "gesture", function(event, self) {
+	eventjs.add(window, "gesture", function(event, self) {
 		console.log(self.rotation, self.scale, self.fingers, self.state);
 	});
 */
 
-if (typeof(Event) === "undefined") var Event = {};
-if (typeof(Event.proxy) === "undefined") Event.proxy = {};
+if (typeof(eventjs) === "undefined") var eventjs = {};
+if (typeof(eventjs.proxy) === "undefined") eventjs.proxy = {};
 
-Event.proxy = (function(root) { "use strict";
+eventjs.proxy = (function(root) { "use strict";
 
 root.pointerdown = 
 root.pointermove = 
@@ -37,20 +37,20 @@ root.pointerup = function(conf) {
 	// Generate maintenance commands, and other configurations.
 	var self = root.pointerSetup(conf);
 	// Attach events.
-	Event.add(conf.target, "mousedown", conf.onPointerDown);
-	Event.add(conf.target, "mousemove", conf.onPointerMove);
-	Event.add(conf.doc, "mouseup", conf.onPointerUp);
+	eventjs.add(conf.target, "mousedown", conf.onPointerDown);
+	eventjs.add(conf.target, "mousemove", conf.onPointerMove);
+	eventjs.add(conf.doc, "mouseup", conf.onPointerUp);
 	// Return this object.
 	conf.target.isPointerEmitter = true;
 	return self;
 };
 
-Event.Gesture = Event.Gesture || {};
-Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
-Event.Gesture._gestureHandlers.pointerdown = root.pointerdown;
-Event.Gesture._gestureHandlers.pointermove = root.pointermove;
-Event.Gesture._gestureHandlers.pointerup = root.pointerup;
+eventjs.Gesture = eventjs.Gesture || {};
+eventjs.Gesture._gestureHandlers = eventjs.Gesture._gestureHandlers || {};
+eventjs.Gesture._gestureHandlers.pointerdown = root.pointerdown;
+eventjs.Gesture._gestureHandlers.pointermove = root.pointermove;
+eventjs.Gesture._gestureHandlers.pointerup = root.pointerup;
 
 return root;
 
-})(Event.proxy);
+})(eventjs.proxy);

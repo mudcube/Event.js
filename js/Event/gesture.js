@@ -1,19 +1,41 @@
-/*
+/*:
 	"Gesture" event proxy (2+ fingers).
 	----------------------------------------------------
 	CONFIGURE: minFingers, maxFingers.
 	----------------------------------------------------
-	Event.add(window, "gesture", function(event, self) {
-		console.log(self.rotation, self.scale, self.fingers, self.state);
+	eventjs.add(window, "gesture", function(event, self) {
+		console.log(
+			self.x, // centroid 
+			self.y,
+			self.rotation,
+			self.scale, 
+			self.fingers, 
+			self.state
+		);
 	});
 */
 
-if (typeof(Event) === "undefined") var Event = {};
-if (typeof(Event.proxy) === "undefined") Event.proxy = {};
+if (typeof(eventjs) === "undefined") var eventjs = {};
+if (typeof(eventjs.proxy) === "undefined") eventjs.proxy = {};
 
-Event.proxy = (function(root) { "use strict";
+eventjs.proxy = (function(root) { "use strict";
 
 var RAD_DEG = Math.PI / 180;
+var getCentroid = function(self, points) {
+	var centroidx = 0;
+	var centroidy = 0;
+	var length = 0;
+	for (var sid in points) {
+		var touch = points[sid];
+		if (touch.up) continue;
+		centroidx += touch.move.x;
+		centroidy += touch.move.y;
+		length ++;
+	}
+	self.x = centroidx /= length;
+	self.y = centroidy /= length;
+	return self;
+};
 
 root.gesture = function(conf) {
 	conf.gesture = conf.gesture || "gesture";
@@ -22,8 +44,8 @@ root.gesture = function(conf) {
 	conf.onPointerDown = function (event) {
 		var fingers = conf.fingers;
 		if (root.pointerStart(event, self, conf)) {
-			Event.add(conf.doc, "mousemove", conf.onPointerMove);
-			Event.add(conf.doc, "mouseup", conf.onPointerUp);
+			eventjs.add(conf.doc, "mousemove", conf.onPointerMove);
+			eventjs.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
 		// Record gesture start.
 		if (conf.fingers === conf.minFingers && fingers !== conf.fingers) {
@@ -34,6 +56,7 @@ root.gesture = function(conf) {
 			var sids = ""; //- FIXME(mud): can generate duplicate IDs.
 			for (var key in conf.tracker) sids += key;
 			self.identifier = parseInt(sids);
+			getCentroid(self, conf.tracker);
 			conf.listener(event, self);
 		}
 	};
@@ -51,13 +74,8 @@ root.gesture = function(conf) {
 			// Check whether "pt" is used by another gesture.
 			if (!pt) continue; 
 			// Find the actual coordinates.
-			if (conf.position === "relative") {
-				pt.move.x = (touch.pageX + bbox.scrollLeft - bbox.x1);
-				pt.move.y = (touch.pageY + bbox.scrollTop - bbox.y1);
-			} else {
-				pt.move.x = (touch.pageX - bbox.x1);
-				pt.move.y = (touch.pageY - bbox.y1);
-			}
+			pt.move.x = (touch.pageX - bbox.x1);
+			pt.move.y = (touch.pageY - bbox.y1);
 		}
 		///
 		if (conf.fingers < conf.minFingers) return;
@@ -65,33 +83,23 @@ root.gesture = function(conf) {
 		var touches = [];
 		var scale = 0;
 		var rotation = 0;
+
 		/// Calculate centroid of gesture.
-		var centroidx = 0;
-		var centroidy = 0;
-		var length = 0;
-		for (var sid in points) {
-			var touch = points[sid];
-			if (touch.up) continue;
-			centroidx += touch.move.x;
-			centroidy += touch.move.y;
-			length ++;
-		}
-		centroidx /= length;
-		centroidy /= length;
+		getCentroid(self, points);
 		///
 		for (var sid in points) {
 			var touch = points[sid];
 			if (touch.up) continue;
 			var start = touch.start;
 			if (!start.distance) {
-				var dx = start.x - centroidx;
-				var dy = start.y - centroidy;
+				var dx = start.x - self.x;
+				var dy = start.y - self.y;
 				start.distance = Math.sqrt(dx * dx + dy * dy);
 				start.angle = Math.atan2(dx, dy) / RAD_DEG;
 			}
 			// Calculate scale.
-			var dx = touch.move.x - centroidx;
-			var dy = touch.move.y - centroidy;
+			var dx = touch.move.x - self.x;
+			var dy = touch.move.y - self.y;
 			var distance = Math.sqrt(dx * dx + dy * dy);
 			scale += distance / start.distance;
 			// Calculate rotation.
@@ -122,8 +130,8 @@ root.gesture = function(conf) {
 		// Remove tracking for touch.
 		var fingers = conf.fingers;
 		if (root.pointerEnd(event, self, conf)) {
-			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
-			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
+			eventjs.remove(conf.doc, "mousemove", conf.onPointerMove);
+			eventjs.remove(conf.doc, "mouseup", conf.onPointerUp);
 		}
 		// Check whether fingers has dropped below minFingers.
 		if (fingers === conf.minFingers && conf.fingers < conf.minFingers) {
@@ -135,15 +143,15 @@ root.gesture = function(conf) {
 	// Generate maintenance commands, and other configurations.
 	var self = root.pointerSetup(conf);
 	// Attach events.
-	Event.add(conf.target, "mousedown", conf.onPointerDown);
+	eventjs.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.
 	return self;
 };
 
-Event.Gesture = Event.Gesture || {};
-Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
-Event.Gesture._gestureHandlers.gesture = root.gesture;
+eventjs.Gesture = eventjs.Gesture || {};
+eventjs.Gesture._gestureHandlers = eventjs.Gesture._gestureHandlers || {};
+eventjs.Gesture._gestureHandlers.gesture = root.gesture;
 
 return root;
 
-})(Event.proxy);
+})(eventjs.proxy);

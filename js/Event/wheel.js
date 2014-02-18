@@ -1,15 +1,24 @@
-/*
+/*:
 	"Mouse Wheel" event proxy.
 	----------------------------------------------------
-	Event.add(window, "wheel", function(event, self) {
+	eventjs.add(window, "wheel", function(event, self) {
 		console.log(self.state, self.wheelDelta);
 	});
 */
 
-if (typeof(Event) === "undefined") var Event = {};
-if (typeof(Event.proxy) === "undefined") Event.proxy = {};
+if (typeof(eventjs) === "undefined") var eventjs = {};
+if (typeof(eventjs.proxy) === "undefined") eventjs.proxy = {};
 
-Event.proxy = (function(root) { "use strict";
+eventjs.proxy = (function(root) { "use strict";
+
+root.wheelPreventElasticBounce = function(el) {
+	if (!el) return;
+	if (typeof(el) === "string") el = document.querySelector(el);
+	eventjs.add(el, "wheel", function(event, self) {
+		self.preventElasticBounce();
+		eventjs.stop(event);
+	});
+};
 
 root.wheel = function(conf) {
 	// Configure event listener.
@@ -23,14 +32,14 @@ root.wheel = function(conf) {
 		wheelDelta: 0,
 		target: conf.target,
 		listener: conf.listener,
-		preventElasticBounce: function() {
+		preventElasticBounce: function(event) {
 			var target = this.target;
 			var scrollTop = target.scrollTop;
 			var top = scrollTop + target.offsetHeight;
 			var height = target.scrollHeight;
-			if (top === height && this.wheelDelta <= 0) Event.cancel(event);
-			else if (scrollTop === 0 && this.wheelDelta >= 0) Event.cancel(event);
-			Event.stop(event);
+			if (top === height && this.wheelDelta <= 0) eventjs.cancel(event);
+			else if (scrollTop === 0 && this.wheelDelta >= 0) eventjs.cancel(event);
+			eventjs.stop(event);
 		},
 		add: function() {
 			conf.target[add](type, onMouseWheel, false);
@@ -56,16 +65,16 @@ root.wheel = function(conf) {
 	// Attach events.
 	var add = document.addEventListener ? "addEventListener" : "attachEvent";
 	var remove = document.removeEventListener ? "removeEventListener" : "detachEvent";
-	var type = Event.getEventSupport("mousewheel") ? "mousewheel" : "DOMMouseScroll";
+	var type = eventjs.getEventSupport("mousewheel") ? "mousewheel" : "DOMMouseScroll";
 	conf.target[add](type, onMouseWheel, false);
 	// Return this object.
 	return self;
 };
 
-Event.Gesture = Event.Gesture || {};
-Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
-Event.Gesture._gestureHandlers.wheel = root.wheel;
+eventjs.Gesture = eventjs.Gesture || {};
+eventjs.Gesture._gestureHandlers = eventjs.Gesture._gestureHandlers || {};
+eventjs.Gesture._gestureHandlers.wheel = root.wheel;
 
 return root;
 
-})(Event.proxy);
+})(eventjs.proxy);

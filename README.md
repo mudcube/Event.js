@@ -1,6 +1,11 @@
-Event.js : 1.1.3 : 2013/07/17 : MIT License
+* Examples
 ----------------------------------------------------
-https://github.com/mudcube/Event.js
+* https://sketch.io/mobile/
+* https://sketch.io/sketchpad/
+* https://sketch.io/webcam-fx/
+* yours?
+
+* Supported events
 ----------------------------------------------------
 <pre>
 1  : click, dblclick, dbltap
@@ -9,7 +14,7 @@ https://github.com/mudcube/Event.js
    : mousewheel, devicemotion, shake
 </pre>
 
-*	Three ways to add/remove events (and why)
+* Three ways to add/remove events (and why)
 ----------------------------------------------------
 <pre>
 // Retains "this" attribute as target, and overrides native addEventListener.
@@ -96,7 +101,7 @@ Event.add(window, "wheel", function(event, self) {
 });
 </pre>
 
-*	Single listener with a custom configuration.
+* Single listener with a custom configuration.
 ----------------------------------------------------
 <pre>
 // adding with addEventListener()
@@ -127,7 +132,7 @@ Event.add({
 });
 </pre>
 
-*	Multiple listeners glued together.
+* Multiple listeners glued together.
 ----------------------------------------------------
 <pre>
 // adding with addEventListener()
@@ -137,7 +142,7 @@ target.addEventListener("click swipe", function(event) { });
 Event.add(target, "click swipe", function(event, self) { });
 </pre>
 
-*	Query selectors to create an event (querySelectorAll)
+* Query selectors to create an event (querySelectorAll)
 ----------------------------------------------------
 <pre>
 // adding events to NodeList from querySelectorAll()
@@ -147,7 +152,7 @@ document.querySelectorAll("#element a.link").addEventListener("click", callback)
 Event.add("#element a.link", "click", callback);
 </pre>
 
-*	Listen until selector to become available (querySelector)
+* Listen until selector to become available (querySelector)
 ----------------------------------------------------
 <pre>
 Event.add("body", "ready", callback);
@@ -161,7 +166,7 @@ Event.add({
 });
 </pre>
 
-*	Multiple listeners bound to one listener w/ configuration.
+* Multiple listeners bound to one listener w/ configuration.
 ----------------------------------------------------
 <pre>
 var bindings = Event.add({
@@ -184,7 +189,7 @@ var bindings = Event.add({
 });
 </pre>
 
-*	Multiple listeners bound to multiple callbacks w/ configuration.
+* Multiple listeners bound to multiple callbacks w/ configuration.
 ----------------------------------------------------
 <pre>
 var bindings = Event.add({
@@ -202,7 +207,7 @@ var bindings = Event.add({
 });
 </pre>
 
-*	Multiple listeners bound to multiple callbacks w/ multiple configurations.
+* Multiple listeners bound to multiple callbacks w/ multiple configurations.
 ----------------------------------------------------
 <pre>
 var binding = Event.add({
@@ -227,7 +232,7 @@ var binding = Event.add({
 });
 </pre>
 
-*	Capturing an event and manually forwarding it to a proxy (tiered events).
+* Capturing an event and manually forwarding it to a proxy (tiered events).
 ----------------------------------------------------
 <pre>
 Event.add(target, "down", function(event, self) {
@@ -244,7 +249,7 @@ Event.add(target, "down", function(event, self) {
 });
 </pre>
 
-*	Stop, prevent and cancel.
+* Stop, prevent and cancel.
 ----------------------------------------------------
 <pre>
 Event.stop(event); // stop bubble.
@@ -252,7 +257,7 @@ Event.prevent(event); // prevent default.
 Event.cancel(event); // stop and prevent.
 </pre>
 
-*	Track for proper command/control-key for Mac/PC.
+* Track for proper command/control-key for Mac/PC.
 ----------------------------------------------------
 <pre>
 Event.add(window, "keyup keydown", Event.proxy.metaTracker); // setup tracking on the metaKey.
@@ -261,13 +266,13 @@ console.log(Event.proxy.metaTracker(event)); // returns whether metaKey is press
 console.log(Event.proxy.metaKey); // indicates whether metaKey is pressed (once metaTracker is run).
 </pre>
 
-*	Test for event features, in this example Drag & Drop file support.
+* Test for event features, in this example Drag & Drop file support.
 ----------------------------------------------------
 <pre>
 console.log(Event.supports('dragstart') && Event.supports('drop') && !!window.FileReader);
 </pre>
 
-*	Turn prototyping on/off
+* Turn prototyping on/off
 ----------------------------------------------------
 <pre>
 // NOTE: These two features are on by default (so it's easy to add to a project)
@@ -279,9 +284,24 @@ Event.modifyEventListener = true;
 Event.modifySelectors = true; 
 </pre>
 
-Quirks + Workarounds
+* Upgrading
 ----------------------------------------------------
 <pre>
-* When using other libraries that have built in "Event" namespace (TypeScript), 
-  to prevent conflict use "eventjs" instead.
+The latest version of MIDI.js makes calls to midijs instead of Event. This fixes issues
+with using the library with other frameworks, also, using the Event namespace was a bit hacky.
+
+If you want to use the latest library, but not update your calls (or prefer the Event namespace), 
+add this to the bottom of the Event.min.js
+///
+var addEvent = eventjs.add;
+var removeEvent = eventjs.remove;
+///
+(function() {
+	for (var key in eventjs) {
+		Event[key] = eventjs[key];
+	}
+	for (var key in eventjs.proxy) {
+		addEvent[key] = eventjs.proxy[key];
+	}
+})();
 </pre>

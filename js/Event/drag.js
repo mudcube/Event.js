@@ -1,17 +1,17 @@
-/*
+/*:
 	"Drag" event proxy (1+ fingers).
 	----------------------------------------------------
 	CONFIGURE: maxFingers, position.
 	----------------------------------------------------
-	Event.add(window, "drag", function(event, self) {
+	eventjs.add(window, "drag", function(event, self) {
 		console.log(self.gesture, self.state, self.start, self.x, self.y, self.bbox);
 	});
 */
 
-if (typeof(Event) === "undefined") var Event = {};
-if (typeof(Event.proxy) === "undefined") Event.proxy = {};
+if (typeof(eventjs) === "undefined") var eventjs = {};
+if (typeof(eventjs.proxy) === "undefined") eventjs.proxy = {};
 
-Event.proxy = (function(root) { "use strict";
+eventjs.proxy = (function(root) { "use strict";
 
 root.dragElement = function(that, event) {
 	root.drag({
@@ -21,7 +21,7 @@ root.dragElement = function(that, event) {
 		listener: function(event, self) {
 			that.style.left = self.x + "px";
 			that.style.top = self.y + "px";
-			Event.prevent(event);
+			eventjs.prevent(event);
 		}
 	});
 };
@@ -31,8 +31,8 @@ root.drag = function(conf) {
 	conf.onPointerDown = function (event) {
 		if (root.pointerStart(event, self, conf)) {
 			if (!conf.monitor) {
-				Event.add(conf.doc, "mousemove", conf.onPointerMove);
-				Event.add(conf.doc, "mouseup", conf.onPointerUp);
+				eventjs.add(conf.doc, "mousemove", conf.onPointerMove);
+				eventjs.add(conf.doc, "mouseup", conf.onPointerUp);
 			}
 		}
 		// Process event listener.
@@ -61,9 +61,6 @@ root.drag = function(conf) {
 				self.y = (pt.pageY - pt.offsetY);
 				pt.offsetX = pt.pageX;
 				pt.offsetY = pt.pageY;
-			} else if (conf.position === "relative") {
-				self.x = (pt.pageX + bbox.scrollLeft - pt.offsetX);
-				self.y = (pt.pageY + bbox.scrollTop - pt.offsetY);
 			} else {
 				self.x = (pt.pageX - pt.offsetX);
 				self.y = (pt.pageY - pt.offsetY);
@@ -76,8 +73,8 @@ root.drag = function(conf) {
 		// Remove tracking for touch.
 		if (root.pointerEnd(event, self, conf, conf.onPointerMove)) {
 			if (!conf.monitor) {
-				Event.remove(conf.doc, "mousemove", conf.onPointerMove);
-				Event.remove(conf.doc, "mouseup", conf.onPointerUp);
+				eventjs.remove(conf.doc, "mousemove", conf.onPointerMove);
+				eventjs.remove(conf.doc, "mouseup", conf.onPointerUp);
 			}
 		}
 	};
@@ -87,20 +84,20 @@ root.drag = function(conf) {
 	if (conf.event) {
 		conf.onPointerDown(conf.event);
 	} else { //
-		Event.add(conf.target, "mousedown", conf.onPointerDown);
+		eventjs.add(conf.target, "mousedown", conf.onPointerDown);
 		if (conf.monitor) {
-			Event.add(conf.doc, "mousemove", conf.onPointerMove);
-			Event.add(conf.doc, "mouseup", conf.onPointerUp);
+			eventjs.add(conf.doc, "mousemove", conf.onPointerMove);
+			eventjs.add(conf.doc, "mouseup", conf.onPointerUp);
 		}
 	}
 	// Return this object.
 	return self;
 };
 
-Event.Gesture = Event.Gesture || {};
-Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
-Event.Gesture._gestureHandlers.drag = root.drag;
+eventjs.Gesture = eventjs.Gesture || {};
+eventjs.Gesture._gestureHandlers = eventjs.Gesture._gestureHandlers || {};
+eventjs.Gesture._gestureHandlers.drag = root.drag;
 
 return root;
 
-})(Event.proxy);
+})(eventjs.proxy);

@@ -1,15 +1,15 @@
-/*
+/*:
 	"Double-Click" aka "Double-Tap" event proxy.
 	----------------------------------------------------
-	Event.add(window, "dblclick", function(event, self) {});
+	eventjs.add(window, "dblclick", function(event, self) {});
 	----------------------------------------------------
 	Touch an target twice for <= 700ms, with less than 25 pixel drift.
 */
 
-if (typeof(Event) === "undefined") var Event = {};
-if (typeof(Event.proxy) === "undefined") Event.proxy = {};
+if (typeof(eventjs) === "undefined") var eventjs = {};
+if (typeof(eventjs.proxy) === "undefined") eventjs.proxy = {};
 
-Event.proxy = (function(root) { "use strict";
+eventjs.proxy = (function(root) { "use strict";
 
 root.dbltap =
 root.dblclick = function(conf) {
@@ -35,8 +35,8 @@ root.dblclick = function(conf) {
 			}, delay);
 		}
 		if (root.pointerStart(event, self, conf)) {
-			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
-			Event.add(conf.doc, "mouseup", conf.onPointerUp);
+			eventjs.add(conf.target, "mousemove", conf.onPointerMove).listener(event);
+			eventjs.add(conf.target, "mouseup", conf.onPointerUp);
 		}
 	};
 	conf.onPointerMove = function (event) {
@@ -45,30 +45,25 @@ root.dblclick = function(conf) {
 			pointer1 = pointers[0];
 		}
 		var bbox = conf.bbox;
-		if (conf.position === "relative") {
-			var ax = (pointer1.pageX + bbox.scrollLeft - bbox.x1);
-			var ay = (pointer1.pageY + bbox.scrollTop - bbox.y1);
-		} else {
-			var ax = (pointer1.pageX - bbox.x1);
-			var ay = (pointer1.pageY - bbox.y1);
-		}
+		var ax = (pointer1.pageX - bbox.x1);
+		var ay = (pointer1.pageY - bbox.y1);
 		if (!(ax > 0 && ax < bbox.width && // Within target coordinates..
 			  ay > 0 && ay < bbox.height &&
 			  Math.abs(pointer1.pageX - pointer0.pageX) <= 25 && // Within drift deviance.
 			  Math.abs(pointer1.pageY - pointer0.pageY) <= 25)) {
 			// Cancel out this listener.
-			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
+			eventjs.remove(conf.target, "mousemove", conf.onPointerMove);
 			clearTimeout(timeout);
 			time0 = time1 = 0;
 		}
 	};
 	conf.onPointerUp = function(event) {
 		if (root.pointerEnd(event, self, conf)) {
-			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
-			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
+			eventjs.remove(conf.target, "mousemove", conf.onPointerMove);
+			eventjs.remove(conf.target, "mouseup", conf.onPointerUp);
 		}
 		if (time0 && time1) {
-			if (time1 <= delay && !(event.cancelBubble && ++event.bubble > 1)) {
+			if (time1 <= delay) { // && !(event.cancelBubble && ++event.cancelBubbleCount > 1)) {
 				self.state = conf.gesture;
 				for (var key in conf.tracker) break;
 				var point = conf.tracker[key];
@@ -84,16 +79,16 @@ root.dblclick = function(conf) {
 	var self = root.pointerSetup(conf);
 	self.state = "dblclick";
 	// Attach events.
-	Event.add(conf.target, "mousedown", conf.onPointerDown);
+	eventjs.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.
 	return self;
 };
 
-Event.Gesture = Event.Gesture || {};
-Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
-Event.Gesture._gestureHandlers.dbltap = root.dbltap;
-Event.Gesture._gestureHandlers.dblclick = root.dblclick;
+eventjs.Gesture = eventjs.Gesture || {};
+eventjs.Gesture._gestureHandlers = eventjs.Gesture._gestureHandlers || {};
+eventjs.Gesture._gestureHandlers.dbltap = root.dbltap;
+eventjs.Gesture._gestureHandlers.dblclick = root.dblclick;
 
 return root;
 
-})(Event.proxy);
+})(eventjs.proxy);

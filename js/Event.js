@@ -16,7 +16,6 @@
 	----------------------------------------------------
 	http://www.w3.org/TR/2011/WD-touch-events-20110505/
 	----------------------------------------------------
-	
 */
 
 if (typeof(Event) === "undefined") var Event = {};
@@ -529,13 +528,8 @@ root.pointerStart = function(event, self, conf) {
 				break;
 		}
 		///
-		if (conf.position === "relative") {
-			var x = (touch.pageX + bbox.scrollLeft - pt.offsetX);
-			var y = (touch.pageY + bbox.scrollTop - pt.offsetY);
-		} else {
-			var x = (touch.pageX - pt.offsetX);
-			var y = (touch.pageY - pt.offsetY);
-		}
+		var x = (touch.pageX - pt.offsetX);
+		var y = (touch.pageY - pt.offsetY);
 		///
 		pt.rotation = 0;
 		pt.scale = 1;
@@ -904,13 +898,8 @@ root.click = function(conf) {
 			var pointer = pointers[0];
 			var bbox = conf.bbox;
 			var newbbox = root.getBoundingBox(conf.target);
-			if (conf.position === "relative") {
-				var ax = (pointer.pageX + bbox.scrollLeft - bbox.x1);
-				var ay = (pointer.pageY + bbox.scrollTop - bbox.y1);
-			} else {
-				var ax = (pointer.pageX - bbox.x1);
-				var ay = (pointer.pageY - bbox.y1);
-			}
+			var ax = (pointer.pageX - bbox.x1);
+			var ay = (pointer.pageY - bbox.y1);
 			if (ax > 0 && ax < bbox.width && // Within target coordinates.
 				ay > 0 && ay < bbox.height &&
 				bbox.scrollTop === newbbox.scrollTop) {
@@ -987,13 +976,8 @@ root.dblclick = function(conf) {
 			pointer1 = pointers[0];
 		}
 		var bbox = conf.bbox;
-		if (conf.position === "relative") {
-			var ax = (pointer1.pageX + bbox.scrollLeft - bbox.x1);
-			var ay = (pointer1.pageY + bbox.scrollTop - bbox.y1);
-		} else {
-			var ax = (pointer1.pageX - bbox.x1);
-			var ay = (pointer1.pageY - bbox.y1);
-		}
+		var ax = (pointer1.pageX - bbox.x1);
+		var ay = (pointer1.pageY - bbox.y1);
 		if (!(ax > 0 && ax < bbox.width && // Within target coordinates..
 			  ay > 0 && ay < bbox.height &&
 			  Math.abs(pointer1.pageX - pointer0.pageX) <= 25 && // Within drift deviance.
@@ -1102,9 +1086,6 @@ root.drag = function(conf) {
 				self.y = (pt.pageY - pt.offsetY);
 				pt.offsetX = pt.pageX;
 				pt.offsetY = pt.pageY;
-			} else if (conf.position === "relative") {
-				self.x = (pt.pageX + bbox.scrollLeft - pt.offsetX);
-				self.y = (pt.pageY + bbox.scrollTop - pt.offsetY);
 			} else {
 				self.x = (pt.pageX - pt.offsetX);
 				self.y = (pt.pageY - pt.offsetY);
@@ -1198,13 +1179,8 @@ root.gesture = function(conf) {
 			// Check whether "pt" is used by another gesture.
 			if (!pt) continue; 
 			// Find the actual coordinates.
-			if (conf.position === "relative") {
-				pt.move.x = (touch.pageX + bbox.scrollLeft - bbox.x1);
-				pt.move.y = (touch.pageY + bbox.scrollTop - bbox.y1);
-			} else {
-				pt.move.x = (touch.pageX - bbox.x1);
-				pt.move.y = (touch.pageY - bbox.y1);
-			}
+			pt.move.x = (touch.pageX - bbox.x1);
+			pt.move.y = (touch.pageY - bbox.y1);
 		}
 		///
 		if (conf.fingers < conf.minFingers) return;
@@ -1637,13 +1613,8 @@ root.tap = function(conf) {
 			var identifier = touch.identifier || Infinity;
 			var pt = conf.tracker[identifier];
 			if (!pt) continue;
-			if (conf.position === "relative") {
-				var x = (touch.pageX + bbox.scrollLeft - bbox.x1);
-				var y = (touch.pageY + bbox.scrollTop - bbox.y1);
-			} else {
-				var x = (touch.pageX - bbox.x1);
-				var y = (touch.pageY - bbox.y1);
-			}
+			var x = (touch.pageX - bbox.x1);
+			var y = (touch.pageY - bbox.y1);
 			///
 			var dx = x - pt.start.x;
 			var dy = y - pt.start.y;

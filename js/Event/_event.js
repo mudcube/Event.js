@@ -1,6 +1,6 @@
-/*
+/*:
 	----------------------------------------------------
-	Event.js : 1.1.3 : 2013/07/17 : MIT License
+	event.js : 1.1.5 : 2014/02/12 : MIT License
 	----------------------------------------------------
 	https://github.com/mudcube/Event.js
 	----------------------------------------------------
@@ -15,20 +15,18 @@
 	* Event batching - i.e. for every x fingers down a new gesture is created.
 	----------------------------------------------------
 	http://www.w3.org/TR/2011/WD-touch-events-20110505/
-	----------------------------------------------------
-	
+	----------------------------------------------------	
 */
 
-if (typeof(Event) === "undefined") var Event = {};
-if (typeof(eventjs) === "undefined") var eventjs = Event;
+if (typeof(eventjs) === "undefined") var eventjs = {};
 
 (function(root) { "use strict";
 
 // Add custom *EventListener commands to HTMLElements (set false to prevent funkiness).
-root.modifyEventListener = true;
+root.modifyEventListener = false;
 
 // Add bulk *EventListener commands on NodeLists from querySelectorAll and others  (set false to prevent funkiness).
-root.modifySelectors = true;
+root.modifySelectors = false;
 
 // Event maintenance.
 root.add = function(target, type, listener, configure) {
@@ -39,23 +37,40 @@ root.remove = function(target, type, listener, configure) {
 	return eventManager(target, type, listener, configure, "remove");
 };
 
+root.returnFalse = function(event) {
+	return false;	
+};
+
 root.stop = function(event) {
 	if (!event) return;
 	if (event.stopPropagation) event.stopPropagation();
 	event.cancelBubble = true; // <= IE8
-	event.bubble = 0;
+	event.cancelBubbleCount = 0;
 };
 
 root.prevent = function(event) {
 	if (!event) return;
-	if (event.preventDefault) event.preventDefault();
-	if (event.preventManipulation) event.preventManipulation(); // MS
-	event.returnValue = false; // <= IE8
+	if (event.preventDefault) {
+		event.preventDefault();
+	} else if (event.preventManipulation) {
+		event.preventManipulation(); // MS
+	} else {
+		event.returnValue = false; // <= IE8
+	}
 };
 
 root.cancel = function(event) {
 	root.stop(event);
 	root.prevent(event);
+};
+
+root.blur = function() { // Blurs the focused element. Useful when using eventjs.cancel as canceling will prevent focused elements from being blurred.
+	var node = document.activeElement;
+	if (!node) return;
+	var nodeName = document.activeElement.nodeName;
+	if (nodeName === "INPUT" || nodeName === "TEXTAREA" || node.contentEditable === "true") {
+		if (node.blur) node.blur();
+	}
 };
 
 // Check whether event is natively supported (via @kangax)
@@ -95,33 +110,71 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 	// Check whether target is a configuration variable;
 	if (String(target) === "[object Object]") {
 		var data = target;
-		target = data.target;
-		type = data.type;
-		listener = data.listener;
-		delete data.target;
-		delete data.type;
-		delete data.listener;
-		for (var key in data) {
-			configure[key] = data[key];
+		target = data.target; delete data.target;
+		///
+		if (data.type && data.listener) {
+			type = data.type; delete data.type;
+			listener = data.listener; delete data.listener;
+			for (var key in data) {
+				configure[key] = data[key];
+			}
+		} else { // specialness
+			for (var param in data) {
+				var value = data[param];
+				if (typeof(value) === "function") continue;
+				configure[param] = value;
+			}
+			///
+			var ret = {};
+			for (var key in data) {
+				var param = key.split(",");
+				var o = data[key];
+				var conf = {};
+				for (var k in configure) { // clone base configuration
+					conf[k] = configure[k];
+				}
+				///
+				if (typeof(o) === "function") { // without configuration
+					var listener = o;
+				} else if (typeof(o.listener) === "function") { // with configuration
+					var listener = o.listener;
+					for (var k in o) { // merge configure into base configuration
+						if (typeof(o[k]) === "function") continue;
+						conf[k] = o[k];
+					}
+				} else { // not a listener
+					continue;
+				}
+				///
+				for (var n = 0; n < param.length; n ++) {
+					ret[key] = eventjs.add(target, param[n], listener, conf, trigger);
+				}
+			}
+			return ret;
 		}
 	}
 	///
 	if (!target || !type || !listener) return;
 	// Check for element to load on interval (before onload).
 	if (typeof(target) === "string" && type === "ready") {
-		var time = (new Date()).getTime();
-		var timeout = configure.timeout;
-		var ms = configure.interval || 1000 / 60;
-		var interval = window.setInterval(function() {
-			if ((new Date()).getTime() - time > timeout) {
-				window.clearInterval(interval);
-			}
-			if (document.querySelector(target)) {
-				window.clearInterval(interval);
-				setTimeout(listener, 1);
-			}
-		}, ms);
-		return;
+		if (window.eventjs_stallOnReady) { /// force stall for scripts to load
+			type = "load";
+			target = window;
+		} else { //
+			var time = (new Date()).getTime();
+			var timeout = configure.timeout;
+			var ms = configure.interval || 1000 / 60;
+			var interval = window.setInterval(function() {
+				if ((new Date()).getTime() - time > timeout) {
+					window.clearInterval(interval);
+				}
+				if (document.querySelector(target)) {
+					window.clearInterval(interval);
+					setTimeout(listener, 1);
+				}
+			}, ms);
+			return;
+		}
 	}
 	// Get DOM element from Query Selector.
 	if (typeof(target) === "string") {
@@ -142,10 +195,18 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 		}	
 		return createBatchCommands(events);
 	}
-	// Check for multiple events in one string.
-	if (type.indexOf && type.indexOf(" ") !== -1) type = type.split(" ");
-	if (type.indexOf && type.indexOf(",") !== -1) type = type.split(",");
-	// Attach or remove multiple events associated with a target.
+
+	/// Check for multiple events in one string.
+	if (typeof(type) === "string") {
+		type = type.toLowerCase();
+		if (type.indexOf(" ") !== -1) {
+			type = type.split(" ");
+		} else if (type.indexOf(",") !== -1) {
+			type = type.split(",");
+		}
+	}
+	
+	/// Attach or remove multiple events associated with a target.
 	if (typeof(type) !== "string") { // Has multiple events.
 		if (typeof(type.length) === "number") { // Handle multiple listeners glued together.
 			for (var n1 = 0, length1 = type.length; n1 < length1; n1 ++) { // Array [type]
@@ -163,10 +224,14 @@ var eventManager = function(target, type, listener, configure, trigger, fromOver
 			}
 		}
 		return createBatchCommands(events);
+	} else if (type.indexOf("on") === 0) { // to support things like "onclick" instead of "click"
+		type = type.substr(2);
 	}
+
 	// Ensure listener is a function.
 	if (typeof(target) !== "object") return createError("Target is not defined!", arguments);
 	if (typeof(listener) !== "function") return createError("Listener is not a function!", arguments);
+
 	// Generate a unique wrapper identifier.
 	var useCapture = configure.useCapture || false;
 	var id = getID(target) + "." + getID(listener) + "." + (useCapture ? 1 : 0);
@@ -319,7 +384,7 @@ var remove = document.removeEventListener ? "removeEventListener" : "detachEvent
 
 /*
 	Pointer.js
-	------------------------
+	----------------------------------------
 	Modified from; https://github.com/borismus/pointer.js
 */
 
@@ -410,4 +475,4 @@ if (root.modifySelectors) (function() {
 
 return root;
 
-})(Event);
+})(eventjs);

@@ -1,16 +1,16 @@
-/*
+/*:
 	----------------------------------------------------
 	"MutationObserver" event proxy.
 	----------------------------------------------------
-	Author: Selvakumar Arumugam (MIT LICENSE)
-	http://stackoverflow.com/questions/10868104/can-you-have-a-javascript-hook-trigger-after-a-dom-elements-style-object-change
+	author: Selvakumar Arumugam - MIT LICENSE
+	   src: http://stackoverflow.com/questions/10868104/can-you-have-a-javascript-hook-trigger-after-a-dom-elements-style-object-change
 	----------------------------------------------------
 */
-if (typeof(Event) === "undefined") var Event = {};
+if (typeof(eventjs) === "undefined") var eventjs = {};
 
-Event.MutationObserver = (function() {
+eventjs.MutationObserver = (function() {
 	var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
-	var DOMAttrModifiedSupported = (function() {
+	var DOMAttrModifiedSupported = !MutationObserver && (function() {
 		var p = document.createElement("p");
 		var flag = false;
 		var fn = function() { flag = true };
@@ -40,11 +40,11 @@ Event.MutationObserver = (function() {
 			});
 			observer.observe(container, options)
 		} else if (DOMAttrModifiedSupported) {
-			Event.add(container, "DOMAttrModified", function(e) {
+			eventjs.add(container, "DOMAttrModified", function(e) {
 				callback.call(container, e.attrName);
 			});
 		} else if ("onpropertychange" in document.body) {
-			Event.add(container, "propertychange", function(e) {
+			eventjs.add(container, "propertychange", function(e) {
 				callback.call(container, window.event.propertyName);
 			});
 		}

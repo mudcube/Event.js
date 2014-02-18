@@ -1,9 +1,9 @@
-/*
+/*:
 	"Tap" and "Longpress" event proxy.
 	----------------------------------------------------
 	CONFIGURE: delay (longpress), timeout (tap).
 	----------------------------------------------------
-	Event.add(window, "tap", function(event, self) {
+	eventjs.add(window, "tap", function(event, self) {
 		console.log(self.fingers);
 	});
 	----------------------------------------------------
@@ -11,10 +11,10 @@
 	multi-finger longpress // touch an target for >= 500ms
 */
 
-if (typeof(Event) === "undefined") var Event = {};
-if (typeof(Event.proxy) === "undefined") Event.proxy = {};
+if (typeof(eventjs) === "undefined") var eventjs = {};
+if (typeof(eventjs.proxy) === "undefined") eventjs.proxy = {};
 
-Event.proxy = (function(root) { "use strict";
+eventjs.proxy = (function(root) { "use strict";
 
 root.longpress = function(conf) {
 	conf.gesture = "longpress";
@@ -33,12 +33,12 @@ root.tap = function(conf) {
 		if (root.pointerStart(event, self, conf)) {
 			timestamp = (new Date()).getTime();
 			// Initialize event listeners.
-			Event.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
-			Event.add(conf.doc, "mouseup", conf.onPointerUp);
+			eventjs.add(conf.doc, "mousemove", conf.onPointerMove).listener(event);
+			eventjs.add(conf.doc, "mouseup", conf.onPointerUp);
 			// Make sure this is a "longpress" event.
 			if (conf.gesture !== "longpress") return;
 			timeout = setTimeout(function() {
-				if (event.cancelBubble && ++event.bubble > 1) return;
+				if (event.cancelBubble && ++event.cancelBubbleCount > 1) return;
 				// Make sure no fingers have been changed.
 				var fingers = 0;
 				for (var key in conf.tracker) {
@@ -67,13 +67,8 @@ root.tap = function(conf) {
 			var identifier = touch.identifier || Infinity;
 			var pt = conf.tracker[identifier];
 			if (!pt) continue;
-			if (conf.position === "relative") {
-				var x = (touch.pageX + bbox.scrollLeft - bbox.x1);
-				var y = (touch.pageY + bbox.scrollTop - bbox.y1);
-			} else {
-				var x = (touch.pageX - bbox.x1);
-				var y = (touch.pageY - bbox.y1);
-			}
+			var x = (touch.pageX - bbox.x1);
+			var y = (touch.pageY - bbox.y1);
 			///
 			var dx = x - pt.start.x;
 			var dy = y - pt.start.y;
@@ -82,7 +77,7 @@ root.tap = function(conf) {
 				  y > 0 && y < bbox.height &&
 				  distance <= conf.driftDeviance)) { // Within drift deviance.
 				// Cancel out this listener.
-				Event.remove(conf.doc, "mousemove", conf.onPointerMove);
+				eventjs.remove(conf.doc, "mousemove", conf.onPointerMove);
 				conf.cancel = true;
 				return;
 			}
@@ -91,9 +86,9 @@ root.tap = function(conf) {
 	conf.onPointerUp = function(event) {
 		if (root.pointerEnd(event, self, conf)) {
 			clearTimeout(timeout);
-			Event.remove(conf.doc, "mousemove", conf.onPointerMove);
-			Event.remove(conf.doc, "mouseup", conf.onPointerUp);
-			if (event.cancelBubble && ++event.bubble > 1) return;
+			eventjs.remove(conf.doc, "mousemove", conf.onPointerMove);
+			eventjs.remove(conf.doc, "mouseup", conf.onPointerUp);
+			if (event.cancelBubble && ++event.cancelBubbleCount > 1) return;
 			// Callback release on longpress.
 			if (conf.gesture === "longpress") {
 				if (self.state === "start") {
@@ -118,16 +113,16 @@ root.tap = function(conf) {
 	// Generate maintenance commands, and other configurations.
 	var self = root.pointerSetup(conf);
 	// Attach events.
-	Event.add(conf.target, "mousedown", conf.onPointerDown);
+	eventjs.add(conf.target, "mousedown", conf.onPointerDown);
 	// Return this object.
 	return self;
 };
 
-Event.Gesture = Event.Gesture || {};
-Event.Gesture._gestureHandlers = Event.Gesture._gestureHandlers || {};
-Event.Gesture._gestureHandlers.tap = root.tap;
-Event.Gesture._gestureHandlers.longpress = root.longpress;
+eventjs.Gesture = eventjs.Gesture || {};
+eventjs.Gesture._gestureHandlers = eventjs.Gesture._gestureHandlers || {};
+eventjs.Gesture._gestureHandlers.tap = root.tap;
+eventjs.Gesture._gestureHandlers.longpress = root.longpress;
 
 return root;
 
-})(Event.proxy);
+})(eventjs.proxy);
