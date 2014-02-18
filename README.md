@@ -21,81 +21,81 @@ target.addEventListener(type, listener, useCapture);
 target.removeEventListener(type, listener, useCapture);
 
 // Has less function calls then the override version, while retains similar formatting.
-Event.add(target, type, listener, configure); 
-Event.remove(target, type, listener, configure);
+eventjs.add(target, type, listener, configure); 
+eventjs.remove(target, type, listener, configure);
 
 // Same as the previous, but (arguably) cleaner looking code.
-Event.add(configure);
-Event.remove(configure);
+eventjs.add(configure);
+eventjs.remove(configure);
 </pre>
 
 ### Click: fingers, minFingers, maxFingers
 ----------------------------------------------------
 <pre>
-Event.add(window, "click", function(event, self) {
+eventjs.add(window, "click", function(event, self) {
 	console.log(self.gesture, self.x, self.y);
 });
 </pre>
 ### Double-Click: fingers, minFingers, maxFingers
 ----------------------------------------------------
 <pre>
-Event.add(window, "dblclick", function(event, self) {
+eventjs.add(window, "dblclick", function(event, self) {
 	console.log(self.gesture, self.x, self.y);
 });
 </pre>
 ### Drag: fingers, maxFingers, position
 ----------------------------------------------------
 <pre>
-Event.add(window, "drag", function(event, self) {
+eventjs.add(window, "drag", function(event, self) {
 	console.log(self.gesture, self.fingers, self.state, self.start, self.x, self.y, self.bbox);
 });
 </pre>
 ### Gesture: fingers, minFingers, maxFingers
 ----------------------------------------------------
 <pre>
-Event.add(window, "gesture", function(event, self) {
+eventjs.add(window, "gesture", function(event, self) {
 	console.log(self.gesture, self.fingers, self.state, self.rotation, self.scale);
 });
 </pre>
 ### Swipe: fingers, minFingers, maxFingers, snap, threshold
 ----------------------------------------------------
 <pre>
-Event.add(window, "swipe", function(event, self) {
+eventjs.add(window, "swipe", function(event, self) {
 	console.log(self.gesture, self.fingers, self.velocity, self.angle, self.start, self.x, self.y);
 });
 </pre>
 ### Tap: fingers, minFingers, maxFingers, timeout
 ----------------------------------------------------
 <pre>
-Event.add(window, "tap", function(event, self) {
+eventjs.add(window, "tap", function(event, self) {
 	console.log(self.gesture, self.fingers);
 });
 </pre>
 ### Longpress: fingers, minFingers, maxFingers, delay
 ----------------------------------------------------
 <pre>
-Event.add(window, "longpress", function(event, self) {
+eventjs.add(window, "longpress", function(event, self) {
 	console.log(self.gesture, self.fingers);
 });
 </pre>
 ### Shake
 ----------------------------------------------------
 <pre>
-Event.add(window, "shake", function(event, self) {
+eventjs.add(window, "shake", function(event, self) {
 	console.log(self.gesture, self.acceleration, self.accelerationIncludingGravity);
 });
 </pre>
 ### DeviceMotion (smooth quirks)
 ----------------------------------------------------
 <pre>
-Event.add(window, "devicemotion", function(event, self) {
+eventjs.add(window, "devicemotion", function(event, self) {
 	console.log(self.gesture, self.acceleration, self.accelerationIncludingGravity);
 });
 </pre>
 ### Wheel (smooth quirks)
 ----------------------------------------------------
 <pre>
-Event.add(window, "wheel", function(event, self) {
+eventjs.add(window, "wheel", function(event, self) {
 	console.log(self.gesture, self.state, self.wheelDelta);
 });
 </pre>
@@ -111,16 +111,16 @@ target.addEventListener("swipe", function(event) {
 	snap: 90 // snap to 90 degree intervals.
 });
 
-// adding with Event.add() - a bit more efficient
-Event.add(target, "swipe", function(event, self) {
+// adding with eventjs.add() - a bit more efficient
+eventjs.add(target, "swipe", function(event, self) {
 	console.log(self.velocity, self.angle, self.fingers);
 }, {
 	fingers: 2,
 	snap: 90 
 });
 
-// adding with Event.add() w/ configuration
-Event.add({
+// adding with eventjs.add() w/ configuration
+eventjs.add({
 	target: target,
 	type: "swipe",
 	fingers: 2,
@@ -137,8 +137,8 @@ Event.add({
 // adding with addEventListener()
 target.addEventListener("click swipe", function(event) { });
 
-// adding with Event.add()
-Event.add(target, "click swipe", function(event, self) { });
+// adding with eventjs.add()
+eventjs.add(target, "click swipe", function(event, self) { });
 </pre>
 
 ### Query selectors to create an event (querySelectorAll)
@@ -147,16 +147,16 @@ Event.add(target, "click swipe", function(event, self) { });
 // adding events to NodeList from querySelectorAll()
 document.querySelectorAll("#element a.link").addEventListener("click", callback);
 
-// adding with Event.add()
-Event.add("#element a.link", "click", callback);
+// adding with eventjs.add()
+eventjs.add("#element a.link", "click", callback);
 </pre>
 
 ### Listen until selector to become available (querySelector)
 ----------------------------------------------------
 <pre>
-Event.add("body", "ready", callback);
+eventjs.add("body", "ready", callback);
 // or...
-Event.add({
+eventjs.add({
 	target: "body", 
 	type: "ready", 
 	timeout: 10000, // set a timeout to stop checking.
@@ -168,7 +168,7 @@ Event.add({
 ### Multiple listeners bound to one listener w/ configuration.
 ----------------------------------------------------
 <pre>
-var bindings = Event.add({
+var bindings = eventjs.add({
 	target: target,
 	type: "click swipe",
 	snap: 90, // snap to 90 degree intervals.
@@ -191,7 +191,7 @@ var bindings = Event.add({
 ### Multiple listeners bound to multiple callbacks w/ configuration.
 ----------------------------------------------------
 <pre>
-var bindings = Event.add({
+var bindings = eventjs.add({
 	target: target,
 	minFingers: 1,
 	maxFingers: 12,
@@ -209,7 +209,7 @@ var bindings = Event.add({
 ### Multiple listeners bound to multiple callbacks w/ multiple configurations.
 ----------------------------------------------------
 <pre>
-var binding = Event.add({
+var binding = eventjs.add({
 	target: target,
 	listeners: {
 		longpress: {
@@ -234,10 +234,10 @@ var binding = Event.add({
 ### Capturing an event and manually forwarding it to a proxy (tiered events).
 ----------------------------------------------------
 <pre>
-Event.add(target, "down", function(event, self) {
+eventjs.add(target, "down", function(event, self) {
 	var x = event.pageX; // local variables that wont change.
 	var y = event.pageY;
-	Event.proxy.drag({
+	eventjs.proxy.drag({
 		event: event,
 		target: target,
 		listener: function(event, self) {
@@ -251,24 +251,24 @@ Event.add(target, "down", function(event, self) {
 ### Stop, prevent and cancel.
 ----------------------------------------------------
 <pre>
-Event.stop(event); // stop bubble.
-Event.prevent(event); // prevent default.
-Event.cancel(event); // stop and prevent.
+eventjs.stop(event); // stop bubble.
+eventjs.prevent(event); // prevent default.
+eventjs.cancel(event); // stop and prevent.
 </pre>
 
 ### Track for proper command/control-key for Mac/PC.
 ----------------------------------------------------
 <pre>
-Event.add(window, "keyup keydown", Event.proxy.metaTracker); // setup tracking on the metaKey.
-Event.add(window, "focus load blur beforeunload", Event.proxy.metaTrackerReset); // 
-console.log(Event.proxy.metaTracker(event)); // returns whether metaKey is pressed.
-console.log(Event.proxy.metaKey); // indicates whether metaKey is pressed (once metaTracker is run).
+eventjs.add(window, "keyup keydown", eventjs.proxy.metaTracker); // setup tracking on the metaKey.
+eventjs.add(window, "focus load blur beforeunload", eventjs.proxy.metaTrackerReset); // 
+console.log(eventjs.proxy.metaTracker(event)); // returns whether metaKey is pressed.
+console.log(eventjs.proxy.metaKey); // indicates whether metaKey is pressed (once metaTracker is run).
 </pre>
 
 ### Test for event features, in this example Drag & Drop file support.
 ----------------------------------------------------
 <pre>
-console.log(Event.supports('dragstart') && Event.supports('drop') && !!window.FileReader);
+console.log(eventjs.supports('dragstart') && eventjs.supports('drop') && !!window.FileReader);
 </pre>
 
 ### Turn prototyping on/off
@@ -278,9 +278,9 @@ console.log(Event.supports('dragstart') && Event.supports('drop') && !!window.Fi
 //       however, I like to run without modify* support in production, as it's less hacky.
 // ----------------------------------------------------
 // add custom *EventListener commands to HTMLElements.
-Event.modifyEventListener = true; 
+eventjs.modifyEventListener = true; 
 // add bulk *EventListener commands on NodeLists from querySelectorAll and others.
-Event.modifySelectors = true; 
+eventjs.modifySelectors = true; 
 </pre>
 
 ### Upgrading
