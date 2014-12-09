@@ -28,7 +28,8 @@ module.exports = function (grunt) {
 				'js/Event/shake.js', 
 				'js/Event/swipe.js', 
 				'js/Event/tap.js', 
-				'js/Event/wheel.js'
+				'js/Event/wheel.js',
+				'js/Event/orientation.js'
 			]
 		},
 		uglify: {
