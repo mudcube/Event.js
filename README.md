@@ -306,6 +306,8 @@ var removeEvent = eventjs.remove;
 </pre>
 
 ### Browser support
+----------------------------------------------------
+<pre>
 Firefox
 Chrome
 Chrome Mobile
@@ -313,6 +315,7 @@ Opera
 Internet Explorer - for IE8 or less include http://git.io/ppQT
 Safari
 Safari Mobile
+</pre>
 
 ### MIT License
 
