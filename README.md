@@ -305,6 +305,15 @@ var removeEvent = eventjs.remove;
 })();
 </pre>
 
+### Browser support
+Firefox
+Chrome
+Chrome Mobile
+Opera
+Internet Explorer - for IE8 or less include http://git.io/ppQT
+Safari
+Safari Mobile
+
 ### MIT License
 
 Copyright (c) 2010-2014 SketchIO (Michael Deal)
